@@ -98,7 +98,7 @@ The workflow is `.github/workflows/cron-build-and-release.yml`. The cron runs on
 
 ### Triggering manually
 
-Go to `Actions → cron-build-and-release → Run workflow`. Set `force_build: true` to build even if VS Code's version hasn't changed (useful for testing build changes against the current pin).
+Go to `Actions → cron-build-and-release → Run workflow`. Set `force_build: true` to build **the version pinned in `upstream/stable.json`** regardless of whether upstream has advanced — useful for testing build/script changes against a known-good pin without picking up a fresh upstream surprise. With `force_build: false` (the default), the workflow builds only when upstream VS Code has advanced past the current pin (the same logic the cron uses).
 
 ### Required repository secrets
 

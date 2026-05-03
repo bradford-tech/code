@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       force_build:
-        description: 'Build even if VS Code version is unchanged'
+        description: 'Build the pinned VS Code version (from upstream/stable.json) regardless of whether upstream has advanced'
         type: boolean
         default: false
 
@@ -36,7 +36,9 @@ jobs:
         id: current
         run: |
           tag=$(jq -r '.tag' upstream/stable.json)
+          commit=$(jq -r '.commit' upstream/stable.json)
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
       - name: Query upstream VS Code latest stable
         id: upstream
@@ -61,27 +63,38 @@ jobs:
         id: compare
         env:
           CURRENT_TAG: ${{ steps.current.outputs.tag }}
-          MS_TAG: ${{ steps.upstream.outputs.ms_tag }}
-          MS_COMMIT: ${{ steps.upstream.outputs.ms_commit }}
+          CURRENT_COMMIT: ${{ steps.current.outputs.commit }}
+          UPSTREAM_TAG: ${{ steps.upstream.outputs.ms_tag }}
+          UPSTREAM_COMMIT: ${{ steps.upstream.outputs.ms_commit }}
           FORCE_BUILD: ${{ inputs.force_build }}
         run: |
+          # force_build: build the *pinned* version regardless of upstream changes.
+          #   Used to verify the workflow against a known-good pin, or to rebuild
+          #   after pushing a workflow/script fix without bumping VS Code.
+          # Cron (force_build=false): build only if upstream advanced past the pin.
           if [[ "$FORCE_BUILD" == "true" ]]; then
+            ms_tag="$CURRENT_TAG"
+            ms_commit="$CURRENT_COMMIT"
             needs_build=true
-            reason="force_build=true"
-          elif [[ "$MS_TAG" != "$CURRENT_TAG" ]]; then
+            reason="force_build=true; using pinned $ms_tag"
+          elif [[ "$UPSTREAM_TAG" != "$CURRENT_TAG" ]]; then
+            ms_tag="$UPSTREAM_TAG"
+            ms_commit="$UPSTREAM_COMMIT"
             needs_build=true
-            reason="upstream tag $MS_TAG differs from current pin $CURRENT_TAG"
+            reason="upstream advanced from $CURRENT_TAG to $ms_tag"
           else
+            ms_tag="$CURRENT_TAG"
+            ms_commit="$CURRENT_COMMIT"
             needs_build=false
-            reason="upstream tag $MS_TAG matches current pin; skipping"
+            reason="upstream tag $UPSTREAM_TAG matches pin; skipping"
           fi
 
           time_patch=$(printf "%04d" $(($(date +%-j) * 24 + $(date +%-H))))
-          release_version="${MS_TAG}${time_patch}"
+          release_version="${ms_tag}${time_patch}"
 
           echo "needs_build=$needs_build" >> "$GITHUB_OUTPUT"
-          echo "ms_tag=$MS_TAG" >> "$GITHUB_OUTPUT"
-          echo "ms_commit=$MS_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "ms_tag=$ms_tag" >> "$GITHUB_OUTPUT"
+          echo "ms_commit=$ms_commit" >> "$GITHUB_OUTPUT"
           echo "release_version=$release_version" >> "$GITHUB_OUTPUT"
           echo "::notice::$reason (release_version=$release_version)"
 
