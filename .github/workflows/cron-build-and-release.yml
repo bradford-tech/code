@@ -120,6 +120,9 @@ jobs:
       MS_TAG: ${{ needs.check.outputs.ms_tag }}
       MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
       RELEASE_VERSION: ${{ needs.check.outputs.release_version }}
+      # Authenticate api.github.com calls during npm postinstall (ripgrep) and
+      # gulp builtin-extension fetches; raises rate limit from 60/h to 5000/h.
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CERTIFICATE_OSX_P12_DATA: ${{ secrets.CERTIFICATE_OSX_P12_DATA }}
       CERTIFICATE_OSX_P12_PASSWORD: ${{ secrets.CERTIFICATE_OSX_P12_PASSWORD }}
       CERTIFICATE_OSX_ID: ${{ secrets.CERTIFICATE_OSX_ID }}
