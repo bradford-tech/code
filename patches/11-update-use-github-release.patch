@@ -72,9 +72,9 @@ index e13d1ba5..3767c907 100644
 -		url.searchParams.set('bg', 'true');
 +export function createUpdateURL(productService: IProductService, quality: string, platform: Platform, architecture: Architecture, target?: Target): string {
 +	if (target) {
-+		return `${productService.updateUrl}/${quality}/${platform}/${architecture}/${target}/latest.json`;
++		return `${productService.updateUrl}/${quality}/${platform}-${architecture}/${target}/latest.json`;
 +	} else {
-+		return `${productService.updateUrl}/${quality}/${platform}/${architecture}/latest.json`;
++		return `${productService.updateUrl}/${quality}/${platform}-${architecture}/latest.json`;
  	}
 -
 -	url.searchParams.set('u', options?.internalOrg ?? 'none');
