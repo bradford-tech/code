@@ -1,9 +1,9 @@
 {
-  "url": "https://github.com/bradford-tech/code/releases/download/1.116.02973/BradfordCode.arm64.1.116.02973.dmg",
-  "name": "1.116.02973",
-  "version": "560a9dba96f961efea7b1612916f89e5d5d4d679",
-  "productVersion": "1.116.0",
-  "hash": "23227ea93309bfea835c578cf17c8a12113be85d33b85ee2771378a6da4ac6d3",
-  "timestamp": 1777845340274,
+  "url": "https://github.com/bradford-tech/code/releases/download/1.118.12984/BradfordCode.arm64.1.118.12984.dmg",
+  "name": "1.118.12984",
+  "version": "034f571df509819cc10b0c8129f66ef77a542f0e",
+  "productVersion": "1.118.1",
+  "hash": "a9049a8fd16a48fab80eb5b2ee9392904b4e1cf2d08b3d6d352963caf43824df",
+  "timestamp": 1777883245807,
   "supportsFastUpdate": true
 }
