@@ -1,8 +1,10 @@
 diff --git a/build/.moduleignore b/build/.moduleignore
-index aaa384bf..25adcdbf 100644
+index 4e809334..f5ad6f5a 100644
 --- a/build/.moduleignore
 +++ b/build/.moduleignore
-@@ -153,9 +153,11 @@ vsda/**
+@@ -151,13 +151,15 @@ vsda/**
+ !vsda/rust/web/**
+ !vsda/rust/bundler/**
  
 -@vscode/policy-watcher/build/**
 -@vscode/policy-watcher/.husky/**
@@ -21,71 +23,109 @@ index aaa384bf..25adcdbf 100644
 +@vscodium/policy-watcher/index.d.ts
 +!@vscodium/policy-watcher/build/Release/vscodium-policy-watcher.node
  
+ @vscode/windows-ca-certs/**/*
+ !@vscode/windows-ca-certs/package.json
 diff --git a/build/lib/policies/basePolicy.ts b/build/lib/policies/basePolicy.ts
 index 7f650ba7..db927cb4 100644
 --- a/build/lib/policies/basePolicy.ts
 +++ b/build/lib/policies/basePolicy.ts
-@@ -38,3 +38,3 @@ export abstract class BasePolicy implements Policy {
+@@ -36,7 +36,7 @@ export abstract class BasePolicy implements Policy {
+ 
+ 	renderADMX(regKey: string) {
  		return [
 -			`<policy name="${this.name}" class="Both" displayName="$(string.${this.name})" explainText="$(string.${this.name}_${this.description.nlsKey.replace(/\./g, '_')})" key="Software\\Policies\\Microsoft\\${regKey}" presentation="$(presentation.${this.name})">`,
 +			`<policy name="${this.name}" class="Both" displayName="$(string.${this.name})" explainText="$(string.${this.name}_${this.description.nlsKey.replace(/\./g, '_')})" key="Software\\Policies\\!!ORG_NAME!!\\${regKey}" presentation="$(presentation.${this.name})">`,
  			`	<parentCategory ref="${this.category.name.nlsKey}" />`,
+ 			`	<supportedOn ref="Supported_${this.minimumVersion.replace(/\./g, '_')}" />`,
+ 			`	<elements>`,
 diff --git a/build/lib/policies/render.ts b/build/lib/policies/render.ts
-index 47b485d1..8437fd47 100644
+index 47b485d1..360f9028 100644
 --- a/build/lib/policies/render.ts
 +++ b/build/lib/policies/render.ts
-@@ -49,3 +49,3 @@ export function renderADMX(regKey: string, versions: string[], categories: Categ
+@@ -47,7 +47,7 @@ export function renderADMX(regKey: string, versions: string[], categories: Categ
+ 	return `<?xml version="1.0" encoding="utf-8"?>
+ <policyDefinitions revision="1.1" schemaVersion="1.0">
  	<policyNamespaces>
 -		<target prefix="${regKey}" namespace="Microsoft.Policies.${regKey}" />
 +		<target prefix="${regKey}" namespace="!!ORG_NAME!!.Policies.${regKey}" />
  	</policyNamespaces>
-@@ -167,3 +167,3 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
+ 	<resources minRequiredRevision="1.0" />
+ 	<supportedOn>
+@@ -165,7 +165,7 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
+ 		</dict>
+ 		<dict>
  			<key>pfm_default</key>
 -			<string>Microsoft</string>
 +			<string>!!ORG_NAME!!</string>
  			<key>pfm_name</key>
-@@ -185,3 +185,3 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
+ 			<string>PayloadOrganization</string>
+ 			<key>pfm_title</key>
+@@ -183,11 +183,11 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
+ <plist version="1.0">
+ <dict>
      <key>pfm_app_url</key>
 -    <string>https://code.visualstudio.com/</string>
 +    <string>https://github.com/!!GH_REPO_PATH!!</string>
      <key>pfm_description</key>
-@@ -189,3 +189,3 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
+     <string>${appName} Managed Settings</string>
      <key>pfm_documentation_url</key>
 -    <string>https://code.visualstudio.com/docs/setup/enterprise</string>
 +    <string>https://github.com/!!GH_REPO_PATH!!</string>
      <key>pfm_domain</key>
-@@ -255,3 +255,3 @@ ${policyEntries}
+     <string>${bundleIdentifier}</string>
+     <key>pfm_format_version</key>
+@@ -253,13 +253,13 @@ ${policyEntries}
+ 			</dict>
+ 		</array>
  		<key>PayloadDescription</key>
 -		<string>This profile manages ${appName}. For more information see https://code.visualstudio.com/docs/setup/enterprise</string>
 +		<string>This profile manages ${appName}. For more information see https://github.com/!!GH_REPO_PATH!!</string>
  		<key>PayloadDisplayName</key>
-@@ -261,3 +261,3 @@ ${policyEntries}
+ 		<string>${appName}</string>
+ 		<key>PayloadIdentifier</key>
+ 		<string>${bundleIdentifier}</string>
  		<key>PayloadOrganization</key>
 -		<string>Microsoft</string>
 +		<string>!!ORG_NAME!!</string>
  		<key>PayloadType</key>
+ 		<string>Configuration</string>
+ 		<key>PayloadUUID</key>
 diff --git a/eslint.config.js b/eslint.config.js
-index 494a2c2c..c53b46aa 100644
+index 5080ac33..b8d5ab27 100644
 --- a/eslint.config.js
 +++ b/eslint.config.js
-@@ -1509,3 +1509,3 @@ export default tseslint.config(
+@@ -1498,7 +1498,7 @@ export default tseslint.config(
+ 						'@vscode/ripgrep',
+ 						'@vscode/iconv-lite-umd',
  						'@vscode/native-watchdog',
 -						'@vscode/policy-watcher',
 +						'@vscodium/policy-watcher',
  						'@vscode/proxy-agent',
+ 						'@vscode/spdlog',
+ 						'@vscode/windows-process-tree',
 diff --git a/package-lock.json b/package-lock.json
-index 88c2aee4..d8852aa8 100644
+index f5b21ba4..4d6f0af5 100644
 --- a/package-lock.json
 +++ b/package-lock.json
-@@ -28,3 +28,2 @@
+@@ -27,7 +27,6 @@
+         "@vscode/deviceid": "^0.1.1",
+         "@vscode/iconv-lite-umd": "0.7.1",
          "@vscode/native-watchdog": "^1.4.6",
 -        "@vscode/policy-watcher": "^1.3.2",
          "@vscode/proxy-agent": "^0.41.0",
-@@ -40,2 +39,3 @@
+         "@vscode/ripgrep": "^1.17.1",
+         "@vscode/sandbox-runtime": "0.0.1",
+@@ -40,6 +39,7 @@
+         "@vscode/windows-process-tree": "^0.7.0",
+         "@vscode/windows-registry": "^1.2.0",
          "@vscodium/native-keymap": "3.3.7-258424",
 +        "@vscodium/policy-watcher": "^1.3.2-252465",
          "@xterm/addon-clipboard": "^0.3.0-beta.197",
-@@ -3844,22 +3844,2 @@
+         "@xterm/addon-image": "^0.10.0-beta.197",
+         "@xterm/addon-ligatures": "^0.11.0-beta.197",
+@@ -3771,26 +3771,6 @@
+       "hasInstallScript": true,
+       "license": "MIT"
      },
 -    "node_modules/@vscode/policy-watcher": {
 -      "version": "1.3.7",
@@ -108,7 +148,11 @@ index 88c2aee4..d8852aa8 100644
 -      }
 -    },
      "node_modules/@vscode/proxy-agent": {
-@@ -4175,2 +4155,22 @@
+       "version": "0.41.0",
+       "resolved": "https://registry.npmjs.org/@vscode/proxy-agent/-/proxy-agent-0.41.0.tgz",
+@@ -4129,6 +4109,26 @@
+       "hasInstallScript": true,
+       "license": "MIT"
      },
 +    "node_modules/@vscodium/policy-watcher": {
 +      "version": "1.3.2-255408",
@@ -130,21 +174,29 @@ index 88c2aee4..d8852aa8 100644
 +        "node": "^18 || ^20 || >= 21"
 +      }
 +    },
-     "node_modules/@wdio/config": {
+     "node_modules/@webgpu/types": {
+       "version": "0.1.66",
+       "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.66.tgz",
 diff --git a/package.json b/package.json
-index 166f0cae..51cd5977 100644
+index b904799d..c2b9d1ac 100644
 --- a/package.json
 +++ b/package.json
-@@ -105,3 +105,3 @@
+@@ -104,7 +104,7 @@
+     "@vscode/deviceid": "^0.1.1",
+     "@vscode/iconv-lite-umd": "0.7.1",
      "@vscode/native-watchdog": "^1.4.6",
 -    "@vscode/policy-watcher": "^1.3.2",
 +    "@vscodium/policy-watcher": "^1.3.2-252465",
      "@vscode/proxy-agent": "^0.41.0",
+     "@vscode/ripgrep": "^1.17.1",
+     "@vscode/sandbox-runtime": "0.0.1",
 diff --git a/src/vs/base/test/node/uri.perf.data.txt b/src/vs/base/test/node/uri.perf.data.txt
 index ee0a24b5..881ce36a 100644
 --- a/src/vs/base/test/node/uri.perf.data.txt
 +++ b/src/vs/base/test/node/uri.perf.data.txt
-@@ -14698,48 +14698,48 @@
+@@ -14696,52 +14696,52 @@
+ /Users/example/node_modules/@vscode/node-addon-api/node_addon_api_except.target.mk
+ /Users/example/node_modules/@vscode/node-addon-api/node_addon_api.target.mk
  /Users/example/node_modules/@vscode/node-addon-api/node_addon_api.Makefile
 -/Users/example/node_modules/@vscode/policy-watcher/LICENSE
 -/Users/example/node_modules/@vscode/policy-watcher/binding.gyp
@@ -239,11 +291,15 @@ index ee0a24b5..881ce36a 100644
 +/Users/example/node_modules/@vscodium/policy-watcher/src/windows/StringPolicy.cc
 +/Users/example/node_modules/@vscodium/policy-watcher/src/windows/NumberPolicy.hh
  /Users/example/node_modules/@vscode/vscode-languagedetection/CODE_OF_CONDUCT.md
+ /Users/example/node_modules/@vscode/vscode-languagedetection/LICENSE
+ /Users/example/node_modules/@vscode/vscode-languagedetection/dist/lib/index.js
 diff --git a/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts b/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
-index ca6cea22..32b22fed 100644
+index 93df77af..69989991 100644
 --- a/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
 +++ b/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
-@@ -62,5 +62,5 @@ flakySuite('Native Modules (all platforms)', () => {
+@@ -60,9 +60,9 @@ flakySuite('Native Modules (all platforms)', () => {
+ 		assert.ok(typeof prompt.exec === 'function', testErrorMessage('@vscode/sudo-prompt'));
+ 	});
  
 -	test('@vscode/policy-watcher', async () => {
 -		const watcher = await import('@vscode/policy-watcher');
@@ -252,22 +308,33 @@ index ca6cea22..32b22fed 100644
 +		const watcher = await import('@vscodium/policy-watcher');
 +		assert.ok(typeof watcher.createWatcher === 'function', testErrorMessage('@vscodium/policy-watcher'));
  	});
+ 
+ 	test('node-pty', async () => {
 diff --git a/src/vs/platform/policy/node/nativePolicyService.ts b/src/vs/platform/policy/node/nativePolicyService.ts
-index 6039dbb7..f2ea09cf 100644
+index 6039dbb7..ead0e4d5 100644
 --- a/src/vs/platform/policy/node/nativePolicyService.ts
 +++ b/src/vs/platform/policy/node/nativePolicyService.ts
-@@ -8,3 +8,3 @@ import { IStringDictionary } from '../../../base/common/collections.js';
+@@ -6,7 +6,7 @@
+ import { AbstractPolicyService, IPolicyService, PolicyDefinition, PolicyValue } from '../common/policy.js';
+ import { IStringDictionary } from '../../../base/common/collections.js';
  import { Throttler } from '../../../base/common/async.js';
 -import type { PolicyUpdate, Watcher } from '@vscode/policy-watcher';
 +import type { PolicyUpdate, Watcher } from '@vscodium/policy-watcher';
  import { MutableDisposable } from '../../../base/common/lifecycle.js';
-@@ -27,3 +27,3 @@ export class NativePolicyService extends AbstractPolicyService implements IPolic
+ import { ILogService } from '../../log/common/log.js';
+ 
+@@ -25,12 +25,12 @@ export class NativePolicyService extends AbstractPolicyService implements IPolic
+ 	protected async _updatePolicyDefinitions(policyDefinitions: IStringDictionary<PolicyDefinition>): Promise<void> {
+ 		this.logService.trace(`NativePolicyService#_updatePolicyDefinitions - Found ${Object.keys(policyDefinitions).length} policy definitions`);
  
 -		const { createWatcher } = await import('@vscode/policy-watcher');
 +		const { createWatcher } = await import('@vscodium/policy-watcher');
  
-@@ -32,3 +32,3 @@ export class NativePolicyService extends AbstractPolicyService implements IPolic
+ 		await this.throttler.queue(() => new Promise<void>((c, e) => {
+ 			try {
  				this.logService.trace(`Creating watcher for productName ${this.productName}`);
 -				this.watcher.value = createWatcher(this.productName, policyDefinitions, update => {
 +				this.watcher.value = createWatcher('!!APP_NAME!!', this.productName, policyDefinitions, update => {
  					this._onDidPolicyChange(update);
+ 					c();
+ 				});

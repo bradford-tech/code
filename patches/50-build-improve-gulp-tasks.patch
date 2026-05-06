@@ -1,30 +1,35 @@
 diff --git a/build/gulpfile.vscode.ts b/build/gulpfile.vscode.ts
-index 080d97f3..93b5f711 100644
+index 3eecbad0..632a0dd4 100644
 --- a/build/gulpfile.vscode.ts
 +++ b/build/gulpfile.vscode.ts
-@@ -30,3 +30,3 @@ import { createAsar } from './lib/asar.ts';
+@@ -28,7 +28,7 @@ import { getProductionDependencies } from './lib/dependencies.ts';
+ import { config } from './lib/electron.ts';
+ import { createAsar } from './lib/asar.ts';
  import minimist from 'minimist';
 -import { compileBuildWithoutManglingTask, compileBuildWithManglingTask } from './gulpfile.compile.ts';
 +import { compileBuildWithoutManglingTask } from './gulpfile.compile.ts';
  import { compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileAllExtensionsBuildTask, compileExtensionMediaBuildTask, cleanExtensionsBuildTask, compileCopilotExtensionBuildTask } from './gulpfile.extensions.ts';
-@@ -197,3 +197,2 @@ function runEsbuildBundle(outDir: string, minify: boolean, nls: boolean, target:
- 			args.push('--minify');
--			args.push('--mangle-privates');
- 		}
-@@ -757,3 +756,4 @@ BUILD_TARGETS.forEach(buildTarget => {
+ import { copyCodiconsTask } from './lib/compilation.ts';
+ import { getCopilotExcludeFilter, prepareBuiltInCopilotRipgrepShim } from './lib/copilot.ts';
+@@ -680,26 +680,47 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 					minified && useCdnSourceMapsForPackagingTasks ? `${sourceMappingURLBase}/core` : undefined
+ 				)
  			);
 -			vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
 +
 +			const prepackTask = task.define(`vscode${dashed(minified)}-prepack`, task.series(
  				copyCodiconsTask,
-@@ -763,2 +763,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 				cleanExtensionsBuildTask,
+ 				compileNonNativeExtensionsBuildTask,
+ 				compileCopilotExtensionBuildTask,
  				compileExtensionMediaBuildTask,
 +			));
 +			gulp.task(prepackTask);
 +
 +			const packingTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}-packing`, task.series(
  				writeISODate('out-build'),
-@@ -767,5 +771,11 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 				esbuildBundleTask,
+ 				vscodeTaskCI
  			));
 -		} else {
 +			gulp.task(packingTask);
@@ -38,7 +43,9 @@ index 080d97f3..93b5f711 100644
 +			const prepackTask = task.define(`vscode${dashed(minified)}-prepack`, task.series(
 +				compileBuildWithoutManglingTask,
  				cleanExtensionsBuildTask,
-@@ -775,4 +785,14 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 				compileNonNativeExtensionsBuildTask,
+ 				compileCopilotExtensionBuildTask,
+ 				compileExtensionMediaBuildTask,
  				minified ? minifyVSCodeTask : bundleVSCodeTask,
 +			));
 +			gulp.task(prepackTask);
@@ -53,3 +60,5 @@ index 080d97f3..93b5f711 100644
 +				packingTask,
 +			));
  		}
+ 		gulp.task(vscodeTask);
+ 
