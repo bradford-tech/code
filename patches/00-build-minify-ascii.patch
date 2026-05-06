@@ -1,0 +1,12 @@
+diff --git a/build/lib/optimize.ts b/build/lib/optimize.ts
+index f5e812e2..1cd4b673 100644
+--- a/build/lib/optimize.ts
++++ b/build/lib/optimize.ts
+@@ -243,6 +243,7 @@ export function minifyTask(src: string, sourceMapBaseUrl?: string): (cb: any) =>
+ 				esbuild.build({
+ 					entryPoints: [f.path],
+ 					minify: true,
++					charset: 'ascii',
+ 					sourcemap: 'external',
+ 					outdir: '.',
+ 					packages: 'external', // "external all the things", see https://esbuild.github.io/api/#packages
