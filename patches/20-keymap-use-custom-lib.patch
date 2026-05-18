@@ -52,9 +52,9 @@ index c8cb435d..f5b21ba4 100644
          "@vscode/windows-process-tree": "^0.7.0",
          "@vscode/windows-registry": "^1.2.0",
 +        "@vscodium/native-keymap": "3.3.7-258424",
-         "@xterm/addon-clipboard": "^0.3.0-beta.197",
-         "@xterm/addon-image": "^0.10.0-beta.197",
-         "@xterm/addon-ligatures": "^0.11.0-beta.197",
+         "@xterm/addon-clipboard": "^0.3.0-beta.213",
+         "@xterm/addon-image": "^0.10.0-beta.213",
+         "@xterm/addon-ligatures": "^0.11.0-beta.213",
 @@ -57,7 +58,6 @@
          "kerberos": "2.1.1",
          "minimist": "^1.2.8",

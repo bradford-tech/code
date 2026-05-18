@@ -37,7 +37,7 @@ index e65e58dc..b9f6049a 100644
 +			default: true,
  			scope: ConfigurationScope.WINDOW,
  		},
- 		'chat.approvedAccountOrganizations': {
+ 		[ChatConfiguration.TitleBarSignInEnabled]: {
 diff --git a/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts b/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
 index 8fb472b3..16cff2b1 100644
 --- a/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
@@ -82,13 +82,12 @@ index 34449705..86277e78 100644
  							ChatContextKeys.Setup.hidden.negate(),
  							ChatContextKeys.Setup.disabledInWorkspace.negate(),
  							ChatContextKeys.Setup.completed.negate(),
-@@ -399,6 +401,7 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
+@@ -399,5 +401,6 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
  						id: MenuId.TitleBarAdjacentCenter,
  						order: 0, // same position as the update button
  						when: ContextKeyExpr.and(
 +							ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  							IsWebContext.negate(),
- 
  							ChatContextKeys.Entitlement.signedOut,
 @@ -430,6 +433,7 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
  					category: localize2('chat.category', 'Chat'),

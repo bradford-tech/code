@@ -120,9 +120,9 @@ index f5b21ba4..4d6f0af5 100644
          "@vscode/windows-registry": "^1.2.0",
          "@vscodium/native-keymap": "3.3.7-258424",
 +        "@vscodium/policy-watcher": "^1.3.2-252465",
-         "@xterm/addon-clipboard": "^0.3.0-beta.197",
-         "@xterm/addon-image": "^0.10.0-beta.197",
-         "@xterm/addon-ligatures": "^0.11.0-beta.197",
+         "@xterm/addon-clipboard": "^0.3.0-beta.213",
+         "@xterm/addon-image": "^0.10.0-beta.213",
+         "@xterm/addon-ligatures": "^0.11.0-beta.213",
 @@ -3771,26 +3771,6 @@
        "hasInstallScript": true,
        "license": "MIT"

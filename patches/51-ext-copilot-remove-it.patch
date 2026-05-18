@@ -59,7 +59,7 @@ index 3c0e3a16..d85dadfe 100644
  				minified ? minifyTask : bundleTask,
  				serverTaskCI
 diff --git a/build/gulpfile.vscode.ts b/build/gulpfile.vscode.ts
-index 632a0dd4..26e04317 100644
+index 25aa6a57..7615c27a 100644
 --- a/build/gulpfile.vscode.ts
 +++ b/build/gulpfile.vscode.ts
 @@ -29,9 +29,8 @@ import { config } from './lib/electron.ts';
@@ -70,10 +70,10 @@ index 632a0dd4..26e04317 100644
 +import { compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileAllExtensionsBuildTask, compileExtensionMediaBuildTask, cleanExtensionsBuildTask } from './gulpfile.extensions.ts';
  import { copyCodiconsTask } from './lib/compilation.ts';
 -import { getCopilotExcludeFilter, prepareBuiltInCopilotRipgrepShim } from './lib/copilot.ts';
- import type { EmbeddedProductInfo } from './lib/embeddedType.ts';
  import { useEsbuildTranspile } from './buildConfig.ts';
  import { promisify } from 'util';
-@@ -371,14 +370,12 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
+ import globCallback from 'glob';
+@@ -335,14 +334,12 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
  			.pipe(filter(depFilterPattern))
  			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, '.moduleignore')))
  			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, `.moduleignore.${process.platform}`)))
@@ -88,7 +88,7 @@ index 632a0dd4..26e04317 100644
  				'**/node-pty/build/Release/*',
  				'**/node-pty/build/Release/conpty/*',
  				'**/node-pty/lib/worker/conoutSocketWorker.js',
-@@ -616,23 +613,6 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
+@@ -557,23 +554,6 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
  	};
  }
  
@@ -112,7 +112,7 @@ index 632a0dd4..26e04317 100644
  const buildRoot = path.dirname(root);
  
  const BUILD_TARGETS = [
-@@ -658,7 +638,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+@@ -599,7 +579,6 @@ BUILD_TARGETS.forEach(buildTarget => {
  			compileNativeExtensionsBuildTask,
  			util.rimraf(path.join(buildRoot, destinationFolderName)),
  			packageTask(platform, arch, sourceFolderName, destinationFolderName, opts),
@@ -120,7 +120,7 @@ index 632a0dd4..26e04317 100644
  		];
  
  		if (platform === 'win32') {
-@@ -685,7 +664,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+@@ -626,7 +605,6 @@ BUILD_TARGETS.forEach(buildTarget => {
  				copyCodiconsTask,
  				cleanExtensionsBuildTask,
  				compileNonNativeExtensionsBuildTask,
@@ -128,7 +128,7 @@ index 632a0dd4..26e04317 100644
  				compileExtensionMediaBuildTask,
  			));
  			gulp.task(prepackTask);
-@@ -706,7 +684,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+@@ -647,7 +625,6 @@ BUILD_TARGETS.forEach(buildTarget => {
  				compileBuildWithoutManglingTask,
  				cleanExtensionsBuildTask,
  				compileNonNativeExtensionsBuildTask,
@@ -191,7 +191,7 @@ index dc154d4b..834a4a78 100644
  
  main().catch(err => {
 diff --git a/package-lock.json b/package-lock.json
-index 4d6f0af5..617a593d 100644
+index 337e45b2..9a0e1dce 100644
 --- a/package-lock.json
 +++ b/package-lock.json
 @@ -11,8 +11,6 @@
@@ -203,7 +203,7 @@ index 4d6f0af5..617a593d 100644
          "@microsoft/1ds-core-js": "^3.2.13",
          "@microsoft/1ds-post-js": "^3.2.13",
          "@microsoft/dev-tunnels-connections": "^1.3.41",
-@@ -1044,142 +1042,6 @@
+@@ -1150,142 +1148,6 @@
          "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
        }
      },
@@ -346,7 +346,7 @@ index 4d6f0af5..617a593d 100644
      "node_modules/@gulp-sourcemaps/identity-map": {
        "version": "2.0.1",
        "resolved": "https://registry.npmjs.org/@gulp-sourcemaps/identity-map/-/identity-map-2.0.1.tgz",
-@@ -16688,6 +16550,7 @@
+@@ -16946,6 +16808,7 @@
        "version": "1.8.3",
        "resolved": "https://registry.npmjs.org/shell-quote/-/shell-quote-1.8.3.tgz",
        "integrity": "sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==",
@@ -354,8 +354,8 @@ index 4d6f0af5..617a593d 100644
        "license": "MIT",
        "engines": {
          "node": ">= 0.4"
-@@ -19195,15 +19058,6 @@
-         "node": ">= 0.10"
+@@ -19596,15 +19459,6 @@
+         "node": ">=18"
        }
      },
 -    "node_modules/vscode-jsonrpc": {
@@ -370,7 +370,7 @@ index 4d6f0af5..617a593d 100644
      "node_modules/vscode-oniguruma": {
        "version": "1.7.0",
        "resolved": "https://registry.npmjs.org/vscode-oniguruma/-/vscode-oniguruma-1.7.0.tgz",
-@@ -19720,6 +19574,7 @@
+@@ -20121,6 +19975,7 @@
        "version": "3.25.76",
        "resolved": "https://registry.npmjs.org/zod/-/zod-3.25.76.tgz",
        "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==",
@@ -379,7 +379,7 @@ index 4d6f0af5..617a593d 100644
        "funding": {
          "url": "https://github.com/sponsors/colinhacks"
 diff --git a/package.json b/package.json
-index c2b9d1ac..1d6ad4ed 100644
+index 8c411b1e..45cd1b20 100644
 --- a/package.json
 +++ b/package.json
 @@ -21,7 +21,7 @@
@@ -420,27 +420,27 @@ index c2b9d1ac..1d6ad4ed 100644
      "@microsoft/1ds-post-js": "^3.2.13",
      "@microsoft/dev-tunnels-connections": "^1.3.41",
 diff --git a/src/vs/platform/agentHost/node/agentHostMain.ts b/src/vs/platform/agentHost/node/agentHostMain.ts
-index ad151caa..07e2abe3 100644
+index 0232f81b..35075d40 100644
 --- a/src/vs/platform/agentHost/node/agentHostMain.ts
 +++ b/src/vs/platform/agentHost/node/agentHostMain.ts
-@@ -19,7 +19,6 @@ import { AgentHostEnableClaudeEnvVar, AgentHostIpcChannels, IAgentHostInspectInf
+@@ -19,7 +19,6 @@ import { AgentHostClaudeSdkPathEnvVar, AgentHostIpcChannels, IAgentHostInspectIn
  import { AgentService } from './agentService.js';
  import { IAgentConfigurationService } from './agentConfigurationService.js';
  import { IAgentHostTerminalManager } from './agentHostTerminalManager.js';
 -import { CopilotAgent } from './copilot/copilotAgent.js';
  import { CopilotApiService, ICopilotApiService } from './shared/copilotApiService.js';
  import { ClaudeAgent } from './claude/claudeAgent.js';
- import { ClaudeProxyService, IClaudeProxyService } from './claude/claudeProxyService.js';
-@@ -119,7 +118,6 @@ function startAgentHost(): void {
+ import { ClaudeAgentSdkService, IClaudeAgentSdkService } from './claude/claudeAgentSdkService.js';
+@@ -127,7 +126,6 @@ function startAgentHost(): void {
  
  		diServices.set(IAgentHostTerminalManager, agentService.terminalManager);
  		diServices.set(IAgentConfigurationService, agentService.configurationService);
 -		agentService.registerProvider(instantiationService.createInstance(CopilotAgent));
  		// The Claude agent provider is opt-in. Gated on the
- 		// `chat.agentHost.claudeAgent.enabled` workbench setting, forwarded by the
- 		// agent host starters as `VSCODE_AGENT_HOST_ENABLE_CLAUDE`.
+ 		// `chat.agentHost.claudeAgent.path` workbench setting being non-empty,
+ 		// forwarded by the agent host starters as `VSCODE_AGENT_HOST_CLAUDE_SDK_PATH`.
 diff --git a/src/vs/platform/agentHost/node/agentHostServerMain.ts b/src/vs/platform/agentHost/node/agentHostServerMain.ts
-index a04f7da1..507cefdf 100644
+index 26cbf179..a1645b32 100644
 --- a/src/vs/platform/agentHost/node/agentHostServerMain.ts
 +++ b/src/vs/platform/agentHost/node/agentHostServerMain.ts
 @@ -31,7 +31,6 @@ import product from '../../product/common/product.js';
@@ -450,23 +450,23 @@ index a04f7da1..507cefdf 100644
 -import { CopilotAgent } from './copilot/copilotAgent.js';
  import { CopilotApiService, ICopilotApiService } from './shared/copilotApiService.js';
  import { ClaudeAgent } from './claude/claudeAgent.js';
- import { ClaudeProxyService, IClaudeProxyService } from './claude/claudeProxyService.js';
-@@ -206,9 +205,6 @@ async function main(): Promise<void> {
- 		diServices.set(ICopilotApiService, copilotApiService);
- 		const claudeProxyService = disposables.add(instantiationService.createInstance(ClaudeProxyService));
+ import { ClaudeAgentSdkService, IClaudeAgentSdkService } from './claude/claudeAgentSdkService.js';
+@@ -213,9 +212,6 @@ async function main(): Promise<void> {
  		diServices.set(IClaudeProxyService, claudeProxyService);
+ 		const claudeAgentSdkService = instantiationService.createInstance(ClaudeAgentSdkService);
+ 		diServices.set(IClaudeAgentSdkService, claudeAgentSdkService);
 -		const copilotAgent = disposables.add(instantiationService.createInstance(CopilotAgent));
 -		agentService.registerProvider(copilotAgent);
 -		log('CopilotAgent registered');
- 		if (options.enableClaudeAgent) {
- 			const claudeAgent = disposables.add(instantiationService.createInstance(ClaudeAgent));
- 			agentService.registerProvider(claudeAgent);
+ 		if (options.claudeSdkPath) {
+ 			// `ClaudeAgentSdkService` reads `AgentHostClaudeSdkPathEnvVar` directly,
+ 			// so make sure it is set even if the path was provided via CLI flag.
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts b/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
 deleted file mode 100644
-index a12ce6bb..00000000
+index 82eb1545..00000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
 +++ /dev/null
-@@ -1,1942 +0,0 @@
+@@ -1,1952 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -494,13 +494,13 @@ index a12ce6bb..00000000
 -import { AgentHostConfigKey, agentHostCustomizationConfigSchema } from '../../common/agentHostCustomizationConfig.js';
 -import { AutoApproveLevel, ISchemaProperty, SessionMode, createSchema, platformSessionSchema, schemaProperty } from '../../common/agentHostSchema.js';
 -import { IAgentPluginManager, ISyncedCustomization } from '../../common/agentPluginManager.js';
--import { AgentSession, AgentSignal, GITHUB_COPILOT_PROTECTED_RESOURCE, IAgent, IAgentAttachment, IAgentCreateSessionConfig, IAgentCreateSessionResult, IAgentDescriptor, IAgentMaterializeSessionEvent, IAgentModelInfo, IAgentResolveSessionConfigParams, IAgentSessionConfigCompletionsParams, IAgentSessionMetadata, IAgentSessionProjectInfo } from '../../common/agentService.js';
+-import { AgentSession, AgentSignal, GITHUB_COPILOT_PROTECTED_RESOURCE, IAgent, IAgentCreateSessionConfig, IAgentCreateSessionResult, IAgentDescriptor, IAgentMaterializeSessionEvent, IAgentModelInfo, IAgentResolveSessionConfigParams, IAgentSessionConfigCompletionsParams, IAgentSessionMetadata, IAgentSessionProjectInfo } from '../../common/agentService.js';
 -import { SessionConfigKey } from '../../common/sessionConfigKeys.js';
 -import { ISessionDataService, SESSION_DB_FILENAME } from '../../common/sessionDataService.js';
 -import type { ResolveSessionConfigResult, SessionConfigCompletionsResult } from '../../common/state/protocol/commands.js';
 -import { ProtectedResourceMetadata, type ConfigSchema, type ModelSelection, type SessionCustomization, type ToolDefinition } from '../../common/state/protocol/state.js';
 -import { AHP_AUTH_REQUIRED, ProtocolError } from '../../common/state/sessionProtocol.js';
--import { CustomizationRef, CustomizationStatus, ResponsePartKind, SessionInputResponseKind, parseSubagentSessionUri, type PendingMessage, type PolicyState, type ResponsePart, type SessionInputAnswer, type ToolCallResult, type Turn } from '../../common/state/sessionState.js';
+-import { CustomizationRef, CustomizationStatus, ResponsePartKind, SessionInputResponseKind, parseSubagentSessionUri, type MessageAttachment, type PendingMessage, type PolicyState, type ResponsePart, type SessionInputAnswer, type ToolCallResult, type Turn } from '../../common/state/sessionState.js';
 -import { IAgentConfigurationService } from '../agentConfigurationService.js';
 -import { IAgentHostGitService, META_DIFF_BASE_BRANCH } from '../agentHostGitService.js';
 -import { IAgentHostTerminalManager } from '../agentHostTerminalManager.js';
@@ -553,24 +553,19 @@ index a12ce6bb..00000000
 -const ReasoningEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
 -type ReasoningEffort = NonNullable<SessionConfig['reasoningEffort']>;
 -
+-export const COPILOT_AGENT_HOST_SYSTEM_MESSAGE = {
+-	mode: 'customize',
+-	sections: {
+-		identity: {
+-			action: 'replace',
+-			content: 'You are an AI assistant using Copilot CLI runtime in VS Code. You help users with software engineering tasks. When asked about your identity, you must state that you are an AI assistant using Copilot CLI runtime in VS Code.',
+-		},
+-	},
+-} satisfies NonNullable<ResumeSessionConfig['systemMessage']>;
+-
 -interface ISerializedModelSelection {
 -	id?: unknown;
 -	config?: unknown;
--}
--
--/**
-- * Narrow surface of {@link CopilotClient} used by this provider. The SDK class
-- * has private members, so tests use this structural type to inject a fake.
-- */
--export interface ICopilotClient {
--	start(): Promise<void>;
--	stop: CopilotClient['stop'];
--	listSessions: CopilotClient['listSessions'];
--	listModels: () => Promise<ICopilotModelInfo[]>;
--	createSession: CopilotClient['createSession'];
--	resumeSession: CopilotClient['resumeSession'];
--	getSessionMetadata: CopilotClient['getSessionMetadata'];
--	readonly rpc: { readonly sessions: { readonly fork: CopilotClient['rpc']['sessions']['fork'] } };
 -}
 -
 -/**
@@ -607,27 +602,6 @@ index a12ce6bb..00000000
 -	readonly feedback?: string;
 -}
 -
--/**
-- * Corrected shape of {@link CopilotClient.listModels} entries.
-- *
-- * The SDK's `ModelInfo` type declares `capabilities`, `capabilities.limits`,
-- * and `capabilities.limits.max_context_window_tokens` as required, but at
-- * runtime synthetic entries (e.g. the `auto` router) ship with an empty
-- * `capabilities: {}` object. We mirror the SDK fields we consume but mark the
-- * unreliable parts as optional so callers must defensively handle them.
-- */
--export interface ICopilotModelInfo {
--	readonly id: string;
--	readonly name: string;
--	readonly capabilities?: {
--		readonly supports?: { readonly vision?: boolean };
--		readonly limits?: { readonly max_context_window_tokens?: number };
--	};
--	readonly policy?: { readonly state?: string };
--	readonly supportedReasoningEfforts?: readonly string[];
--	readonly defaultReasoningEffort?: string;
--}
--
 -function isReasoningEffort(value: string | undefined): value is ReasoningEffort {
 -	return ReasoningEfforts.some(reasoningEffort => reasoningEffort === value);
 -}
@@ -642,6 +616,28 @@ index a12ce6bb..00000000
 -
 -export function getCopilotWorktreeBranchName(sessionId: string, branchNameHint: string | undefined): string {
 -	return `agents/${branchNameHint ? `${branchNameHint}-${sessionId.substring(0, 8)}` : sessionId}`;
+-}
+-
+-/**
+- * Derive a slug-style branch-name hint from the user's first message. Used
+- * by the worktree isolation flow so the generated branch name reflects the
+- * intent of the session instead of being just a session id.
+- *
+- * Returns `undefined` if the message has no slug-able content (e.g. only
+- * punctuation), in which case the caller falls back to a session-id-only
+- * branch name.
+- */
+-export function getCopilotBranchNameHintFromMessage(message: string): string | undefined {
+-	const words = message
+-		.toLowerCase()
+-		.normalize('NFKD')
+-		.replace(/[^a-z0-9]+/g, '-')
+-		.replace(/^-+|-+$/g, '')
+-		.split('-')
+-		.filter(word => word.length > 0)
+-		.slice(0, 8);
+-	const hint = words.join('-').slice(0, 48).replace(/-+$/g, '');
+-	return hint.length > 0 ? hint : undefined;
 -}
 -
 -/**
@@ -676,14 +672,10 @@ index a12ce6bb..00000000
 -	}
 -	const result = turns.slice();
 -	const first = result[0];
--	const partIdx = first.responseParts.findIndex(rp => rp.kind === ResponsePartKind.Markdown);
--	if (partIdx >= 0) {
--		const part = first.responseParts[partIdx];
--		const updated: ResponsePart = part.kind === ResponsePartKind.Markdown
--			? { ...part, content: announcement + part.content }
--			: part;
+-	const part = first.responseParts[0];
+-	if (part?.kind === ResponsePartKind.Markdown) {
 -		const responseParts = first.responseParts.slice();
--		responseParts[partIdx] = updated;
+-		responseParts[0] = { ...part, content: announcement + part.content };
 -		result[0] = { ...first, responseParts };
 -	} else {
 -		const responseParts: ResponsePart[] = [
@@ -709,8 +701,8 @@ index a12ce6bb..00000000
 -	private readonly _models = observableValue<readonly IAgentModelInfo[]>(this, []);
 -	readonly models = this._models;
 -
--	private _client: ICopilotClient | undefined;
--	private _clientStarting: Promise<ICopilotClient> | undefined;
+-	private _client: CopilotClient | undefined;
+-	private _clientStarting: Promise<CopilotClient> | undefined;
 -	private _githubToken: string | undefined;
 -	private readonly _sessions = this._register(new DisposableMap<string, CopilotAgentSession>());
 -	/**
@@ -752,7 +744,7 @@ index a12ce6bb..00000000
 -		this.onDidCustomizationsChange = this._plugins.onDidChange;
 -	}
 -
--	protected _createCopilotClient(options: CopilotClientOptions): ICopilotClient {
+-	protected _createCopilotClient(options: CopilotClientOptions): CopilotClient {
 -		return new CopilotClient(options);
 -	}
 -
@@ -840,7 +832,7 @@ index a12ce6bb..00000000
 -	 * `MessageConnection`. Once the SDK adds first-class support, this shim
 -	 * should be removed.
 -	 */
--	protected _enablePlanModeOnClient(client: ICopilotClient): void {
+-	protected _enablePlanModeOnClient(client: CopilotClient): void {
 -		// `connection` is declared private on `CopilotClient` at the type
 -		// level but is a plain field at runtime — see the SDK's compiled
 -		// `dist/client.js`.
@@ -883,7 +875,7 @@ index a12ce6bb..00000000
 -
 -	// ---- client lifecycle ---------------------------------------------------
 -
--	private async _ensureClient(): Promise<ICopilotClient> {
+-	private async _ensureClient(): Promise<CopilotClient> {
 -		const tokenAtStartup = this._githubToken;
 -		if (!tokenAtStartup) {
 -			throw new ProtocolError(AHP_AUTH_REQUIRED, 'Authentication is required to use Copilot', this.getProtectedResources());
@@ -1109,6 +1101,9 @@ index a12ce6bb..00000000
 -			supportsVision: !!m.capabilities?.supports?.vision,
 -			configSchema: this._createThinkingLevelConfigSchema(m.supportedReasoningEfforts, m.defaultReasoningEffort),
 -			policyState: m.policy?.state as PolicyState | undefined,
+-			_meta: typeof m.billing?.multiplier === 'number' ? {
+-				multiplierNumeric: m.billing.multiplier,
+-			} : undefined,
 -		}));
 -		this._logService.info(`[Copilot] Found ${result.length} models`);
 -		return result;
@@ -1263,7 +1258,7 @@ index a12ce6bb..00000000
 -	 * `SessionConfigChanged` actions that arrived after `createSession` are
 -	 * honoured without bespoke forwarding.
 -	 */
--	private async _materializeProvisional(sessionId: string): Promise<CopilotAgentSession> {
+-	private async _materializeProvisional(sessionId: string, prompt: string): Promise<CopilotAgentSession> {
 -		const provisional = this._provisionalSessions.get(sessionId);
 -		if (!provisional) {
 -			throw new Error(`Cannot materialize unknown provisional session: ${sessionId}`);
@@ -1283,7 +1278,7 @@ index a12ce6bb..00000000
 -		const customizationDirectory = provisional.workingDirectory;
 -		const activeClient = this._activeClients.get(sessionUri);
 -		const snapshot = activeClient ? await activeClient.snapshot(customizationDirectory) : undefined;
--		const workingDirectory = await this._resolveSessionWorkingDirectory(materializedConfig, sessionId);
+-		const workingDirectory = await this._resolveSessionWorkingDirectory(materializedConfig, sessionId, prompt);
 -		const shellManager = this._instantiationService.createInstance(ShellManager, sessionUri, workingDirectory);
 -		const sessionConfigBuilder = this._buildSessionConfig(snapshot, shellManager);
 -
@@ -1401,7 +1396,14 @@ index a12ce6bb..00000000
 -	}
 -
 -	onClientToolCallComplete(session: URI, toolCallId: string, result: ToolCallResult): void {
--		const sessionId = AgentSession.id(parseSubagentSessionUri(session.toString())?.parentSession || session);
+-		// Walk up the subagent chain to reach the root SDK session entry;
+-		// _sessions is keyed by root session IDs only.
+-		let target = session;
+-		let parsed;
+-		while ((parsed = parseSubagentSessionUri(target))) {
+-			target = parsed.parentSession;
+-		}
+-		const sessionId = AgentSession.id(target);
 -		const entry = this._sessions.get(sessionId);
 -		entry?.handleClientToolCallComplete(toolCallId, result);
 -	}
@@ -1410,15 +1412,17 @@ index a12ce6bb..00000000
 -		this._plugins.setEnabled(uri, enabled);
 -	}
 -
--	async sendMessage(session: URI, prompt: string, attachments?: IAgentAttachment[], turnId?: string): Promise<void> {
+-	async sendMessage(session: URI, prompt: string, attachments?: readonly MessageAttachment[], turnId?: string): Promise<void> {
 -		const sessionId = AgentSession.id(session);
 -		await this._sessionSequencer.queue(sessionId, async () => {
 -
 -			// First message on a provisional session: materialize the SDK
--			// session, worktree, and on-disk metadata before continuing.
+-			// session, worktree, and on-disk metadata before continuing. The
+-			// prompt is forwarded so a worktree-isolated session can derive
+-			// its branch-name hint from the user's first message.
 -			let entry: CopilotAgentSession | undefined;
 -			if (this._provisionalSessions.has(sessionId)) {
--				entry = await this._materializeProvisional(sessionId);
+-				entry = await this._materializeProvisional(sessionId, prompt);
 -			} else {
 -				entry = this._sessions.get(sessionId);
 -			}
@@ -1519,18 +1523,24 @@ index a12ce6bb..00000000
 -	async getSessionMessages(session: URI): Promise<readonly Turn[]> {
 -		// If the URI describes a subagent child session (`<parent>/subagent/<toolCallId>`),
 -		// load the parent's events once and extract the child's filtered turns.
--		const subagentInfo = parseSubagentSessionUri(session.toString());
+-		const subagentInfo = parseSubagentSessionUri(session);
 -		if (subagentInfo) {
--			const parentUri = URI.parse(subagentInfo.parentSession);
--			const parentSessionId = AgentSession.id(parentUri);
--			const parentEntry = this._sessions.get(parentSessionId) ?? await this._resumeSession(parentSessionId).catch(err => {
--				this._logService.warn(`[Copilot:${parentSessionId}] Failed to resume parent for subagent restore`, err);
+-			// Walk up the subagent chain to find the root SDK session entry;
+-			// _sessions is keyed by root session IDs only.
+-			let rootSession = subagentInfo.parentSession;
+-			let parentParsed;
+-			while ((parentParsed = parseSubagentSessionUri(rootSession))) {
+-				rootSession = parentParsed.parentSession;
+-			}
+-			const rootSessionId = AgentSession.id(rootSession);
+-			const parentEntry = this._sessions.get(rootSessionId) ?? await this._resumeSession(rootSessionId).catch(err => {
+-				this._logService.warn(`[Copilot:${rootSessionId}] Failed to resume root for subagent restore`, err);
 -				return undefined;
 -			});
 -			if (!parentEntry) {
 -				return [];
 -			}
--			return parentEntry.getSubagentMessages(subagentInfo.toolCallId, session.toString());
+-			return parentEntry.getSubagentMessages(subagentInfo.toolCallId);
 -		}
 -
 -		const sessionId = AgentSession.id(session);
@@ -1819,10 +1829,10 @@ index a12ce6bb..00000000
 -	 * inside the {@link SessionWrapperFactory}.
 -	 */
 -	private _buildSessionConfig(snapshot: IActiveClientSnapshot | undefined, shellManager: ShellManager): (args: Parameters<SessionWrapperFactory>[0]) => Promise<ResumeSessionConfig> {
--		const shellTools = createShellTools(shellManager, this._terminalManager, this._logService);
 -		const plugins = snapshot?.plugins ?? [];
 -
 -		return async (callbacks: Parameters<SessionWrapperFactory>[0]) => {
+-			const shellTools = await createShellTools(shellManager, this._terminalManager, this._logService);
 -			const customAgents = await toSdkCustomAgents(plugins.flatMap(p => p.agents), this._fileService);
 -			return {
 -				onPermissionRequest: callbacks.onPermissionRequest,
@@ -1831,6 +1841,7 @@ index a12ce6bb..00000000
 -				mcpServers: toSdkMcpServers(plugins.flatMap(p => p.mcpServers)),
 -				customAgents,
 -				skillDirectories: toSdkSkillDirectories(plugins.flatMap(p => p.skills)),
+-				systemMessage: COPILOT_AGENT_HOST_SYSTEM_MESSAGE,
 -				tools: [...shellTools, ...callbacks.clientTools],
 -				// Enable infinite sessions so the SDK provisions a workspace
 -				// directory (containing `plan.md`, `checkpoints/`, `files/`).
@@ -1919,7 +1930,7 @@ index a12ce6bb..00000000
 -		return this._gitService.getBranches(workingDirectory, { query, limit: CopilotAgent._BRANCH_COMPLETION_LIMIT });
 -	}
 -
--	protected async _resolveSessionWorkingDirectory(config: IAgentCreateSessionConfig | undefined, sessionId: string): Promise<URI | undefined> {
+-	protected async _resolveSessionWorkingDirectory(config: IAgentCreateSessionConfig | undefined, sessionId: string, prompt?: string): Promise<URI | undefined> {
 -		if (config?.config?.isolation !== 'worktree' || !config.workingDirectory || typeof config.config.branch !== 'string') {
 -			return config?.workingDirectory;
 -		}
@@ -1930,8 +1941,7 @@ index a12ce6bb..00000000
 -		}
 -
 -		const worktreesRoot = getCopilotWorktreesRoot(repositoryRoot);
--		const branchNameHintRaw = config.config[SessionConfigKey.BranchNameHint];
--		const branchNameHint = typeof branchNameHintRaw === 'string' ? branchNameHintRaw : undefined;
+-		const branchNameHint = prompt ? getCopilotBranchNameHintFromMessage(prompt) : undefined;
 -		const branchName = getCopilotWorktreeBranchName(sessionId, branchNameHint);
 -		const worktree = URI.joinPath(worktreesRoot, getCopilotWorktreeName(branchName));
 -		await fs.mkdir(worktreesRoot.fsPath, { recursive: true });
@@ -2411,22 +2421,24 @@ index a12ce6bb..00000000
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts b/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts
 deleted file mode 100644
-index 87a71830..00000000
+index 9617436f..00000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts
 +++ /dev/null
-@@ -1,1705 +0,0 @@
+@@ -1,1853 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
 - *--------------------------------------------------------------------------------------------*/
 -
--import type { PermissionRequestResult, SessionConfig, Tool, ToolResultObject } from '@github/copilot-sdk';
+-import type { MessageOptions, PermissionRequestResult, SessionConfig, Tool, ToolResultObject } from '@github/copilot-sdk';
 -import { DeferredPromise } from '../../../../base/common/async.js';
 -import { VSBuffer } from '../../../../base/common/buffer.js';
 -import { Emitter } from '../../../../base/common/event.js';
 -import { Disposable, IReference, toDisposable } from '../../../../base/common/lifecycle.js';
--import { join } from '../../../../base/common/path.js';
+-import { Schemas } from '../../../../base/common/network.js';
+-import { isAbsolute, join } from '../../../../base/common/path.js';
 -import { extUriBiasedIgnorePathCase, normalizePath } from '../../../../base/common/resources.js';
+-import { splitLinesIncludeSeparators } from '../../../../base/common/strings.js';
 -import { URI } from '../../../../base/common/uri.js';
 -import { generateUuid } from '../../../../base/common/uuid.js';
 -import { localize } from '../../../../nls.js';
@@ -2436,18 +2448,18 @@ index 87a71830..00000000
 -import { IInstantiationService } from '../../../instantiation/common/instantiation.js';
 -import { ILogService } from '../../../log/common/log.js';
 -import { platformSessionSchema } from '../../common/agentHostSchema.js';
--import { AgentSignal, IAgentAttachment } from '../../common/agentService.js';
+-import { AgentSignal } from '../../common/agentService.js';
 -import { stripRedundantCdPrefix } from '../../common/commandLineHelpers.js';
 -import { SessionConfigKey } from '../../common/sessionConfigKeys.js';
--import { ISessionDatabase, ISessionDataService } from '../../common/sessionDataService.js';
--import type { FileEdit, ToolDefinition } from '../../common/state/protocol/state.js';
+-import { ISessionDatabase, ISessionDataService, SESSION_ATTACHMENTS_DIRNAME } from '../../common/sessionDataService.js';
+-import { MessageAttachmentKind, type FileEdit, type MessageAttachment, type ToolDefinition } from '../../common/state/protocol/state.js';
 -import { ActionType, type SessionAction } from '../../common/state/sessionActions.js';
 -import { ResponsePartKind, SessionInputAnswerState, SessionInputAnswerValueKind, SessionInputQuestionKind, SessionInputResponseKind, ToolCallConfirmationReason, ToolCallStatus, ToolResultContentType, type PendingMessage, type URI as ProtocolURI, type SessionInputAnswer, type SessionInputRequest, type ToolCallResult, type ToolResultContent, type Turn } from '../../common/state/sessionState.js';
 -import { IAgentConfigurationService } from '../agentConfigurationService.js';
 -import type { IExitPlanModeRequestParams, IExitPlanModeResponse } from './copilotAgent.js';
 -import { CopilotSessionWrapper } from './copilotSessionWrapper.js';
 -import type { ShellManager } from './copilotShellTools.js';
--import { getEditFilePath, getInvocationMessage, getPastTenseMessage, getPermissionDisplay, getShellLanguage, getSubagentMetadata, getToolDisplayName, getToolInputString, getToolKind, isEditTool, isHiddenTool, isShellTool, synthesizeSkillToolCall, tryStringify, type ITypedPermissionRequest } from './copilotToolDisplay.js';
+-import { getEditFilePaths, getInvocationMessage, getPastTenseMessage, getPermissionDisplay, getShellLanguage, getSubagentMetadata, getToolDisplayName, getToolInputString, getToolKind, isEditTool, isHiddenTool, isShellTool, synthesizeSkillToolCall, tryStringify, type ITypedPermissionRequest } from './copilotToolDisplay.js';
 -import { FileEditTracker } from './fileEditTracker.js';
 -import { mapSessionEvents } from './mapSessionEvents.js';
 -import { buildPendingEditContentUri } from './pendingEditContentStore.js';
@@ -2461,6 +2473,7 @@ index 87a71830..00000000
 - * and the `session.mode_changed` listener.
 - */
 -export type CopilotSdkMode = 'interactive' | 'plan' | 'autopilot';
+-type CopilotSdkAttachment = Required<MessageOptions>['attachments'][number];
 -
 -const COPILOT_HOME_DIRECTORY = '.copilot';
 -const SESSION_STATE_DIRECTORY = join(COPILOT_HOME_DIRECTORY, 'session-state');
@@ -2594,6 +2607,7 @@ index 87a71830..00000000
 -
 -	/** Tracks active tool invocations so we can produce past-tense messages on completion. */
 -	private readonly _activeToolCalls = new Map<string, { toolName: string; displayName: string; parameters: Record<string, unknown> | undefined; content: ToolResultContent[]; parentToolCallId: string | undefined }>();
+-	private readonly _parentToolCallIdsByAgentId = new Map<string, string>();
 -	/** Pending permission requests awaiting a renderer-side decision. */
 -	private readonly _pendingPermissions = new Map<string, DeferredPromise<boolean>>();
 -	/** Pending user input requests awaiting a renderer-side answer. */
@@ -2616,6 +2630,8 @@ index 87a71830..00000000
 -	private readonly _editTracker: FileEditTracker;
 -	/** Session database reference. */
 -	private readonly _databaseRef: IReference<ISessionDatabase>;
+-	/** On-disk root for per-session data (database, attachments, …). */
+-	private readonly _sessionDataDir: URI;
 -	/** Protocol turn ID set by {@link send}, used for file edit tracking. */
 -	private _turnId = '';
 -	/** SDK session wrapper, set by {@link initializeSession}. */
@@ -2641,14 +2657,14 @@ index 87a71830..00000000
 -	private readonly _customizationDirectory: URI | undefined;
 -
 -	/**
--	 * Current markdown response part ID for the active turn. Streaming text
--	 * deltas append to this part; the first delta of a turn allocates a new
--	 * part ID. Reset on each new turn (in {@link send}) and invalidated when
--	 * a tool call begins so subsequent text creates a fresh part.
+-	 * Current markdown response part IDs for the active turn, keyed by
+-	 * `parentToolCallId ?? ''`. Parent and subagent text stream through the
+-	 * same SDK session but land in different AHP sessions, so their markdown
+-	 * part state must not mask or append to each other.
 -	 */
--	private _currentMarkdownPartId: string | undefined;
--	/** Current reasoning response part ID for the active turn. Reset on each new turn. */
--	private _currentReasoningPartId: string | undefined;
+-	private readonly _currentMarkdownPartIds = new Map<string, string>();
+-	/** Current reasoning response part IDs for the active turn, keyed by `parentToolCallId ?? ''`. */
+-	private readonly _currentReasoningPartIds = new Map<string, string>();
 -	/** Tracks whether a non-empty activity has been published, so we only emit a clear when needed. */
 -	private _hasReportedActivity = false;
 -
@@ -2675,6 +2691,7 @@ index 87a71830..00000000
 -
 -		this._databaseRef = sessionDataService.openDatabase(options.sessionUri);
 -		this._register(toDisposable(() => this._databaseRef.dispose()));
+-		this._sessionDataDir = sessionDataService.getSessionDataDir(options.sessionUri);
 -
 -		this._editTracker = this._instantiationService.createInstance(FileEditTracker, options.sessionUri.toString(), this._databaseRef.object);
 -
@@ -2727,6 +2744,19 @@ index 87a71830..00000000
 -		});
 -	}
 -
+-	private _parentToolCallIdForSubagentEvent(e: { readonly agentId?: string }): string | undefined {
+-		return e.agentId ? this._parentToolCallIdsByAgentId.get(e.agentId) : undefined;
+-	}
+-
+-	private _shouldDropUnmappedSubagentEvent(e: { readonly agentId?: string }, eventName: string): boolean {
+-		const parentToolCallId = this._parentToolCallIdForSubagentEvent(e);
+-		if (!parentToolCallId && e.agentId) {
+-			this._logService.warn(`[Copilot:${this.sessionId}] Dropping ${eventName} for unknown subagent agentId=${e.agentId}`);
+-			return true;
+-		}
+-		return false;
+-	}
+-
 -	/**
 -	 * Resets per-turn streaming state so the next text/reasoning chunk
 -	 * allocates a fresh response part. Called by the agent when a new turn
@@ -2734,8 +2764,20 @@ index 87a71830..00000000
 -	 */
 -	resetTurnState(turnId: string): void {
 -		this._turnId = turnId;
--		this._currentMarkdownPartId = undefined;
--		this._currentReasoningPartId = undefined;
+-		this._currentMarkdownPartIds.clear();
+-		this._currentReasoningPartIds.clear();
+-		this._parentToolCallIdsByAgentId.clear();
+-	}
+-
+-	private _getEditFilePaths(parameters: unknown): string[] {
+-		return getEditFilePaths(parameters).map(path => this._resolveEditFilePath(path));
+-	}
+-
+-	private _resolveEditFilePath(path: string): string {
+-		if (isAbsolute(path) || !this._workingDirectory || this._workingDirectory.scheme !== Schemas.file) {
+-			return path;
+-		}
+-		return join(this._workingDirectory.fsPath, path);
 -	}
 -
 -	/**
@@ -2755,10 +2797,11 @@ index 87a71830..00000000
 -	 */
 -	private _emitMarkdownDelta(content: string, parentToolCallId?: string): void {
 -		const session = this._protocolSession();
--		let partId = this._currentMarkdownPartId;
+-		const markdownScope = parentToolCallId ?? '';
+-		let partId = this._currentMarkdownPartIds.get(markdownScope);
 -		if (!partId) {
 -			partId = generateUuid();
--			this._currentMarkdownPartId = partId;
+-			this._currentMarkdownPartIds.set(markdownScope, partId);
 -			this._emitAction({
 -				type: ActionType.SessionResponsePart,
 -				session,
@@ -2777,18 +2820,19 @@ index 87a71830..00000000
 -	}
 -
 -	/** Emits a reasoning delta, similar to {@link _emitMarkdownDelta} but for reasoning parts. */
--	private _emitReasoningDelta(content: string): void {
+-	private _emitReasoningDelta(content: string, parentToolCallId?: string): void {
 -		const session = this._protocolSession();
--		let partId = this._currentReasoningPartId;
+-		const reasoningScope = parentToolCallId ?? '';
+-		let partId = this._currentReasoningPartIds.get(reasoningScope);
 -		if (!partId) {
 -			partId = generateUuid();
--			this._currentReasoningPartId = partId;
+-			this._currentReasoningPartIds.set(reasoningScope, partId);
 -			this._emitAction({
 -				type: ActionType.SessionResponsePart,
 -				session,
 -				turnId: this._turnId,
 -				part: { kind: ResponsePartKind.Reasoning, id: partId, content },
--			});
+-			}, parentToolCallId);
 -			return;
 -		}
 -		this._emitAction({
@@ -2797,7 +2841,7 @@ index 87a71830..00000000
 -			turnId: this._turnId,
 -			partId,
 -			content,
--		});
+-		}, parentToolCallId);
 -	}
 -
 -	/**
@@ -2904,26 +2948,89 @@ index 87a71830..00000000
 -
 -	// ---- session operations -------------------------------------------------
 -
--	async send(prompt: string, attachments?: IAgentAttachment[], turnId?: string, mode?: CopilotSdkMode): Promise<void> {
+-	async send(prompt: string, attachments?: readonly MessageAttachment[], turnId?: string, mode?: CopilotSdkMode): Promise<void> {
 -		if (turnId) {
 -			this._turnId = turnId;
 -		}
 -		this._logService.info(`[Copilot:${this.sessionId}] sendMessage called: "${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}" (${attachments?.length ?? 0} attachments)`);
 -
--		const sdkAttachments = attachments?.map(a => {
--			const path = a.uri.scheme === 'file' ? a.uri.fsPath : a.uri.toString();
--			if (a.type === 'selection') {
--				return { type: 'selection' as const, filePath: path, displayName: a.displayName ?? path, text: a.text, selection: a.selection };
--			}
--			return { type: a.type, path, displayName: a.displayName };
--		});
+-		const sdkAttachments = attachments
+-			? (await Promise.all(attachments.map(a => this._toSdkAttachment(a))))
+-				.filter((a): a is NonNullable<typeof a> => a !== undefined)
+-			: undefined;
 -		if (sdkAttachments?.length) {
--			this._logService.trace(`[Copilot:${this.sessionId}] Attachments: ${JSON.stringify(sdkAttachments.map(a => ({ type: a.type, path: a.type === 'selection' ? a.filePath : a.path })))}`);
+-			this._logService.trace(`[Copilot:${this.sessionId}] Attachments: ${JSON.stringify(sdkAttachments.map(a => ({ type: a.type })))}`);
 -		}
 -
 -		await this.applyMode(mode);
 -		await this._wrapper.session.send({ prompt, attachments: sdkAttachments });
 -		this._logService.info(`[Copilot:${this.sessionId}] session.send() returned`);
+-	}
+-
+-	/**
+-	 * Translate a protocol {@link MessageAttachment} into the Copilot CLI
+-	 * SDK's `attachments` payload shape. Resource attachments map to the
+-	 * SDK's reference-style `file`/`directory`/`selection` variants (the
+-	 * {@link MessageAttachmentBase.displayKind} advisory hint controls
+-	 * which one). Embedded resources (e.g. inline image bytes) map to the
+-	 * SDK's `blob` variant. Resource attachments that point at a
+-	 * `session-db:` URI are also forwarded as `blob` — the agent host
+-	 * snapshots inline / client-resident attachment bytes into the
+-	 * session database before dispatching the turn, so by the time we
+-	 * see them here the bytes are local and the original URI is gone.
+-	 * Simple attachments are dropped — the SDK has no equivalent shape
+-	 * for them.
+-	 *
+-	 * For selections we read the resource content from disk and slice it
+-	 * by the carried range (the protocol's {@link TextSelection} only
+-	 * carries the range, not the inline text). On read failure the
+-	 * selection downgrades to a plain file reference.
+-	 */
+-	private async _toSdkAttachment(attachment: MessageAttachment): Promise<CopilotSdkAttachment | undefined> {
+-		if (attachment.type === MessageAttachmentKind.EmbeddedResource) {
+-			return { type: 'blob' as const, data: attachment.data, mimeType: attachment.contentType, displayName: attachment.label };
+-		}
+-		if (attachment.type !== MessageAttachmentKind.Resource) {
+-			return undefined;
+-		}
+-		const uri = URI.parse(attachment.uri);
+-		const path = uri.scheme === 'file' ? uri.fsPath : uri.toString();
+-		const displayName = attachment.label ?? path;
+-		if (attachment.displayKind === 'selection' && attachment.selection) {
+-			try {
+-				const text = await this._readSelectedText(uri, attachment.selection.range);
+-				return { type: 'selection' as const, filePath: path, displayName, text, selection: attachment.selection.range };
+-			} catch (err) {
+-				this._logService.warn(`[Copilot:${this.sessionId}] Failed to read selected text for ${uri.toString()}: ${err}`);
+-				return { type: 'file' as const, path, displayName };
+-			}
+-		}
+-		if (attachment.displayKind === 'selection') {
+-			return { type: 'file' as const, path, displayName };
+-		}
+-		const type = attachment.displayKind === 'directory' ? 'directory' : 'file';
+-		return { type, path, displayName };
+-	}
+-
+-	private async _readSelectedText(uri: URI, range: { readonly start: { readonly line: number; readonly character: number }; readonly end: { readonly line: number; readonly character: number } }): Promise<string> {
+-		const content = await this._fileService.readFile(uri);
+-		const text = content.value.toString();
+-		// AHP carries the resource range; the public SDK can carry the selected text too.
+-		// This reads the resource URI, so unsaved editor changes are not included.
+-		const lines = splitLinesIncludeSeparators(text);
+-		const start = this._getOffsetAt(lines, range.start);
+-		const end = this._getOffsetAt(lines, range.end);
+-		return text.substring(start, Math.max(start, end));
+-	}
+-
+-	private _getOffsetAt(lines: readonly string[], position: { readonly line: number; readonly character: number }): number {
+-		const line = Math.max(0, Math.min(position.line, lines.length - 1));
+-		let offset = 0;
+-		for (let i = 0; i < line; i++) {
+-			offset += lines[i].length;
+-		}
+-		const lineText = lines[line].replace(/\r\n|\r|\n$/, '');
+-		return offset + Math.max(0, Math.min(position.character, lineText.length));
 -	}
 -
 -	/**
@@ -2973,7 +3080,7 @@ index 87a71830..00000000
 -		return result.turns;
 -	}
 -
--	async getSubagentMessages(parentToolCallId: string, childSessionUri: string): Promise<readonly Turn[]> {
+-	async getSubagentMessages(parentToolCallId: string): Promise<readonly Turn[]> {
 -		const events = await this._wrapper.session.getMessages();
 -		let db: ISessionDatabase | undefined;
 -		try {
@@ -3029,6 +3136,20 @@ index 87a71830..00000000
 -			const sessionResourcePath = this._getInternalSessionResourcePath(request);
 -			if (sessionResourcePath) {
 -				this._logService.info(`[Copilot:${this.sessionId}] Auto-approving internal session resource ${sessionResourcePath}`);
+-				return { kind: 'approve-once' };
+-			}
+-
+-			// Auto-approve reads of files under the session's attachments
+-			// directory. The agent host writes user-message attachments
+-			// (pasted images, snapshotted client-side files, etc.) there
+-			// before dispatching the turn; the agent ends up needing to
+-			// read those same files back, and prompting the user to
+-			// approve a read of bytes they themselves attached is
+-			// redundant.
+-			if (request.kind === 'read' && typeof request.path === 'string'
+-				&& this._isSessionAttachmentPath(request.path)
+-			) {
+-				this._logService.info(`[Copilot:${this.sessionId}] Auto-approving session attachment ${request.path}`);
 -				return { kind: 'approve-once' };
 -			}
 -
@@ -3120,6 +3241,19 @@ index 87a71830..00000000
 -
 -		const permissionUri = normalizePath(URI.file(permissionPath));
 -		return extUriBiasedIgnorePathCase.isEqualOrParent(permissionUri, sessionDir) ? permissionPath : undefined;
+-	}
+-
+-	/**
+-	 * Returns true when `permissionPath` lives under this session's
+-	 * `<sessionDataDir>/attachments` directory — i.e. the bytes were
+-	 * written by the agent host's user-message attachment rewriter and so
+-	 * are already user-supplied content that does not need to be
+-	 * re-confirmed via a permission prompt.
+-	 */
+-	private _isSessionAttachmentPath(permissionPath: string): boolean {
+-		const attachmentsDir = normalizePath(URI.joinPath(this._sessionDataDir, SESSION_ATTACHMENTS_DIRNAME));
+-		const permissionUri = normalizePath(URI.file(permissionPath));
+-		return extUriBiasedIgnorePathCase.isEqualOrParent(permissionUri, attachmentsDir);
 -	}
 -
 -	/**
@@ -3379,10 +3513,8 @@ index 87a71830..00000000
 -	private async _handlePreToolUse(input: PreToolUseHookInput): Promise<void> {
 -		try {
 -			if (isEditTool(input.toolName)) {
--				const filePath = getEditFilePath(input.toolArgs);
--				if (filePath) {
--					await this._editTracker.trackEditStart(filePath);
--				}
+-				const filePaths = this._getEditFilePaths(input.toolArgs);
+-				await Promise.all(filePaths.map(p => this._editTracker.trackEditStart(p)));
 -			}
 -		} catch (error) {
 -			this._logService.error(error, `[Copilot:${this.sessionId}] Failed in onPreToolUse: tool=${input.toolName}`);
@@ -3393,10 +3525,8 @@ index 87a71830..00000000
 -	private async _handlePostToolUse(input: PostToolUseHookInput): Promise<void> {
 -		try {
 -			if (isEditTool(input.toolName)) {
--				const filePath = getEditFilePath(input.toolArgs);
--				if (filePath) {
--					await this._editTracker.completeEdit(filePath);
--				}
+-				const filePaths = this._getEditFilePaths(input.toolArgs);
+-				await Promise.all(filePaths.map(p => this._editTracker.completeEdit(p)));
 -			}
 -		} catch (error) {
 -			this._logService.error(error, `[Copilot:${this.sessionId}] Failed in onPostToolUse: tool=${input.toolName}`);
@@ -3421,7 +3551,10 @@ index 87a71830..00000000
 -
 -		this._register(wrapper.onMessageDelta(e => {
 -			this._logService.trace(`[Copilot:${sessionId}] delta: ${e.data.deltaContent}`);
--			this._emitMarkdownDelta(e.data.deltaContent, e.data.parentToolCallId);
+-			if (this._shouldDropUnmappedSubagentEvent(e, 'assistant.message_delta')) {
+-				return;
+-			}
+-			this._emitMarkdownDelta(e.data.deltaContent, this._parentToolCallIdForSubagentEvent(e));
 -		}));
 -
 -		this._register(wrapper.onMessage(e => {
@@ -3438,17 +3571,22 @@ index 87a71830..00000000
 -			if (!e.data.content) {
 -				return;
 -			}
--			if (this._currentMarkdownPartId) {
+-			if (this._shouldDropUnmappedSubagentEvent(e, 'assistant.message')) {
+-				return;
+-			}
+-			const parentToolCallId = this._parentToolCallIdForSubagentEvent(e);
+-			const markdownScope = parentToolCallId ?? '';
+-			if (this._currentMarkdownPartIds.has(markdownScope)) {
 -				return;
 -			}
 -			const partId = generateUuid();
--			this._currentMarkdownPartId = partId;
+-			this._currentMarkdownPartIds.set(markdownScope, partId);
 -			this._emitAction({
 -				type: ActionType.SessionResponsePart,
 -				session: this._protocolSession(),
 -				turnId: this._turnId,
 -				part: { kind: ResponsePartKind.Markdown, id: partId, content: e.data.content },
--			}, e.data.parentToolCallId);
+-			}, parentToolCallId);
 -		}));
 -
 -		this._register(wrapper.onToolStart(e => {
@@ -3484,19 +3622,22 @@ index 87a71830..00000000
 -				toolArgs = tryStringify(parameters);
 -			}
 -			const displayName = getToolDisplayName(e.data.toolName);
--			this._activeToolCalls.set(e.data.toolCallId, { toolName: e.data.toolName, displayName, parameters, content: [], parentToolCallId: e.data.parentToolCallId });
+-			if (this._shouldDropUnmappedSubagentEvent(e, 'tool.execution_start')) {
+-				return;
+-			}
+-			const parentToolCallId = this._parentToolCallIdForSubagentEvent(e);
+-			this._activeToolCalls.set(e.data.toolCallId, { toolName: e.data.toolName, displayName, parameters, content: [], parentToolCallId });
 -			const toolKind = getToolKind(e.data.toolName);
 -			const subagentMeta = toolKind === 'subagent' ? getSubagentMetadata(parameters) : undefined;
 -			const toolClientId = this._clientToolNames.has(e.data.toolName) ? this._appliedSnapshot.clientId : undefined;
--			const parentToolCallId = e.data.parentToolCallId;
 -
 -			// A new tool call invalidates the current markdown and reasoning
 -			// parts so the next text/reasoning delta after the tool call
 -			// starts a fresh part. Without invalidating reasoning here, a
 -			// later round of reasoning (after tool_start/tool_complete)
 -			// would silently append to the pre-tool-call reasoning block.
--			this._currentMarkdownPartId = undefined;
--			this._currentReasoningPartId = undefined;
+-			this._currentMarkdownPartIds.delete(parentToolCallId ?? '');
+-			this._currentReasoningPartIds.delete(parentToolCallId ?? '');
 -
 -			const meta: Record<string, unknown> = { toolKind, language: toolKind === 'terminal' ? getShellLanguage(e.data.toolName) : undefined };
 -			if (subagentMeta?.description) {
@@ -3550,6 +3691,11 @@ index 87a71830..00000000
 -			if (!tracked) {
 -				return;
 -			}
+-			const parentToolCallId = tracked.parentToolCallId ?? this._parentToolCallIdForSubagentEvent(e);
+-			if (!parentToolCallId && e.agentId) {
+-				this._logService.warn(`[Copilot:${this.sessionId}] Dropping tool.execution_complete for unknown subagent agentId=${e.agentId}`);
+-				return;
+-			}
 -			this._logService.info(`[Copilot:${sessionId}] Tool completed: ${e.data.toolCallId}`);
 -			this._activeToolCalls.delete(e.data.toolCallId);
 -			const displayName = tracked.displayName;
@@ -3560,8 +3706,8 @@ index 87a71830..00000000
 -				content.push({ type: ToolResultContentType.Text, text: toolOutput });
 -			}
 -
--			const filePath = isEditTool(tracked.toolName) ? getEditFilePath(tracked.parameters) : undefined;
--			if (filePath) {
+-			const filePaths = isEditTool(tracked.toolName) ? this._getEditFilePaths(tracked.parameters) : [];
+-			for (const filePath of filePaths) {
 -				try {
 -					const fileEdit = await this._editTracker.takeCompletedEdit(this._turnId, e.data.toolCallId, filePath);
 -					if (fileEdit) {
@@ -3596,7 +3742,7 @@ index 87a71830..00000000
 -					content: content.length > 0 ? content : undefined,
 -					error: e.data.error,
 -				},
--			}, e.data.parentToolCallId);
+-			}, parentToolCallId);
 -		}));
 -
 -		this._register(wrapper.onIdle(() => {
@@ -3656,6 +3802,9 @@ index 87a71830..00000000
 -		}));
 -
 -		this._register(wrapper.onSubagentStarted(e => {
+-			if (e.agentId) {
+-				this._parentToolCallIdsByAgentId.set(e.agentId, e.data.toolCallId);
+-			}
 -			this._logService.info(`[Copilot:${sessionId}] Subagent started: toolCallId=${e.data.toolCallId}, agent=${e.data.agentName}`);
 -			this._onDidSessionProgress.fire({
 -				kind: 'subagent_started',
@@ -3698,7 +3847,10 @@ index 87a71830..00000000
 -
 -		this._register(wrapper.onReasoningDelta(e => {
 -			this._logService.trace(`[Copilot:${sessionId}] Reasoning delta: ${e.data.deltaContent.length} chars`);
--			this._emitReasoningDelta(e.data.deltaContent);
+-			if (this._shouldDropUnmappedSubagentEvent(e, 'assistant.reasoning_delta')) {
+-				return;
+-			}
+-			this._emitReasoningDelta(e.data.deltaContent, this._parentToolCallIdForSubagentEvent(e));
 -		}));
 -
 -		// Sync the AHP session config when the SDK's `currentMode` changes
@@ -3938,10 +4090,16 @@ index 87a71830..00000000
 -		}));
 -
 -		this._register(wrapper.onSubagentCompleted(e => {
+-			if (e.agentId) {
+-				this._parentToolCallIdsByAgentId.delete(e.agentId);
+-			}
 -			this._logService.trace(`[Copilot:${sessionId}] Subagent completed: ${e.data.agentName}`);
 -		}));
 -
 -		this._register(wrapper.onSubagentFailed(e => {
+-			if (e.agentId) {
+-				this._parentToolCallIdsByAgentId.delete(e.agentId);
+-			}
 -			this._logService.error(`[Copilot:${sessionId}] Subagent failed: ${e.data.agentName} - ${e.data.error}`);
 -		}));
 -
@@ -4770,10 +4928,10 @@ index 9a0fd2a7..00000000
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotShellTools.ts b/src/vs/platform/agentHost/node/copilot/copilotShellTools.ts
 deleted file mode 100644
-index 2b95d64f..00000000
+index 2c92facc..00000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotShellTools.ts
 +++ /dev/null
-@@ -1,766 +0,0 @@
+@@ -1,836 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -4784,7 +4942,7 @@ index 2b95d64f..00000000
 -import { URI } from '../../../../base/common/uri.js';
 -import { removeAnsiEscapeCodes } from '../../../../base/common/strings.js';
 -import * as platform from '../../../../base/common/platform.js';
--import { DisposableStore, type IReference, toDisposable } from '../../../../base/common/lifecycle.js';
+-import { Disposable, DisposableStore, type IReference, toDisposable } from '../../../../base/common/lifecycle.js';
 -import { Emitter, Event } from '../../../../base/common/event.js';
 -import { ILogService } from '../../../log/common/log.js';
 -import { TerminalClaimKind, type TerminalSessionClaim } from '../../common/state/protocol/state.js';
@@ -4813,15 +4971,49 @@ index 2b95d64f..00000000
 -	readonly id: string;
 -	readonly terminalUri: string;
 -	readonly shellType: ShellType;
+-	readonly executable: string;
 -}
 -
 -export type ShellType = 'bash' | 'powershell';
 -
--function getShellExecutable(shellType: ShellType): string {
--	if (shellType === 'powershell') {
--		return 'powershell.exe';
+-/**
+- * Routes a resolved shell executable to one of the Copilot SDK's two
+- * built-in shell tools (`bash` / `powershell`). Falls back to the platform
+- * default for unknown shells.
+- */
+-export function shellTypeForExecutable(shellPath: string): ShellType {
+-	// Strip path on either separator and the .exe suffix.
+-	const lastSep = Math.max(shellPath.lastIndexOf('/'), shellPath.lastIndexOf('\\'));
+-	const base = shellPath.slice(lastSep + 1).toLowerCase().replace(/\.exe$/, '');
+-	switch (base) {
+-		// PowerShell
+-		case 'pwsh':
+-		case 'powershell':
+-		case 'pwsh-preview':
+-			return 'powershell';
+-		// POSIX shells
+-		case 'bash':
+-		case 'sh':
+-		case 'zsh':
+-		case 'fish':
+-		case 'csh':
+-		case 'ksh':
+-		case 'nu':
+-		case 'xonsh':
+-		// Git for Windows bash entry points
+-		case 'git-cmd':
+-		// WSL launchers — bash inside, but invoked via these stubs
+-		case 'wsl':
+-		case 'ubuntu':
+-		case 'ubuntu1804':
+-		case 'kali':
+-		case 'debian':
+-		case 'opensuse-42':
+-		case 'sles-12':
+-			return 'bash';
+-		default:
+-			return platform.isWindows ? 'powershell' : 'bash';
 -	}
--	return process.env['SHELL'] || '/bin/bash';
 -}
 -
 -// ---------------------------------------------------------------------------
@@ -4836,14 +5028,15 @@ index 2b95d64f..00000000
 - * Created via {@link IInstantiationService} once per session and disposed when
 - * the session ends.
 - */
--export class ShellManager {
+-export class ShellManager extends Disposable {
 -
 -	private readonly _shells = new Map<string, IManagedShell>();
 -	private readonly _toolCallShells = new Map<string, string>();
+-	private _resolvedExecutable: Promise<string> | undefined;
 -	/** Set of shell ids currently executing a command and unsafe to share. */
 -	private readonly _busyShellIds = new Set<string>();
 -
--	private readonly _onDidAssociateTerminal = new Emitter<{ toolCallId: string; terminalUri: string; displayName: string }>();
+-	private readonly _onDidAssociateTerminal = this._register(new Emitter<{ toolCallId: string; terminalUri: string; displayName: string }>());
 -	readonly onDidAssociateTerminal: Event<{ toolCallId: string; terminalUri: string; displayName: string }> = this._onDidAssociateTerminal.event;
 -
 -	constructor(
@@ -4851,7 +5044,32 @@ index 2b95d64f..00000000
 -		private readonly _workingDirectory: URI | undefined,
 -		@IAgentHostTerminalManager private readonly _terminalManager: IAgentHostTerminalManager,
 -		@ILogService private readonly _logService: ILogService,
--	) { }
+-	) {
+-		super();
+-
+-		this._register(toDisposable(() => {
+-			for (const shell of this._shells.values()) {
+-				if (this._terminalManager.hasTerminal(shell.terminalUri)) {
+-					this._terminalManager.disposeTerminal(shell.terminalUri);
+-				}
+-			}
+-			this._shells.clear();
+-			this._toolCallShells.clear();
+-			this._busyShellIds.clear();
+-		}));
+-	}
+-
+-	/**
+-	 * Resolves the session's shell executable via {@link IAgentHostTerminalManager.getDefaultShell}
+-	 * and caches it so every tool call in the session uses the same binary
+-	 * (keeps `shellType`, sentinel format, and history suppression consistent).
+-	 */
+-	getResolvedExecutable(): Promise<string> {
+-		if (!this._resolvedExecutable) {
+-			this._resolvedExecutable = this._terminalManager.getDefaultShell();
+-		}
+-		return this._resolvedExecutable;
+-	}
 -
 -	/**
 -	 * Acquire a shell of the given type for executing a single command. The
@@ -4896,19 +5114,21 @@ index 2b95d64f..00000000
 -		};
 -
 -		const shellDisplayName = shellType === 'bash' ? 'Bash' : 'PowerShell';
+-		const executable = await this.getResolvedExecutable();
 -
 -		await this._terminalManager.createTerminal({
 -			terminal: terminalUri,
 -			claim,
 -			name: shellDisplayName,
 -			cwd: cwd ?? this._workingDirectory?.fsPath,
--		}, { shell: getShellExecutable(shellType), preventShellHistory: true, nonInteractive: true });
+-		}, { shell: executable, preventShellHistory: true, nonInteractive: true });
 -
--		const shell: IManagedShell = { id, terminalUri, shellType };
+-		const shell: IManagedShell = { id, terminalUri, shellType, executable };
 -		this._shells.set(id, shell);
 -		this._busyShellIds.add(id);
 -		this._trackToolCall(toolCallId, id);
--		this._logService.info(`[ShellManager] Created ${shellType} shell ${id} (terminal=${terminalUri})`);
+-
+-		this._logService.info(`[ShellManager] Created ${shellType} shell ${id} (terminal=${terminalUri},  executable=${executable})`);
 -		return this._makeReference(shell);
 -	}
 -
@@ -4968,17 +5188,6 @@ index 2b95d64f..00000000
 -		this._logService.info(`[ShellManager] Shut down shell ${id}`);
 -		return true;
 -	}
--
--	dispose(): void {
--		for (const shell of this._shells.values()) {
--			if (this._terminalManager.hasTerminal(shell.terminalUri)) {
--				this._terminalManager.disposeTerminal(shell.terminalUri);
--			}
--		}
--		this._shells.clear();
--		this._toolCallShells.clear();
--		this._busyShellIds.clear();
--	}
 -}
 -
 -// ---------------------------------------------------------------------------
@@ -5003,8 +5212,6 @@ index 2b95d64f..00000000
 - * settings in via the `VSCODE_PREVENT_SHELL_HISTORY` env var (set when the
 - * terminal is created with `preventShellHistory: true`). PowerShell
 - * suppresses history through PSReadLine instead, so no prefix is needed.
-- *
-- * Exported for tests.
 - */
 -export function prefixForHistorySuppression(shellType: ShellType): string {
 -	return shellType === 'powershell' ? '' : ' ';
@@ -5239,23 +5446,22 @@ index 2b95d64f..00000000
 -}
 -
 -/**
-- * Creates the set of SDK {@link Tool} definitions that override the built-in
-- * Copilot CLI shell tools with PTY-backed implementations.
-- *
-- * Returns tools for the platform-appropriate shell (bash or powershell),
-- * including companion tools (read, write, shutdown, list).
+- * Builds the SDK {@link Tool} set that overrides the Copilot SDK's two
+- * built-in shells (`bash` and `powershell`) with PTY-backed implementations,
+- * plus companion tools (read, write, shutdown, list).
 - */
--export function createShellTools(
+-export async function createShellTools(
 -	shellManager: ShellManager,
 -	terminalManager: IAgentHostTerminalManager,
 -	logService: ILogService,
 -	// eslint-disable-next-line @typescript-eslint/no-explicit-any
--): Tool<any>[] {
--	const shellType: ShellType = platform.isWindows ? 'powershell' : 'bash';
+-): Promise<Tool<any>[]> {
+-	const executable = await shellManager.getResolvedExecutable();
+-	const shellType = shellTypeForExecutable(executable);
 -
 -	const primaryTool: Tool<IShellToolArgs> = {
 -		name: shellType,
--		description: shellType === 'bash' ? createBashModelDescription(false) : createPowerShellModelDescription(shellType, 'pwsh.exe', false),
+-		description: shellType === 'bash' ? createBashModelDescription(false) : createPowerShellModelDescription(shellType, executable, false),
 -		parameters: {
 -			type: 'object',
 -			properties: {
@@ -5378,7 +5584,29 @@ index 2b95d64f..00000000
 -		},
 -	};
 -
--	return [primaryTool, readTool, writeTool, shutdownTool, listTool];
+-	// Stub the *other* SDK built-in so the model can't bypass our override
+-	// (e.g. on Windows still calling `powershell` when Git Bash is configured).
+-	const otherShellType: ShellType = shellType === 'bash' ? 'powershell' : 'bash';
+-	const redirectMessage = `This tool is disabled because the configured shell is ${executable}. Use the \`${shellType}\` tool instead.`;
+-	const redirectTool: Tool<IShellToolArgs> = {
+-		name: otherShellType,
+-		description: redirectMessage,
+-		parameters: {
+-			type: 'object',
+-			properties: {
+-				command: { type: 'string', description: 'The command to execute' },
+-				timeout: { type: 'number', description: 'Timeout in milliseconds (default 120000)' },
+-			},
+-			required: ['command'],
+-		},
+-		overridesBuiltInTool: true,
+-		skipPermission: true,
+-		handler: () => {
+-			return makeFailureResult(redirectMessage, 'wrong_shell');
+-		},
+-	};
+-
+-	return [primaryTool, readTool, writeTool, shutdownTool, listTool, redirectTool];
 -}
 -interface ITerminalSandboxResolvedNetworkDomains {
 -	allowedDomains: string[];
@@ -5541,7 +5769,7 @@ index 2b95d64f..00000000
 -	].join('\n');
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
-index e9ee2803..aba9dd57 100644
+index cf6ba4b8..b6ba81ef 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 @@ -3,14 +3,11 @@
@@ -5559,7 +5787,7 @@ index e9ee2803..aba9dd57 100644
  import { StringOrMarkdown } from '../../common/state/protocol/state.js';
  import { basename } from '../../../../base/common/resources.js';
  
-@@ -664,142 +661,3 @@ export function tryStringify(value: unknown): string | undefined {
+@@ -775,142 +772,3 @@ export function tryStringify(value: unknown): string | undefined {
  	}
  }
  
@@ -5704,20 +5932,21 @@ index e9ee2803..aba9dd57 100644
 -}
 diff --git a/src/vs/platform/agentHost/test/node/copilotAgent.test.ts b/src/vs/platform/agentHost/test/node/copilotAgent.test.ts
 deleted file mode 100644
-index 6582fedf..00000000
+index f4f40cda..00000000
 --- a/src/vs/platform/agentHost/test/node/copilotAgent.test.ts
 +++ /dev/null
-@@ -1,1009 +0,0 @@
+@@ -1,1167 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
 - *--------------------------------------------------------------------------------------------*/
 -
--import type { CopilotSession, SessionEventPayload, SessionEventType, TypedSessionEventHandler } from '@github/copilot-sdk';
+-import type { CopilotClient, CopilotSession, ModelInfo, SessionEventPayload, SessionEventType, TypedSessionEventHandler } from '@github/copilot-sdk';
 -import assert from 'assert';
 -import * as fs from 'fs/promises';
 -import * as os from 'os';
 -import { Disposable, type DisposableStore, type IDisposable, type IReference } from '../../../../base/common/lifecycle.js';
+-import { waitForState } from '../../../../base/common/observable.js';
 -import { URI } from '../../../../base/common/uri.js';
 -import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
 -import { INativeEnvironmentService } from '../../../environment/common/environment.js';
@@ -5731,14 +5960,14 @@ index 6582fedf..00000000
 -import { AgentSession, type AgentSignal, type IAgentActionSignal, type IAgentSessionMetadata } from '../../common/agentService.js';
 -import { ISessionDataService } from '../../common/sessionDataService.js';
 -import { AHP_AUTH_REQUIRED, ProtocolError } from '../../common/state/sessionProtocol.js';
--import { buildSubagentSessionUri, ResponsePartKind, SessionCustomization, TurnState, type CustomizationRef, type MarkdownResponsePart, type ToolCallResult, type Turn } from '../../common/state/sessionState.js';
+-import { buildSubagentSessionUri, ResponsePartKind, SessionCustomization, ToolCallConfirmationReason, ToolCallStatus, TurnState, type CustomizationRef, type MarkdownResponsePart, type ToolCallResult, type Turn } from '../../common/state/sessionState.js';
 -import { ActionType, type IDeltaAction } from '../../common/state/sessionActions.js';
 -
 -import { AgentConfigurationService, IAgentConfigurationService } from '../../node/agentConfigurationService.js';
 -import { AgentHostStateManager } from '../../node/agentHostStateManager.js';
 -import { IAgentHostGitService } from '../../node/agentHostGitService.js';
 -import { IAgentHostTerminalManager } from '../../node/agentHostTerminalManager.js';
--import { CopilotAgent, getCopilotWorktreeBranchName, getCopilotWorktreeName, getCopilotWorktreesRoot, type ICopilotClient } from '../../node/copilot/copilotAgent.js';
+-import { COPILOT_AGENT_HOST_SYSTEM_MESSAGE, CopilotAgent, getCopilotBranchNameHintFromMessage, getCopilotWorktreeBranchName, getCopilotWorktreeName, getCopilotWorktreesRoot } from '../../node/copilot/copilotAgent.js';
 -import { CopilotAgentSession, type SessionWrapperFactory } from '../../node/copilot/copilotAgentSession.js';
 -import { CopilotSessionWrapper } from '../../node/copilot/copilotSessionWrapper.js';
 -import { ShellManager } from '../../node/copilot/copilotShellTools.js';
@@ -5807,6 +6036,7 @@ index 6582fedf..00000000
 -	disposeTerminal(): void { }
 -	getTerminalInfos(): [] { return []; }
 -	getTerminalState(): undefined { return undefined; }
+-	async getDefaultShell(): Promise<string> { return '/bin/bash'; }
 -}
 -
 -class TestSessionDataService extends Disposable implements ISessionDataService {
@@ -5839,28 +6069,66 @@ index 6582fedf..00000000
 -	whenIdle(): Promise<void> { return Promise.resolve(); }
 -}
 -
--class TestCopilotClient implements ICopilotClient {
--	readonly rpc: ICopilotClient['rpc'] = { sessions: { fork: async () => ({ sessionId: 'forked-session' }) } };
+-interface ITestCopilotModelInfo {
+-	readonly id: string;
+-	readonly name: string;
+-	readonly capabilities?: {
+-		readonly supports?: { readonly vision?: boolean };
+-		readonly limits?: { readonly max_context_window_tokens?: number };
+-	};
+-	readonly policy?: { readonly state?: NonNullable<ModelInfo['policy']>['state'] };
+-	readonly billing?: ModelInfo['billing'];
+-	readonly supportedReasoningEfforts?: ModelInfo['supportedReasoningEfforts'];
+-	readonly defaultReasoningEffort?: ModelInfo['defaultReasoningEffort'];
+-}
+-
+-interface ITestCopilotClient extends Pick<CopilotClient, 'start' | 'stop' | 'listSessions' | 'listModels' | 'createSession' | 'resumeSession' | 'getSessionMetadata'> {
+-	readonly rpc: { readonly sessions: { readonly fork: CopilotClient['rpc']['sessions']['fork'] } };
+-}
+-
+-function toSdkModelInfo(model: ITestCopilotModelInfo): ModelInfo {
+-	return {
+-		id: model.id,
+-		name: model.name,
+-		capabilities: {
+-			supports: {
+-				vision: model.capabilities?.supports?.vision ?? false,
+-				reasoningEffort: !!model.supportedReasoningEfforts?.length,
+-			},
+-			limits: {
+-				max_context_window_tokens: model.capabilities?.limits?.max_context_window_tokens ?? 0,
+-			},
+-		},
+-		...(model.policy ? { policy: { state: model.policy.state ?? 'enabled', terms: '' } } : {}),
+-		...(model.billing ? { billing: model.billing } : {}),
+-		...(model.supportedReasoningEfforts ? { supportedReasoningEfforts: model.supportedReasoningEfforts } : {}),
+-		...(model.defaultReasoningEffort ? { defaultReasoningEffort: model.defaultReasoningEffort } : {}),
+-	};
+-}
+-
+-class TestCopilotClient implements ITestCopilotClient {
+-	readonly rpc: ITestCopilotClient['rpc'] = { sessions: { fork: async () => ({ sessionId: 'forked-session' }) } };
 -	listSessionCallCount = 0;
 -	readonly getSessionMetadataCalls: string[] = [];
 -
 -	constructor(
--		private readonly _sessions: Awaited<ReturnType<ICopilotClient['listSessions']>>,
+-		private readonly _sessions: Awaited<ReturnType<ITestCopilotClient['listSessions']>>,
+-		private readonly _models: readonly ITestCopilotModelInfo[] = [],
 -	) { }
 -
 -	async start(): Promise<void> { }
--	async stop(): ReturnType<ICopilotClient['stop']> { return []; }
--	async listSessions(): ReturnType<ICopilotClient['listSessions']> {
+-	async stop(): ReturnType<ITestCopilotClient['stop']> { return []; }
+-	async listSessions(): ReturnType<ITestCopilotClient['listSessions']> {
 -		this.listSessionCallCount++;
 -		return this._sessions;
 -	}
--	async listModels(): ReturnType<ICopilotClient['listModels']> { return []; }
--	async getSessionMetadata(sessionId: string): ReturnType<ICopilotClient['getSessionMetadata']> {
+-	async listModels(): ReturnType<ITestCopilotClient['listModels']> { return this._models.map(toSdkModelInfo); }
+-	async getSessionMetadata(sessionId: string): ReturnType<ITestCopilotClient['getSessionMetadata']> {
 -		this.getSessionMetadataCalls.push(sessionId);
 -		return this._sessions.find(s => s.sessionId === sessionId);
 -	}
--	createSession: ICopilotClient['createSession'] = async () => { throw new Error('not implemented'); };
--	resumeSession: ICopilotClient['resumeSession'] = async () => { throw new Error('not implemented'); };
+-	createSession: ITestCopilotClient['createSession'] = async () => { throw new Error('not implemented'); };
+-	resumeSession: ITestCopilotClient['resumeSession'] = async () => { throw new Error('not implemented'); };
 -}
 -
 -interface IFakeAgentSession {
@@ -5888,7 +6156,7 @@ index 6582fedf..00000000
 -	readonly resumeCalls: string[] = [];
 -
 -	constructor(
--		private readonly _copilotClient: ICopilotClient,
+-		private readonly _copilotClient: ITestCopilotClient,
 -		@ILogService logService: ILogService,
 -		@IInstantiationService instantiationService: IInstantiationService,
 -		@IFileService fileService: IFileService,
@@ -5898,11 +6166,11 @@ index 6582fedf..00000000
 -		@IAgentConfigurationService configurationService: IAgentConfigurationService,
 -	) {
 -		super(logService, instantiationService, fileService, sessionDataService, gitService, terminalManager, configurationService);
--		this._enablePlanModeOnClient(this._copilotClient);
+-		this._enablePlanModeOnClient(this._copilotClient as CopilotClient);
 -	}
 -
--	protected override _createCopilotClient(): ICopilotClient {
--		return this._copilotClient;
+-	protected override _createCopilotClient(): CopilotClient {
+-		return this._copilotClient as CopilotClient;
 -	}
 -
 -	registerFakeSession(sessionId: string, fake: IFakeAgentSession): void {
@@ -5943,12 +6211,12 @@ index 6582fedf..00000000
 -		return stub;
 -	}
 -
--	resolveWorktreeForTest(config: Parameters<CopilotAgent['createSession']>[0], sessionId: string): Promise<URI | undefined> {
--		return this._resolveSessionWorkingDirectory(config, sessionId);
+-	resolveWorktreeForTest(config: Parameters<CopilotAgent['createSession']>[0], sessionId: string, prompt?: string): Promise<URI | undefined> {
+-		return this._resolveSessionWorkingDirectory(config, sessionId, prompt);
 -	}
 -}
 -
--function createTestAgentContext(disposables: Pick<DisposableStore, 'add'>, options?: { sessionDataService?: ISessionDataService; copilotClient?: ICopilotClient; gitService?: TestAgentHostGitService; environmentServiceRegistration?: 'native' | 'none'; pluginManager?: IAgentPluginManager }): { agent: CopilotAgent; instantiationService: IInstantiationService } {
+-function createTestAgentContext(disposables: Pick<DisposableStore, 'add'>, options?: { sessionDataService?: ISessionDataService; copilotClient?: ITestCopilotClient; gitService?: TestAgentHostGitService; environmentServiceRegistration?: 'native' | 'none'; pluginManager?: IAgentPluginManager }): { agent: CopilotAgent; instantiationService: IInstantiationService } {
 -	const services = new ServiceCollection();
 -	const logService = new NullLogService();
 -	const fileService = disposables.add(new FileService(logService));
@@ -5976,7 +6244,7 @@ index 6582fedf..00000000
 -	return { agent, instantiationService };
 -}
 -
--function createTestAgent(disposables: Pick<DisposableStore, 'add'>, options?: { sessionDataService?: ISessionDataService; copilotClient?: ICopilotClient; gitService?: TestAgentHostGitService; environmentServiceRegistration?: 'native' | 'none'; pluginManager?: IAgentPluginManager }): CopilotAgent {
+-function createTestAgent(disposables: Pick<DisposableStore, 'add'>, options?: { sessionDataService?: ISessionDataService; copilotClient?: ITestCopilotClient; gitService?: TestAgentHostGitService; environmentServiceRegistration?: 'native' | 'none'; pluginManager?: IAgentPluginManager }): CopilotAgent {
 -	return createTestAgentContext(disposables, options).agent;
 -}
 -
@@ -5999,7 +6267,7 @@ index 6582fedf..00000000
 -	return result;
 -}
 -
--function sdkSession(sessionId: string, cwd?: string): Awaited<ReturnType<ICopilotClient['listSessions']>>[number] {
+-function sdkSession(sessionId: string, cwd?: string): Awaited<ReturnType<ITestCopilotClient['listSessions']>>[number] {
 -	return {
 -		sessionId,
 -		startTime: new Date(1000),
@@ -6042,6 +6310,16 @@ index 6582fedf..00000000
 -		assert.strictEqual(getCopilotWorktreeBranchName('12345678-aaaa-bbbb-cccc-123456789abc', 'a'.repeat(48)).length, 'agents/'.length + 48 + '-12345678'.length);
 -	});
 -
+-	test('derives slug branch hint from first message', () => {
+-		assert.strictEqual(getCopilotBranchNameHintFromMessage('Add agent host config'), 'add-agent-host-config');
+-		assert.strictEqual(getCopilotBranchNameHintFromMessage('  Fix: the bug!! '), 'fix-the-bug');
+-		assert.strictEqual(getCopilotBranchNameHintFromMessage('Refactor café ☕ rendering'), 'refactor-cafe-rendering');
+-		assert.strictEqual(getCopilotBranchNameHintFromMessage('one two three four five six seven eight nine ten'), 'one-two-three-four-five-six-seven-eight');
+-		assert.strictEqual(getCopilotBranchNameHintFromMessage('a'.repeat(100))?.length, 48);
+-		assert.strictEqual(getCopilotBranchNameHintFromMessage('!!! ??? ...'), undefined);
+-		assert.strictEqual(getCopilotBranchNameHintFromMessage(''), undefined);
+-	});
+-
 -	test('returns empty models and throws AuthRequired for sessions before authentication', async () => {
 -		const agent = createTestAgent(disposables);
 -		try {
@@ -6062,6 +6340,34 @@ index 6582fedf..00000000
 -				() => agent.createSession({ workingDirectory: URI.file('/workspace') }),
 -				(error: Error) => error instanceof ProtocolError && error.code === AHP_AUTH_REQUIRED,
 -			);
+-		} finally {
+-			await disposeAgent(agent);
+-		}
+-	});
+-
+-	test('models include billing multiplier metadata when SDK provides it', async () => {
+-		const agent = createTestAgent(disposables, {
+-			copilotClient: new TestCopilotClient([], [{
+-				id: 'gpt-4o',
+-				name: 'GPT-4o',
+-				billing: { multiplier: 1.5 },
+-				capabilities: { limits: { max_context_window_tokens: 128000 }, supports: { vision: true } },
+-			}]),
+-		});
+-		try {
+-			await agent.authenticate('https://api.github.com', 'token');
+-			const models = await waitForState(agent.models, models => models.length > 0);
+-
+-			assert.deepStrictEqual(models, [{
+-				provider: 'copilotcli',
+-				id: 'gpt-4o',
+-				name: 'GPT-4o',
+-				maxContextWindow: 128000,
+-				supportsVision: true,
+-				configSchema: undefined,
+-				policyState: undefined,
+-				_meta: { multiplierNumeric: 1.5 },
+-			}]);
 -		} finally {
 -			await disposeAgent(agent);
 -		}
@@ -6318,6 +6624,43 @@ index 6582fedf..00000000
 -		// Forking a provisional session is no longer a special case: the agent
 -		// service drops `config.fork` for sources with no turns, so the call
 -		// reduces to a plain new-session create.
+-
+-		test('materialization passes VS Code-specific system message to the SDK', async () => {
+-			const sessionDataService = disposables.add(new TestSessionDataService());
+-			const client = new TestCopilotClient([]);
+-			let capturedConfig: Parameters<ITestCopilotClient['createSession']>[0] | undefined;
+-			client.createSession = async config => {
+-				capturedConfig = config;
+-				return new MockCopilotSession() as unknown as CopilotSession;
+-			};
+-
+-			const agent = createTestAgent(disposables, { sessionDataService, copilotClient: client });
+-			try {
+-				await agent.authenticate('https://api.github.com', 'token');
+-
+-				const result = await agent.createSession({
+-					session: AgentSession.uri('copilotcli', 'system-message-session'),
+-					workingDirectory: URI.file('/workspace'),
+-				});
+-				assert.strictEqual(result.provisional, true);
+-
+-				await agent.sendMessage(result.session, 'hello');
+-
+-				assert.ok(capturedConfig, 'SDK createSession should be called during provisional materialization');
+-				const systemMessage = capturedConfig.systemMessage;
+-				assert.deepStrictEqual(systemMessage, COPILOT_AGENT_HOST_SYSTEM_MESSAGE);
+-				if (!systemMessage || systemMessage.mode !== 'customize') {
+-					assert.fail('Expected customize-mode system message');
+-				}
+-				assert.strictEqual(systemMessage.sections?.identity?.action, 'replace');
+-				assert.strictEqual(
+-					systemMessage.sections?.identity?.content,
+-					'You are an AI assistant using Copilot CLI runtime in VS Code. You help users with software engineering tasks. When asked about your identity, you must state that you are an AI assistant using Copilot CLI runtime in VS Code.'
+-				);
+-			} finally {
+-				await disposeAgent(agent);
+-			}
+-		});
 -	});
 -
 -	suite('onClientToolCallComplete', () => {
@@ -6376,6 +6719,27 @@ index 6582fedf..00000000
 -			}
 -		});
 -
+-		test('routes a nested subagent session URI (depth > 1) to the root session entry', async () => {
+-			// Regression for depth > 1: a nested subagent URI like
+-			// `copilot:/root/subagent/tc1/subagent/tc2` must walk all the way
+-			// to the root session entry in `_sessions`, not stop at the
+-			// intermediate parent `copilot:/root/subagent/tc1`.
+-			const agent = createTestAgent(disposables);
+-			try {
+-				const rootUri = AgentSession.uri('copilotcli', 'session-root');
+-				const { calls } = installStubSession(agent, AgentSession.id(rootUri));
+-
+-				const subagentUri = URI.parse(buildSubagentSessionUri(rootUri.toString(), 'tc-parent'));
+-				const nestedUri = URI.parse(buildSubagentSessionUri(subagentUri.toString(), 'tc-nested'));
+-				const result: ToolCallResult = { success: true, pastTenseMessage: 'nested done' };
+-				agent.onClientToolCallComplete(nestedUri, 'tc-inner', result);
+-
+-				assert.deepStrictEqual(calls, [{ toolCallId: 'tc-inner', result }]);
+-			} finally {
+-				await disposeAgent(agent);
+-			}
+-		});
+-
 -		test('is a no-op when no session entry exists for the resolved id', async () => {
 -			const agent = createTestAgent(disposables);
 -			try {
@@ -6425,7 +6789,28 @@ index 6582fedf..00000000
 -			}) as TestableCopilotAgent;
 -
 -			const fakeMessages: Turn[] = [
--				{ id: 'u1', userMessage: { text: 'hi' }, responseParts: [{ kind: ResponsePartKind.Markdown, id: 'a1', content: 'hello back' }], usage: undefined, state: TurnState.Complete },
+-				{
+-					id: 'u1',
+-					userMessage: { text: 'hi' },
+-					responseParts: [
+-						{
+-							kind: ResponsePartKind.ToolCall,
+-							toolCall: {
+-								status: ToolCallStatus.Completed,
+-								toolCallId: 'tc-1',
+-								toolName: 'view',
+-								displayName: 'View File',
+-								invocationMessage: 'Reading file',
+-								success: true,
+-								pastTenseMessage: 'Read file',
+-								confirmed: ToolCallConfirmationReason.NotNeeded,
+-							},
+-						},
+-						{ kind: ResponsePartKind.Markdown, id: 'a1', content: 'hello back' },
+-					],
+-					usage: undefined,
+-					state: TurnState.Complete,
+-				},
 -			];
 -			let sendCalls = 0;
 -			agent.registerFakeSession(sessionId, {
@@ -6445,8 +6830,8 @@ index 6582fedf..00000000
 -				const expectedBranchName = getCopilotWorktreeBranchName(sessionId, branchHint);
 -				const workingDir = await agent.resolveWorktreeForTest({
 -					workingDirectory: repositoryRoot,
--					config: { isolation: 'worktree', branch: 'main', branchNameHint: branchHint },
--				}, sessionId);
+-					config: { isolation: 'worktree', branch: 'main' },
+-				}, sessionId, 'Add feature');
 -				assert.ok(workingDir, 'resolveWorktreeForTest must return a worktree URI');
 -				assert.deepStrictEqual(gitService.addedWorktrees.length, 1, 'addWorktree must be called once');
 -				assert.strictEqual(gitService.addedWorktrees[0].branchName, expectedBranchName);
@@ -6488,13 +6873,14 @@ index 6582fedf..00000000
 -				assert.strictEqual(reemittedMarkdown.length, 0, 'announcement must not be re-emitted on subsequent sends');
 -
 -				// 4. Restore path: getSessionMessages must prepend the
--				//    announcement to the first turn's first markdown part,
+-				//    announcement ahead of every first-turn response part,
 -				//    using the persisted branch metadata.
 -				const restored = await agent.getSessionMessages(session);
--				const md = restored[0]?.responseParts.find((p): p is MarkdownResponsePart => p.kind === ResponsePartKind.Markdown);
+-				const md = restored[0]?.responseParts[0] as MarkdownResponsePart | undefined;
 -				assert.ok(md, 'restored turns should include a markdown response part');
+-				assert.strictEqual(md.kind, ResponsePartKind.Markdown, 'worktree announcement must be the first response part');
 -				assert.ok(md.content.includes(expectedBranchName), `restored markdown content should include the branch name, got '${md.content}'`);
--				assert.ok(md.content.endsWith('hello back'), `restored markdown content should still end with the original reply, got '${md.content}'`);
+-				assert.strictEqual(restored[0]?.responseParts[1]?.kind, ResponsePartKind.ToolCall, 'existing tool calls must remain after the announcement');
 -			} finally {
 -				await disposeAgent(agent);
 -			}
@@ -6571,7 +6957,7 @@ index 6582fedf..00000000
 -				await agent.authenticate('https://api.github.com', 'token');
 -				const workingDir = await agent.resolveWorktreeForTest({
 -					workingDirectory: repositoryRoot,
--					config: { isolation: 'worktree', branch: 'main', branchNameHint: 'feat' },
+-					config: { isolation: 'worktree', branch: 'main' },
 -				}, sessionId);
 -				assert.ok(workingDir, 'worktree must be created');
 -				// Simulate the worktree directory existing on disk so the archive
@@ -6618,7 +7004,7 @@ index 6582fedf..00000000
 -				await agent.authenticate('https://api.github.com', 'token');
 -				const workingDir = await agent.resolveWorktreeForTest({
 -					workingDirectory: repositoryRoot,
--					config: { isolation: 'worktree', branch: 'main', branchNameHint: 'feat' },
+-					config: { isolation: 'worktree', branch: 'main' },
 -				}, sessionId);
 -				await fs.mkdir(workingDir!.fsPath, { recursive: true });
 -				gitService.dirtyWorkingDirectories.add(workingDir!.fsPath);
@@ -6649,7 +7035,7 @@ index 6582fedf..00000000
 -				await agent.authenticate('https://api.github.com', 'token');
 -				const workingDir = await agent.resolveWorktreeForTest({
 -					workingDirectory: repositoryRoot,
--					config: { isolation: 'worktree', branch: 'main', branchNameHint: 'feat' },
+-					config: { isolation: 'worktree', branch: 'main' },
 -				}, sessionId);
 -				await fs.mkdir(workingDir!.fsPath, { recursive: true });
 -				// Drop the branch so cleanup must skip.
@@ -6704,7 +7090,7 @@ index 6582fedf..00000000
 -				await agent.authenticate('https://api.github.com', 'token');
 -				const workingDir = await agent.resolveWorktreeForTest({
 -					workingDirectory: repositoryRoot,
--					config: { isolation: 'worktree', branch: 'main', branchNameHint: 'feat' },
+-					config: { isolation: 'worktree', branch: 'main' },
 -				}, sessionId);
 -				await fs.mkdir(workingDir!.fsPath, { recursive: true });
 -
@@ -6719,10 +7105,10 @@ index 6582fedf..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts b/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts
 deleted file mode 100644
-index c89f11ed..00000000
+index 56ae84c4..00000000
 --- a/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts
 +++ /dev/null
-@@ -1,1831 +0,0 @@
+@@ -1,2322 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -6731,6 +7117,7 @@ index c89f11ed..00000000
 -import type { CopilotSession, SessionEvent, SessionEventPayload, SessionEventType, Tool, ToolResultObject, TypedSessionEventHandler } from '@github/copilot-sdk';
 -import assert from 'assert';
 -import { DeferredPromise } from '../../../../base/common/async.js';
+-import { VSBuffer } from '../../../../base/common/buffer.js';
 -import { Emitter } from '../../../../base/common/event.js';
 -import { DisposableStore } from '../../../../base/common/lifecycle.js';
 -import { join, sep } from '../../../../base/common/path.js';
@@ -6745,7 +7132,7 @@ index c89f11ed..00000000
 -import { IDiffComputeService } from '../../common/diffComputeService.js';
 -import { ISessionDataService } from '../../common/sessionDataService.js';
 -import { ActionType, type SessionDeltaAction, type SessionErrorAction, type SessionInputRequestedAction, type SessionResponsePartAction, type SessionToolCallCompleteAction, type SessionToolCallReadyAction, type SessionToolCallStartAction } from '../../common/state/sessionActions.js';
--import { AttachmentType, ResponsePartKind, SessionInputAnswerState, SessionInputAnswerValueKind, SessionInputQuestionKind, SessionInputResponseKind, ToolResultContentType } from '../../common/state/sessionState.js';
+-import { MessageAttachmentKind, ResponsePartKind, SessionInputAnswerState, SessionInputAnswerValueKind, SessionInputQuestionKind, SessionInputResponseKind, ToolCallStatus, ToolResultContentType, type ToolResultFileEditContent } from '../../common/state/sessionState.js';
 -import { CopilotAgentSession, IActiveClientSnapshot, SessionWrapperFactory } from '../../node/copilot/copilotAgentSession.js';
 -import { CopilotSessionWrapper } from '../../node/copilot/copilotSessionWrapper.js';
 -import { IAgentConfigurationService } from '../../node/agentConfigurationService.js';
@@ -6778,8 +7165,8 @@ index c89f11ed..00000000
 -	}
 -
 -	/** Push an event through to all registered handlers of the given type. */
--	fire<K extends SessionEventType>(type: K, data: SessionEventPayload<K>['data']): void {
--		const event = { type, data, id: 'evt-1', timestamp: new Date().toISOString(), parentId: null } as SessionEventPayload<K>;
+-	fire<K extends SessionEventType>(type: K, data: SessionEventPayload<K>['data'], overrides?: Partial<Omit<SessionEventPayload<K>, 'type' | 'data'>>): void {
+-		const event = { type, data, id: 'evt-1', timestamp: new Date().toISOString(), parentId: null, ...overrides } as SessionEventPayload<K>;
 -		const set = this._handlers.get(type);
 -		if (set) {
 -			for (const handler of set) {
@@ -6792,7 +7179,7 @@ index c89f11ed..00000000
 -	async send(request: unknown) { this.sendRequests.push(request); return ''; }
 -	async abort() { }
 -	async setModel() { }
--	async getMessages() { return []; }
+-	async getMessages(): Promise<SessionEvent[]> { return []; }
 -	async destroy() { }
 -
 -	readonly rpc = {
@@ -6812,10 +7199,16 @@ index c89f11ed..00000000
 -
 -class CapturingLogService extends NullLogService {
 -	readonly errors: Array<{ first: string | Error; args: unknown[] }> = [];
+-	readonly warnings: Array<{ message: string; args: unknown[] }> = [];
 -
 -	override error(message: string | Error, ...args: unknown[]): void {
 -		this.errors.push({ first: message, args });
 -		super.error(message, ...args);
+-	}
+-
+-	override warn(message: string, ...args: unknown[]): void {
+-		this.warnings.push({ message, args });
+-		super.warn(message, ...args);
 -	}
 -}
 -
@@ -6841,6 +7234,7 @@ index c89f11ed..00000000
 -	_editTracker: {
 -		trackEditStart(path: string): Promise<void>;
 -		completeEdit(path: string): Promise<void>;
+-		takeCompletedEdit(turnId: string, toolCallId: string, path: string): Promise<ToolResultFileEditContent | undefined>;
 -	};
 -	_pendingClientToolCalls: {
 -		get(toolCallId: string): DeferredPromise<ToolResultObject> | undefined;
@@ -6868,6 +7262,8 @@ index c89f11ed..00000000
 -	workingDirectory?: URI;
 -	/** Per-key effective config values returned by the fake configuration service. */
 -	configValues?: Record<string, unknown>;
+-	fileContents?: Record<string, string>;
+-	fileReadErrors?: readonly string[];
 -}): Promise<{
 -	session: CopilotAgentSession;
 -	mockSession: MockCopilotSession;
@@ -6912,7 +7308,15 @@ index c89f11ed..00000000
 -
 -	const services = new ServiceCollection();
 -	services.set(ILogService, options?.logService ?? new NullLogService());
--	services.set(IFileService, { _serviceBrand: undefined } as IFileService);
+-	services.set(IFileService, {
+-		_serviceBrand: undefined,
+-		readFile: async (resource: URI) => {
+-			if (options?.fileReadErrors?.includes(resource.toString()) || options?.fileReadErrors?.includes(resource.fsPath)) {
+-				throw new Error('read failed');
+-			}
+-			return { value: VSBuffer.fromString(options?.fileContents?.[resource.toString()] ?? options?.fileContents?.[resource.fsPath] ?? '') };
+-		},
+-	} as Partial<IFileService> as IFileService);
 -	services.set(ISessionDataService, createSessionDataService());
 -	services.set(IDiffComputeService, createZeroDiffComputeService());
 -	const sessionConfigUpdates: Array<{ session: string; patch: Record<string, unknown> }> = [];
@@ -6971,22 +7375,143 @@ index c89f11ed..00000000
 -	ensureNoDisposablesAreLeakedInTestSuite();
 -
 -	test('maps internal attachment URIs to Copilot SDK path fields', async () => {
--		const { session, mockSession } = await createAgentSession(disposables);
 -		const fileUri = URI.file('/workspace/file.ts');
 -		const selectionUri = URI.file('/workspace/selection.ts');
+-		const { session, mockSession } = await createAgentSession(disposables, {
+-			fileContents: {
+-				[selectionUri.toString()]: 'alpha\nbeta\n012selected text345\nomega',
+-			},
+-		});
 -
 -		await session.send('hello', [
--			{ type: AttachmentType.File, uri: fileUri, displayName: 'file.ts' },
--			{ type: AttachmentType.Selection, uri: selectionUri, displayName: 'selection.ts' },
+-			{ type: MessageAttachmentKind.Resource, uri: fileUri.toString(), label: 'file.ts', displayKind: 'document' },
+-			{
+-				type: MessageAttachmentKind.Resource,
+-				uri: selectionUri.toString(),
+-				label: 'selection.ts',
+-				displayKind: 'selection',
+-				selection: {
+-					range: {
+-						start: { line: 2, character: 3 },
+-						end: { line: 2, character: 16 },
+-					},
+-				},
+-			},
 -		]);
 -
 -		assert.deepStrictEqual(mockSession.sendRequests, [{
 -			prompt: 'hello',
 -			attachments: [
 -				{ type: 'file', path: fileUri.fsPath, displayName: 'file.ts' },
--				{ type: 'selection', filePath: selectionUri.fsPath, displayName: 'selection.ts', text: undefined, selection: undefined },
+-				{
+-					type: 'selection',
+-					filePath: selectionUri.fsPath,
+-					displayName: 'selection.ts',
+-					text: 'selected text',
+-					selection: {
+-						start: { line: 2, character: 3 },
+-						end: { line: 2, character: 16 },
+-					},
+-				},
 -			],
 -		}]);
+-	});
+-
+-	test('extracts selected text from file contents for different line endings and bounds', async () => {
+-		const testCases = [
+-			{
+-				name: 'lf multiline',
+-				contents: 'zero\none\ntwo\nthree',
+-				selection: { start: { line: 1, character: 1 }, end: { line: 2, character: 2 } },
+-				expectedText: 'ne\ntw',
+-			},
+-			{
+-				name: 'crlf multiline',
+-				contents: 'zero\r\none\r\ntwo\r\nthree',
+-				selection: { start: { line: 1, character: 1 }, end: { line: 2, character: 2 } },
+-				expectedText: 'ne\r\ntw',
+-			},
+-			{
+-				name: 'clamps past eof',
+-				contents: 'zero\none',
+-				selection: { start: { line: 1, character: 1 }, end: { line: 42, character: 99 } },
+-				expectedText: 'ne',
+-			},
+-			{
+-				name: 'empty when end is before start',
+-				contents: 'zero\none',
+-				selection: { start: { line: 1, character: 3 }, end: { line: 1, character: 1 } },
+-				expectedText: '',
+-			},
+-		] satisfies ReadonlyArray<{
+-			name: string;
+-			contents: string;
+-			selection: {
+-				start: { line: number; character: number };
+-				end: { line: number; character: number };
+-			};
+-			expectedText: string;
+-		}>;
+-
+-		for (const testCase of testCases) {
+-			const selectionUri = URI.file(`/workspace/${testCase.name}.ts`);
+-			const { session, mockSession } = await createAgentSession(disposables, {
+-				fileContents: {
+-					[selectionUri.toString()]: testCase.contents,
+-				},
+-			});
+-
+-			await session.send('hello', [{
+-				type: MessageAttachmentKind.Resource,
+-				uri: selectionUri.toString(),
+-				label: `${testCase.name}.ts`,
+-				displayKind: 'selection',
+-				selection: { range: testCase.selection },
+-			}]);
+-
+-			assert.deepStrictEqual(mockSession.sendRequests, [{
+-				prompt: 'hello',
+-				attachments: [{
+-					type: 'selection',
+-					filePath: selectionUri.fsPath,
+-					displayName: `${testCase.name}.ts`,
+-					text: testCase.expectedText,
+-					selection: testCase.selection,
+-				}],
+-			}], testCase.name);
+-			disposables.clear();
+-		}
+-	});
+-
+-	test('falls back to file attachment when selection text cannot be read', async () => {
+-		const selectionUri = URI.file('/workspace/missing.ts');
+-		const logService = new CapturingLogService();
+-		const { session, mockSession } = await createAgentSession(disposables, {
+-			fileReadErrors: [selectionUri.toString()],
+-			logService,
+-		});
+-
+-		await session.send('hello', [{
+-			type: MessageAttachmentKind.Resource,
+-			uri: selectionUri.toString(),
+-			label: 'missing.ts',
+-			displayKind: 'selection',
+-			selection: {
+-				range: {
+-					start: { line: 0, character: 0 },
+-					end: { line: 0, character: 5 },
+-				},
+-			},
+-		}]);
+-
+-		assert.deepStrictEqual(mockSession.sendRequests, [{
+-			prompt: 'hello',
+-			attachments: [
+-				{ type: 'file', path: selectionUri.fsPath, displayName: 'missing.ts' },
+-			],
+-		}]);
+-		assert.strictEqual(logService.warnings.length, 1);
+-		assert.match(logService.warnings[0].message, /Failed to read selected text/);
 -	});
 -
 -	// ---- permission handling ----
@@ -7469,6 +7994,87 @@ index c89f11ed..00000000
 -			}
 -		});
 -
+-		test('edit hooks resolve relative apply_patch file paths against workingDirectory', async () => {
+-			const capturedCallbacks: { current?: Parameters<SessionWrapperFactory>[0] } = {};
+-			const workingDirectory = URI.file('/repo/project');
+-			const absolutePath = URI.file('/tmp/absolute.ts').fsPath;
+-			const { session } = await createAgentSession(disposables, { workingDirectory, captureWrapperCallbacks: capturedCallbacks });
+-			const sessionInternals = session as unknown as ISessionInternalsForTest;
+-			const started: string[] = [];
+-			const completed: string[] = [];
+-			sessionInternals._editTracker.trackEditStart = async path => { started.push(path); };
+-			sessionInternals._editTracker.completeEdit = async path => { completed.push(path); };
+-			const patch = [
+-				'*** Begin Patch',
+-				'*** Update File: foo.ts',
+-				'@@',
+-				'+new',
+-				'*** Update File: src/bar.ts',
+-				'@@',
+-				'+new',
+-				`*** Update File: ${absolutePath}`,
+-				'@@',
+-				'+new',
+-				'*** End Patch',
+-			].join('\n');
+-
+-			await capturedCallbacks.current!.hooks.onPreToolUse({
+-				timestamp: 0,
+-				cwd: '/repo/project',
+-				toolName: 'apply_patch',
+-				toolArgs: patch,
+-			});
+-			await capturedCallbacks.current!.hooks.onPostToolUse({
+-				timestamp: 0,
+-				cwd: '/repo/project',
+-				toolName: 'apply_patch',
+-				toolArgs: patch,
+-				toolResult: { textResultForLlm: '', resultType: 'success' },
+-			});
+-
+-			assert.deepStrictEqual({ started, completed }, {
+-				started: [join(workingDirectory.fsPath, 'foo.ts'), join(workingDirectory.fsPath, 'src/bar.ts'), absolutePath],
+-				completed: [join(workingDirectory.fsPath, 'foo.ts'), join(workingDirectory.fsPath, 'src/bar.ts'), absolutePath],
+-			});
+-		});
+-
+-		test('tool_complete resolves relative apply_patch file paths before taking completed edits', async () => {
+-			const workingDirectory = URI.file('/repo/project');
+-			const { session, mockSession, waitForSignal } = await createAgentSession(disposables, { workingDirectory });
+-			const sessionInternals = session as unknown as ISessionInternalsForTest;
+-			const taken: string[] = [];
+-			sessionInternals._editTracker.takeCompletedEdit = async (_turnId, _toolCallId, path) => {
+-				taken.push(path);
+-				return undefined;
+-			};
+-			session.resetTurnState('turn-apply-patch');
+-			const patch = [
+-				'*** Begin Patch',
+-				'*** Update File: foo.ts',
+-				'@@',
+-				'+new',
+-				'*** Update File: src/bar.ts',
+-				'@@',
+-				'+new',
+-				'*** End Patch',
+-			].join('\n');
+-
+-			mockSession.fire('tool.execution_start', {
+-				toolCallId: 'tc-apply-patch',
+-				toolName: 'apply_patch',
+-				arguments: patch,
+-			} as unknown as SessionEventPayload<'tool.execution_start'>['data']);
+-
+-			mockSession.fire('tool.execution_complete', {
+-				toolCallId: 'tc-apply-patch',
+-				success: true,
+-			} as SessionEventPayload<'tool.execution_complete'>['data']);
+-
+-			await waitForSignal(s => isAction(s, ActionType.SessionToolCallComplete));
+-
+-			assert.deepStrictEqual(taken, [join(workingDirectory.fsPath, 'foo.ts'), join(workingDirectory.fsPath, 'src/bar.ts')]);
+-		});
+-
 -		test('hidden tools are not emitted as tool_start', async () => {
 -			const { mockSession, signals } = await createAgentSession(disposables);
 -			mockSession.fire('tool.execution_start', {
@@ -7620,6 +8226,197 @@ index c89f11ed..00000000
 -			assert.ok(hasPart, 'should have surfaced the message content');
 -		});
 -
+-		test('history replay renders assistant tool requests when lifecycle events are missing', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.getMessages = async () => [
+-				{
+-					type: 'user.message',
+-					data: { messageId: 'turn-1', content: 'inspect the workspace' },
+-				},
+-				{
+-					type: 'assistant.message',
+-					data: {
+-						messageId: 'msg-1',
+-						content: 'I will inspect the workspace.',
+-						toolRequests: [
+-							{
+-								toolCallId: 'tc-view',
+-								name: 'view',
+-								arguments: { path: '/workspace/file.ts' },
+-								type: 'function',
+-							},
+-							{
+-								toolCallId: 'tc-bash',
+-								name: 'bash',
+-								arguments: { command: 'npm test' },
+-								type: 'function',
+-							},
+-							{
+-								toolCallId: 'tc-intent',
+-								name: 'report_intent',
+-								arguments: { intent: 'Inspecting files' },
+-								type: 'function',
+-							},
+-						],
+-					},
+-				},
+-				{
+-					type: 'tool.execution_complete',
+-					data: {
+-						toolCallId: 'tc-bash',
+-						success: false,
+-						error: { message: 'tests failed' },
+-					},
+-				},
+-				{
+-					type: 'assistant.message',
+-					data: { messageId: 'msg-2', content: 'Done.' },
+-				},
+-			] as SessionEvent[];
+-
+-			const turns = await session.getMessages();
+-
+-			const actual = turns.map(turn => {
+-				const parts: Array<Record<string, unknown>> = [];
+-				for (const part of turn.responseParts) {
+-					switch (part.kind) {
+-						case ResponsePartKind.ToolCall:
+-							parts.push({
+-								kind: part.kind,
+-								toolCallId: part.toolCall.toolCallId,
+-								toolName: part.toolCall.toolName,
+-								status: part.toolCall.status,
+-								success: part.toolCall.status === ToolCallStatus.Completed ? part.toolCall.success : undefined,
+-								content: part.toolCall.status === ToolCallStatus.Completed ? part.toolCall.content : undefined,
+-							});
+-							break;
+-						case ResponsePartKind.Markdown:
+-							parts.push({ kind: part.kind, content: part.content });
+-							break;
+-						default:
+-							parts.push({ kind: part.kind });
+-					}
+-				}
+-				return { userMessage: turn.userMessage.text, parts };
+-			});
+-
+-			assert.deepStrictEqual(actual, [{
+-				userMessage: 'inspect the workspace',
+-				parts: [
+-					{ kind: ResponsePartKind.Markdown, content: 'I will inspect the workspace.' },
+-					{ kind: ResponsePartKind.ToolCall, toolCallId: 'tc-view', toolName: 'view', status: ToolCallStatus.Completed, success: true, content: undefined },
+-					{ kind: ResponsePartKind.ToolCall, toolCallId: 'tc-bash', toolName: 'bash', status: ToolCallStatus.Completed, success: false, content: [{ type: ToolResultContentType.Text, text: 'tests failed' }] },
+-					{ kind: ResponsePartKind.Markdown, content: 'Done.' },
+-				],
+-			}]);
+-		});
+-
+-		test('history replay does not duplicate assistant tool requests with lifecycle events', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.getMessages = async () => [
+-				{
+-					type: 'user.message',
+-					data: { messageId: 'turn-1', content: 'run tests' },
+-				},
+-				{
+-					type: 'assistant.message',
+-					data: {
+-						messageId: 'msg-1',
+-						content: '',
+-						toolRequests: [{
+-							toolCallId: 'tc-bash',
+-							name: 'bash',
+-							arguments: { command: 'npm test' },
+-							type: 'function',
+-						}],
+-					},
+-				},
+-				{
+-					type: 'tool.execution_start',
+-					data: {
+-						toolCallId: 'tc-bash',
+-						toolName: 'bash',
+-						arguments: { command: 'npm test' },
+-					},
+-				},
+-				{
+-					type: 'tool.execution_complete',
+-					data: {
+-						toolCallId: 'tc-bash',
+-						success: true,
+-						result: { content: 'passed' },
+-					},
+-				},
+-				{
+-					type: 'assistant.message',
+-					data: { messageId: 'msg-2', content: 'Done.' },
+-				},
+-			] as SessionEvent[];
+-
+-			const turns = await session.getMessages();
+-			const toolCalls = turns[0].responseParts.flatMap(part => part.kind === ResponsePartKind.ToolCall ? [part.toolCall] : []);
+-
+-			assert.deepStrictEqual(toolCalls.map(toolCall => ({
+-				toolCallId: toolCall.toolCallId,
+-				toolName: toolCall.toolName,
+-				content: toolCall.status === ToolCallStatus.Completed ? toolCall.content : undefined,
+-			})), [{
+-				toolCallId: 'tc-bash',
+-				toolName: 'bash',
+-				content: [{ type: ToolResultContentType.Text, text: 'passed' }],
+-			}]);
+-		});
+-
+-		test('subagent message delta does not suppress final parent assistant message', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			session.resetTurnState('turn-1');
+-
+-			mockSession.fire('tool.execution_start', {
+-				toolCallId: 'tc-subagent',
+-				toolName: 'task',
+-				arguments: { description: 'Explore tests', agent_type: 'explore' },
+-			} as SessionEventPayload<'tool.execution_start'>['data']);
+-
+-			mockSession.fire('subagent.started', {
+-				toolCallId: 'tc-subagent',
+-				agentName: 'explore',
+-				agentDisplayName: 'Explore',
+-				agentDescription: 'Explore tests',
+-			} as SessionEventPayload<'subagent.started'>['data'], { agentId: 'agent-1' });
+-
+-			mockSession.fire('assistant.message_delta', {
+-				messageId: 'msg-child',
+-				deltaContent: 'Subagent found the answer.',
+-			} as SessionEventPayload<'assistant.message_delta'>['data'], { agentId: 'agent-1' });
+-
+-			mockSession.fire('tool.execution_complete', {
+-				toolCallId: 'tc-subagent',
+-				success: true,
+-				result: { content: 'done' },
+-			} as SessionEventPayload<'tool.execution_complete'>['data']);
+-
+-			mockSession.fire('assistant.message', {
+-				messageId: 'msg-parent-final',
+-				content: 'Final parent answer.',
+-			} as SessionEventPayload<'assistant.message'>['data']);
+-
+-			const markdownParts = signals.flatMap(signal => {
+-				if (signal.kind !== 'action' || signal.action.type !== ActionType.SessionResponsePart) {
+-					return [];
+-				}
+-				const part = (signal.action as SessionResponsePartAction).part;
+-				if (part.kind !== ResponsePartKind.Markdown) {
+-					return [];
+-				}
+-				return [{ parentToolCallId: signal.parentToolCallId, content: part.content }];
+-			});
+-
+-			assert.deepStrictEqual(markdownParts, [
+-				{ parentToolCallId: 'tc-subagent', content: 'Subagent found the answer.' },
+-				{ parentToolCallId: undefined, content: 'Final parent answer.' },
+-			]);
+-		});
+-
 -		test('reasoning delta after tool_start starts a new reasoning response part', async () => {
 -			const { mockSession, signals } = await createAgentSession(disposables);
 -
@@ -7665,6 +8462,80 @@ index c89f11ed..00000000
 -				'second reasoning round should have a distinct part id');
 -			assert.strictEqual(reasoningResponseParts[0].content, 'thinking step 1');
 -			assert.strictEqual(reasoningResponseParts[1].content, 'thinking step 2');
+-		});
+-
+-		test('subagent reasoning delta routes to the subagent session scope', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			session.resetTurnState('turn-1');
+-
+-			mockSession.fire('subagent.started', {
+-				toolCallId: 'tc-subagent',
+-				agentName: 'explore',
+-				agentDisplayName: 'Explore',
+-				agentDescription: 'Explore tests',
+-			} as SessionEventPayload<'subagent.started'>['data'], { agentId: 'agent-1' });
+-
+-			mockSession.fire('assistant.reasoning_delta', {
+-				reasoningId: 'reasoning-child',
+-				deltaContent: 'Subagent thinking.',
+-			} as SessionEventPayload<'assistant.reasoning_delta'>['data'], { agentId: 'agent-1' });
+-
+-			mockSession.fire('assistant.reasoning_delta', {
+-				reasoningId: 'reasoning-parent',
+-				deltaContent: 'Parent thinking.',
+-			} as SessionEventPayload<'assistant.reasoning_delta'>['data']);
+-
+-			const reasoningParts = signals.flatMap(signal => {
+-				if (signal.kind !== 'action' || signal.action.type !== ActionType.SessionResponsePart) {
+-					return [];
+-				}
+-				const part = (signal.action as SessionResponsePartAction).part;
+-				if (part.kind !== ResponsePartKind.Reasoning) {
+-					return [];
+-				}
+-				return [{ parentToolCallId: signal.parentToolCallId, content: part.content }];
+-			});
+-
+-			assert.deepStrictEqual(reasoningParts, [
+-				{ parentToolCallId: 'tc-subagent', content: 'Subagent thinking.' },
+-				{ parentToolCallId: undefined, content: 'Parent thinking.' },
+-			]);
+-		});
+-
+-		test('subagent tool completion routes to the subagent session scope', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			session.resetTurnState('turn-1');
+-
+-			mockSession.fire('subagent.started', {
+-				toolCallId: 'tc-subagent',
+-				agentName: 'explore',
+-				agentDisplayName: 'Explore',
+-				agentDescription: 'Explore tests',
+-			} as SessionEventPayload<'subagent.started'>['data'], { agentId: 'agent-1' });
+-
+-			mockSession.fire('tool.execution_start', {
+-				toolCallId: 'tc-child-tool',
+-				toolName: 'bash',
+-				arguments: { command: 'echo hi' },
+-			} as SessionEventPayload<'tool.execution_start'>['data'], { agentId: 'agent-1' });
+-
+-			mockSession.fire('tool.execution_complete', {
+-				toolCallId: 'tc-child-tool',
+-				success: true,
+-				result: { content: 'hi' },
+-			} as SessionEventPayload<'tool.execution_complete'>['data'], { agentId: 'agent-1' });
+-
+-			const toolCompletions = signals.flatMap(signal => {
+-				if (!isAction(signal, ActionType.SessionToolCallComplete)) {
+-					return [];
+-				}
+-				const action = signal.action as SessionToolCallCompleteAction;
+-				return [{ parentToolCallId: signal.parentToolCallId, toolCallId: action.toolCallId }];
+-			});
+-
+-			assert.deepStrictEqual(toolCompletions, [
+-				{ parentToolCallId: 'tc-subagent', toolCallId: 'tc-child-tool' },
+-			]);
 -		});
 -	});
 -
@@ -8015,12 +8886,18 @@ index c89f11ed..00000000
 -			// SessionToolCallStart).
 -			const { session, mockSession, signals, waitForSignal } = await createAgentSession(disposables, { clientSnapshot: snapshot });
 -
+-			mockSession.fire('subagent.started', {
+-				toolCallId: 'tc-parent-subagent',
+-				agentName: 'helper',
+-				agentDisplayName: 'Helper',
+-				agentDescription: 'Helps',
+-			} as SessionEventPayload<'subagent.started'>['data'], { agentId: 'agent-client-tool' });
+-
 -			mockSession.fire('tool.execution_start', {
 -				toolCallId: 'tc-sub-client',
 -				toolName: 'my_tool',
 -				arguments: {},
--				parentToolCallId: 'tc-parent-subagent',
--			} as SessionEventPayload<'tool.execution_start'>['data']);
+-			} as SessionEventPayload<'tool.execution_start'>['data'], { agentId: 'agent-client-tool' });
 -
 -			const resultPromise = session.handlePermissionRequest({
 -				kind: 'custom-tool',
@@ -9020,10 +9897,10 @@ index 990a15bb..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotShellTools.test.ts b/src/vs/platform/agentHost/test/node/copilotShellTools.test.ts
 deleted file mode 100644
-index 5fea1bbc..00000000
+index 7c320077..00000000
 --- a/src/vs/platform/agentHost/test/node/copilotShellTools.test.ts
 +++ /dev/null
-@@ -1,128 +0,0 @@
+@@ -1,154 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -9040,15 +9917,16 @@ index 5fea1bbc..00000000
 -import type { CreateTerminalParams } from '../../common/state/protocol/commands.js';
 -import type { TerminalClaim, TerminalInfo } from '../../common/state/protocol/state.js';
 -import { IAgentHostTerminalManager } from '../../node/agentHostTerminalManager.js';
--import { ShellManager, prefixForHistorySuppression } from '../../node/copilot/copilotShellTools.js';
+-import { ShellManager, prefixForHistorySuppression, shellTypeForExecutable } from '../../node/copilot/copilotShellTools.js';
 -
 -class TestAgentHostTerminalManager implements IAgentHostTerminalManager {
 -	declare readonly _serviceBrand: undefined;
 -
+-	defaultShell = '/bin/bash';
 -	readonly created: { params: CreateTerminalParams; options?: { shell?: string; preventShellHistory?: boolean; nonInteractive?: boolean } }[] = [];
 -
 -	async createTerminal(params: CreateTerminalParams, options?: { shell?: string; preventShellHistory?: boolean; nonInteractive?: boolean }): Promise<void> {
--		this.created.push({ params, options });
+-		this.created.push({ params, options: { ...options, shell: options?.shell ?? this.defaultShell } });
 -	}
 -	writeInput(): void { }
 -	onData(): IDisposable { return Disposable.None; }
@@ -9063,6 +9941,7 @@ index 5fea1bbc..00000000
 -	disposeTerminal(): void { }
 -	getTerminalInfos(): TerminalInfo[] { return []; }
 -	getTerminalState(): undefined { return undefined; }
+-	async getDefaultShell(): Promise<string> { return this.defaultShell; }
 -}
 -
 -suite('CopilotShellTools', () => {
@@ -9072,13 +9951,18 @@ index 5fea1bbc..00000000
 -	teardown(() => disposables.clear());
 -	ensureNoDisposablesAreLeakedInTestSuite();
 -
--	test('uses session working directory for created shells', async () => {
+-	function createServices(): { instantiationService: IInstantiationService; terminalManager: TestAgentHostTerminalManager } {
 -		const terminalManager = new TestAgentHostTerminalManager();
 -		const services = new ServiceCollection();
 -		services.set(ILogService, new NullLogService());
 -		services.set(IAgentHostTerminalManager, terminalManager);
 -		const instantiationService: IInstantiationService = disposables.add(new InstantiationService(services));
 -		services.set(IInstantiationService, instantiationService);
+-		return { instantiationService, terminalManager };
+-	}
+-
+-	test('uses session working directory for created shells', async () => {
+-		const { instantiationService, terminalManager } = createServices();
 -		const worktreePath = URI.file('/workspace/worktree').fsPath;
 -		const explicitCwd = URI.file('/explicit/cwd').fsPath;
 -		const shellManager = disposables.add(instantiationService.createInstance(ShellManager, URI.parse('copilot:/session-1'), URI.file(worktreePath)));
@@ -9093,12 +9977,7 @@ index 5fea1bbc..00000000
 -	});
 -
 -	test('opts every managed shell into shell-history suppression and non-interactive mode', async () => {
--		const terminalManager = new TestAgentHostTerminalManager();
--		const services = new ServiceCollection();
--		services.set(ILogService, new NullLogService());
--		services.set(IAgentHostTerminalManager, terminalManager);
--		const instantiationService: IInstantiationService = disposables.add(new InstantiationService(services));
--		services.set(IInstantiationService, instantiationService);
+-		const { instantiationService, terminalManager } = createServices();
 -		const shellManager = disposables.add(instantiationService.createInstance(ShellManager, URI.parse('copilot:/session-1'), undefined));
 -
 -		await shellManager.getOrCreateShell('bash', 'turn-1', 'tool-1');
@@ -9108,9 +9987,33 @@ index 5fea1bbc..00000000
 -		assert.strictEqual(terminalManager.created[0].options?.nonInteractive, true);
 -	});
 -
+-	test('uses the executable resolved by the terminal manager', async () => {
+-		const { instantiationService, terminalManager } = createServices();
+-		terminalManager.defaultShell = '/custom/path/to/pwsh';
+-		const shellManager = disposables.add(instantiationService.createInstance(ShellManager, URI.parse('copilot:/session-1'), undefined));
+-
+-		await shellManager.getOrCreateShell('powershell', 'turn-1', 'tool-1');
+-
+-		assert.strictEqual(terminalManager.created[0].options?.shell, '/custom/path/to/pwsh');
+-	});
+-
 -	test('prefixForHistorySuppression prepends a space for POSIX shells, no-op for PowerShell', () => {
 -		assert.strictEqual(prefixForHistorySuppression('bash'), ' ');
 -		assert.strictEqual(prefixForHistorySuppression('powershell'), '');
+-	});
+-
+-	test('shellTypeForExecutable maps known shell basenames and falls back to platform default', () => {
+-		assert.deepStrictEqual([
+-			shellTypeForExecutable('C:\\Program Files\\PowerShell\\7\\pwsh.exe'),
+-			shellTypeForExecutable('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'),
+-			shellTypeForExecutable('/usr/bin/bash'),
+-			shellTypeForExecutable('/usr/bin/zsh'),
+-			shellTypeForExecutable('/bin/sh'),
+-		], ['powershell', 'powershell', 'bash', 'bash', 'bash']);
+-
+-		// Unknown shells fall through to the platform default — just assert it's one of the known types.
+-		const unknownDefault = shellTypeForExecutable('C:\\Windows\\System32\\cmd.exe');
+-		assert.ok(unknownDefault === 'bash' || unknownDefault === 'powershell');
 -	});
 -
 -	test('getOrCreateShell reuses an idle shell after the reference is disposed', async () => {
@@ -9154,10 +10057,10 @@ index 5fea1bbc..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotToolDisplay.test.ts b/src/vs/platform/agentHost/test/node/copilotToolDisplay.test.ts
 deleted file mode 100644
-index 3f55ce67..00000000
+index 8ad4e124..00000000
 --- a/src/vs/platform/agentHost/test/node/copilotToolDisplay.test.ts
 +++ /dev/null
-@@ -1,370 +0,0 @@
+@@ -1,464 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -9166,7 +10069,7 @@ index 3f55ce67..00000000
 -import assert from 'assert';
 -import { URI } from '../../../../base/common/uri.js';
 -import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
--import { getInvocationMessage, getPastTenseMessage, getPermissionDisplay, getShellLanguage, getToolInputString, getToolKind, isHiddenTool, synthesizeSkillToolCall, type ITypedPermissionRequest } from '../../node/copilot/copilotToolDisplay.js';
+-import { getEditFilePath, getEditFilePaths, getInvocationMessage, getPastTenseMessage, getPermissionDisplay, getShellLanguage, getToolInputString, getToolKind, isHiddenTool, synthesizeSkillToolCall, type ITypedPermissionRequest } from '../../node/copilot/copilotToolDisplay.js';
 -
 -suite('getPermissionDisplay — cd-prefix stripping', () => {
 -
@@ -9526,5 +10429,99 @@ index 3f55ce67..00000000
 -	test('getToolInputString returns pattern for both grep and rg', () => {
 -		assert.strictEqual(getToolInputString('grep', { pattern: 'abc' }, undefined), 'abc');
 -		assert.strictEqual(getToolInputString('rg', { pattern: 'abc' }, undefined), 'abc');
+-	});
+-});
+-
+-suite('apply_patch tool display', () => {
+-
+-	ensureNoDisposablesAreLeakedInTestSuite();
+-
+-	function text(msg: ReturnType<typeof getInvocationMessage>): string {
+-		return typeof msg === 'string' ? msg : msg.markdown;
+-	}
+-
+-	const singleFilePatch = [
+-		'*** Begin Patch',
+-		'*** Update File: /repo/src/foo.ts',
+-		'@@',
+-		'-old',
+-		'+new',
+-		'*** End Patch',
+-	].join('\n');
+-
+-	const multiFilePatch = [
+-		'*** Begin Patch',
+-		'*** Update File: /repo/src/foo.ts',
+-		'@@',
+-		'-old',
+-		'+new',
+-		'*** Add File: /repo/src/bar.ts',
+-		'+hello',
+-		'*** Delete File: /repo/src/baz.ts',
+-		'*** End Patch',
+-	].join('\n');
+-
+-	test('renders a clickable file link for a single-file patch', () => {
+-		const inv = text(getInvocationMessage('apply_patch', 'Patch', { input: singleFilePatch }));
+-		const past = text(getPastTenseMessage('apply_patch', 'Patch', { input: singleFilePatch }, true));
+-		assert.deepStrictEqual({ inv, past }, {
+-			inv: 'Editing [foo.ts](file:///repo/src/foo.ts)',
+-			past: 'Edited [foo.ts](file:///repo/src/foo.ts)',
+-		});
+-	});
+-
+-	test('lists every affected file for a multi-file patch', () => {
+-		const inv = text(getInvocationMessage('apply_patch', 'Patch', { input: multiFilePatch }));
+-		const past = text(getPastTenseMessage('apply_patch', 'Patch', { input: multiFilePatch }, true));
+-		assert.deepStrictEqual({ inv, past }, {
+-			inv: 'Editing [foo.ts](file:///repo/src/foo.ts), [bar.ts](file:///repo/src/bar.ts), [baz.ts](file:///repo/src/baz.ts)',
+-			past: 'Edited [foo.ts](file:///repo/src/foo.ts), [bar.ts](file:///repo/src/bar.ts), [baz.ts](file:///repo/src/baz.ts)',
+-		});
+-	});
+-
+-	test('falls back to a generic message when the patch body is missing or unparseable', () => {
+-		assert.strictEqual(getInvocationMessage('apply_patch', 'Patch', undefined), 'Editing files');
+-		assert.strictEqual(getInvocationMessage('apply_patch', 'Patch', { input: 'not a patch' }), 'Editing files');
+-		assert.strictEqual(getPastTenseMessage('apply_patch', 'Patch', undefined, true), 'Edited files');
+-	});
+-
+-	test('also accepts the patch text under the `patch` parameter (CLI shape)', () => {
+-		const inv = text(getInvocationMessage('apply_patch', 'Patch', { patch: singleFilePatch }));
+-		assert.strictEqual(inv, 'Editing [foo.ts](file:///repo/src/foo.ts)');
+-	});
+-
+-	test('git_apply_patch shares the same display path', () => {
+-		const inv = text(getInvocationMessage('git_apply_patch', 'Patch', { input: singleFilePatch }));
+-		const past = text(getPastTenseMessage('git_apply_patch', 'Patch', { input: singleFilePatch }, true));
+-		assert.deepStrictEqual({ inv, past }, {
+-			inv: 'Editing [foo.ts](file:///repo/src/foo.ts)',
+-			past: 'Edited [foo.ts](file:///repo/src/foo.ts)',
+-		});
+-	});
+-
+-	test('failure still routes through the generic failed message', () => {
+-		assert.strictEqual(getPastTenseMessage('apply_patch', 'Patch', { input: singleFilePatch }, false), '"Patch" failed');
+-	});
+-
+-	test('getEditFilePath returns the first affected file from a patch body', () => {
+-		assert.strictEqual(getEditFilePath({ input: singleFilePatch }), '/repo/src/foo.ts');
+-		assert.strictEqual(getEditFilePath({ input: multiFilePatch }), '/repo/src/foo.ts');
+-		assert.strictEqual(getEditFilePath({ patch: singleFilePatch }), '/repo/src/foo.ts');
+-		assert.strictEqual(getEditFilePath(JSON.stringify({ input: singleFilePatch })), '/repo/src/foo.ts');
+-		assert.strictEqual(getEditFilePath({ input: 'not a patch' }), undefined);
+-	});
+-
+-	test('getEditFilePaths returns every affected file from a patch body', () => {
+-		assert.deepStrictEqual(getEditFilePaths({ input: singleFilePatch }), ['/repo/src/foo.ts']);
+-		assert.deepStrictEqual(getEditFilePaths({ input: multiFilePatch }), ['/repo/src/foo.ts', '/repo/src/bar.ts', '/repo/src/baz.ts']);
+-		assert.deepStrictEqual(getEditFilePaths({ patch: multiFilePatch }), ['/repo/src/foo.ts', '/repo/src/bar.ts', '/repo/src/baz.ts']);
+-		assert.deepStrictEqual(getEditFilePaths(JSON.stringify({ input: multiFilePatch })), ['/repo/src/foo.ts', '/repo/src/bar.ts', '/repo/src/baz.ts']);
+-		assert.deepStrictEqual(getEditFilePaths({ path: '/repo/src/edit.ts' }), ['/repo/src/edit.ts']);
+-		assert.deepStrictEqual(getEditFilePaths({ input: 'not a patch' }), []);
+-		assert.deepStrictEqual(getEditFilePaths(undefined), []);
+-		// SDK custom-tool format: arguments arrive as a raw V4A patch string,
+-		// not as a JSON object — exercise the string fallback path.
+-		assert.deepStrictEqual(getEditFilePaths(multiFilePatch), ['/repo/src/foo.ts', '/repo/src/bar.ts', '/repo/src/baz.ts']);
+-		assert.deepStrictEqual(getEditFilePaths(singleFilePatch), ['/repo/src/foo.ts']);
 -	});
 -});
