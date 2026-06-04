@@ -143,9 +143,13 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.npm
-          key: npm-${{ env.MS_COMMIT }}
+          # Include the .nvmrc hash so changing Node major automatically invalidates
+          # the cache. Without this, native modules built against the old Node
+          # (e.g. macos-alias from `npx create-dmg`, NODE_MODULE_VERSION 127 vs 137)
+          # survive a Node bump and crash with ERR_DLOPEN_FAILED.
+          key: npm-${{ hashFiles('.nvmrc') }}-${{ env.MS_COMMIT }}
           restore-keys: |
-            npm-
+            npm-${{ hashFiles('.nvmrc') }}-
 
       - name: Pin upstream VS Code (in-job, not committed)
         run: |
