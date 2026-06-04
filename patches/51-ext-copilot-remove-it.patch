@@ -7397,7 +7397,7 @@ index a5d5c783..00000000
 -	return (match?.[1] ?? trimmed).trim();
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
-index bf2d438e..37ff1b1c 100644
+index bf2d438e..967739e3 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 @@ -3,14 +3,11 @@
@@ -7415,7 +7415,7 @@ index bf2d438e..37ff1b1c 100644
  import { StringOrMarkdown } from '../../common/state/protocol/state.js';
  import { basename } from '../../../../base/common/resources.js';
  
-@@ -895,152 +892,7 @@ export function tryStringify(value: unknown): string | undefined {
+@@ -895,152 +892,3 @@ export function tryStringify(value: unknown): string | undefined {
  	}
  }
  
@@ -7457,10 +7457,10 @@ index bf2d438e..37ff1b1c 100644
 -	newFileContents?: string;
 -}
 -
- /** Safely extract a string value from an SDK field that may be `unknown` at runtime. */
- function str(value: unknown): string | undefined {
- 	return typeof value === 'string' ? value : undefined;
- }
+-/** Safely extract a string value from an SDK field that may be `unknown` at runtime. */
+-function str(value: unknown): string | undefined {
+-	return typeof value === 'string' ? value : undefined;
+-}
 -
 -/**
 - * Derives display fields from a permission request for the tool confirmation UI.
