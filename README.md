@@ -23,7 +23,7 @@ This repository produces a notarized `.dmg` from a local build environment, and 
 
 - macOS arm64 (Apple Silicon).
 - Xcode Command Line Tools — `xcode-select --install`.
-- Node 22.22.1 — install via `nvm install` from this directory (uses `.nvmrc`).
+- Node 24.15.0 — install via `nvm install` from this directory (uses `.nvmrc`).
 - Homebrew packages: `jq`, `librsvg` (only for icon regeneration), `imagemagick` (only for icon regeneration).
 - An Apple Developer Program membership.
 - A Developer ID Application certificate exported from Keychain Access as a `.p12` file.
