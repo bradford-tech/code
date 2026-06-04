@@ -43,7 +43,7 @@ index 92f3b6a4..420464b0 100644
 --- a/build/package-lock.json
 +++ b/build/package-lock.json
 @@ -51,3 +51,3 @@
-         "@vscode/ripgrep": "^1.17.1",
+         "@vscode/ripgrep-universal": "^1.18.0",
 -        "@vscode/vsce": "3.6.1",
 +        "@vscodium/vsce": "3.6.1-258428",
          "ansi-colors": "^3.2.3",
@@ -260,7 +260,7 @@ index 92f3b6a4..420464b0 100644
      },
 -    "node_modules/@vscode/vsce/node_modules/brace-expansion": {
 +    "node_modules/@vscodium/vsce/node_modules/brace-expansion": {
-       "version": "5.0.5",
+       "version": "5.0.6",
 @@ -2172,3 +2065,3 @@
      },
 -    "node_modules/@vscode/vsce/node_modules/chalk": {
@@ -349,7 +349,7 @@ index 4746ea2f..49867df9 100644
 --- a/build/package.json
 +++ b/build/package.json
 @@ -45,3 +45,3 @@
-     "@vscode/ripgrep": "^1.17.1",
+     "@vscode/ripgrep-universal": "^1.18.0",
 -    "@vscode/vsce": "3.6.1",
 +    "@vscodium/vsce": "3.6.1-258428",
      "ansi-colors": "^3.2.3",

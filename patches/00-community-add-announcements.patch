@@ -26,10 +26,10 @@ index 01778b2..615828d 100644
 +
  export class GettingStartedPage extends EditorPane {
 @@ -154,2 +158,4 @@ export class GettingStartedPage extends EditorPane {
- 	private gettingStartedList?: GettingStartedIndexList<IResolvedWalkthrough>;
+ 	private readonly gettingStartedList = this._register(new MutableDisposable<GettingStartedIndexList<IResolvedWalkthrough>>());
 +	private announcementList?: GettingStartedIndexList<AnnouncementEntry>;
 +	private announcementData?: AnnouncementEntry[];
- 
+
 @@ -880,2 +886,3 @@ export class GettingStartedPage extends EditorPane {
  		const gettingStartedList = this.buildGettingStartedWalkthroughsList();
 +		const announcementList = await this.buildAnnouncementList();

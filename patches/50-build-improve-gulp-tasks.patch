@@ -1,8 +1,8 @@
 diff --git a/build/gulpfile.vscode.ts b/build/gulpfile.vscode.ts
-index 3eecbad0..632a0dd4 100644
+index 88c66de6..386bbb0b 100644
 --- a/build/gulpfile.vscode.ts
 +++ b/build/gulpfile.vscode.ts
-@@ -28,7 +28,7 @@ import { getProductionDependencies } from './lib/dependencies.ts';
+@@ -25,7 +25,7 @@ import { getProductionDependencies } from './lib/dependencies.ts';
  import { config } from './lib/electron.ts';
  import { createAsar } from './lib/asar.ts';
  import minimist from 'minimist';
@@ -10,13 +10,12 @@ index 3eecbad0..632a0dd4 100644
 +import { compileBuildWithoutManglingTask } from './gulpfile.compile.ts';
  import { compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileAllExtensionsBuildTask, compileExtensionMediaBuildTask, cleanExtensionsBuildTask, compileCopilotExtensionBuildTask } from './gulpfile.extensions.ts';
  import { copyCodiconsTask } from './lib/compilation.ts';
- import { getCopilotExcludeFilter, prepareBuiltInCopilotRipgrepShim } from './lib/copilot.ts';
-@@ -680,26 +680,47 @@ BUILD_TARGETS.forEach(buildTarget => {
+ import { getCopilotExcludeFilter, getCopilotRuntimePrebuildFiles, getRipgrepExcludeFilter, prepareBuiltInCopilotRipgrepShim } from './lib/copilot.ts';
+@@ -655,26 +655,46 @@ BUILD_TARGETS.forEach(buildTarget => {
  					minified && useCdnSourceMapsForPackagingTasks ? `${sourceMappingURLBase}/core` : undefined
  				)
  			);
 -			vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
-+
 +			const prepackTask = task.define(`vscode${dashed(minified)}-prepack`, task.series(
  				copyCodiconsTask,
  				cleanExtensionsBuildTask,
@@ -24,7 +23,7 @@ index 3eecbad0..632a0dd4 100644
  				compileCopilotExtensionBuildTask,
  				compileExtensionMediaBuildTask,
 +			));
-+			gulp.task(prepackTask);
++			task.task(prepackTask);
 +
 +			const packingTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}-packing`, task.series(
  				writeISODate('out-build'),
@@ -32,7 +31,7 @@ index 3eecbad0..632a0dd4 100644
  				vscodeTaskCI
  			));
 -		} else {
-+			gulp.task(packingTask);
++			task.task(packingTask);
 +
  			vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
 -				minified ? compileBuildWithManglingTask : compileBuildWithoutManglingTask,
@@ -48,17 +47,17 @@ index 3eecbad0..632a0dd4 100644
  				compileExtensionMediaBuildTask,
  				minified ? minifyVSCodeTask : bundleVSCodeTask,
 +			));
-+			gulp.task(prepackTask);
++			task.task(prepackTask);
 +
 +			const packingTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}-packing`, task.series(
  				vscodeTaskCI
  			));
-+			gulp.task(packingTask);
++			task.task(packingTask);
 +
 +			vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
 +				prepackTask,
 +				packingTask,
 +			));
  		}
- 		gulp.task(vscodeTask);
+ 		task.task(vscodeTask);
  

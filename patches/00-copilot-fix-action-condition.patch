@@ -25,11 +25,10 @@ index c7020b52..bb69de4f 100644
  				)
  			}, {
  				id: MenuId.InlineChatEditorAffordance,
-diff --git a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
-index e65e58dc..b9f6049a 100644
---- a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
-+++ b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
-@@ -1547,7 +1547,7 @@ configurationRegistry.registerConfiguration({
+diff --git a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
+--- a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
++++ b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
+@@ -1672,7 +1672,7 @@ configurationRegistry.registerConfiguration({
  		[ChatConfiguration.AIDisabled]: {
  			type: 'boolean',
  			description: nls.localize('chat.disableAIFeatures', "Disable and hide built-in AI features provided by GitHub Copilot, including chat and inline suggestions."),
