@@ -1,0 +1,244 @@
+name: Claude build-failure fix
+
+on:
+  issues:
+    types: [labeled]
+  repository_dispatch:
+    types: [claude-build-fix-trigger]
+
+# One in-flight fix per issue. Newer triggers queue behind the current run so
+# the counter can't be misread, and so two events don't both spawn Claude.
+concurrency:
+  group: claude-build-fix-${{ github.event.issue.number || github.event.client_payload.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    # Path 1: human (or non-GITHUB_TOKEN actor) added `build-failure` to an issue.
+    # Path 2/3: cron workflow dispatched `claude-build-fix-trigger`.
+    if: |
+      (github.event_name == 'issues' && github.event.label.name == 'build-failure') ||
+      github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    # 45 min budget: Claude clones a fresh vscode/ (1-3 min shallow), dry-applies
+    # ~30 patches sequentially, analyzes failure logs, edits patch files, and
+    # pushes — with --max-turns 50 this can creep past 30 min on multi-patch
+    # breaks. Hitting the timeout still marks the attempt as consumed, so a
+    # tight cap accelerates needs-human on transient slowness.
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      # Resolve which issue number we're operating on and what failing run kicked
+      # this off. The fields live in different places on the two event payloads.
+      #
+      # SECURITY: repository_dispatch payloads are attacker-controllable by anyone
+      # with a token holding `repo` scope on this repo. BOTH dispatched fields
+      # flow into Claude's prompt template (lines further down) and so are a
+      # prompt-injection vector — newlines + "ignore prior instructions" text
+      # would be passed verbatim into Claude's context. We fail loudly on either:
+      #   - issue_number not purely numeric
+      #   - run_url not a recognizable GitHub Actions run URL
+      # The regex on run_url is intentionally tight: only the host (alphanumerics,
+      # dots, hyphens) and the GH Actions run path (alphanumerics, dots, slashes,
+      # hyphens, underscores ending in `/actions/runs/<digits>`). A newline or
+      # synthetic instruction text cannot match.
+      - name: Resolve issue number + run URL
+        id: ctx
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_FROM_LABEL: ${{ github.event.issue.number }}
+          ISSUE_FROM_DISPATCH: ${{ github.event.client_payload.issue_number }}
+          RUN_URL_FROM_DISPATCH: ${{ github.event.client_payload.run_url }}
+        run: |
+          set -eo pipefail
+          if [ "$EVENT_NAME" = "issues" ]; then
+            # github.event.issue.number is GitHub-generated, always numeric.
+            echo "issue_number=$ISSUE_FROM_LABEL" >> "$GITHUB_OUTPUT"
+            # No run URL on a human label-add; leave blank — Claude is told to
+            # fall back to `gh run list --workflow cron-build-and-release.yml`.
+            echo "run_url=" >> "$GITHUB_OUTPUT"
+          else
+            if ! printf '%s' "$ISSUE_FROM_DISPATCH" | grep -Eq '^[0-9]+$'; then
+              echo "::error::client_payload.issue_number is not a positive integer: '$ISSUE_FROM_DISPATCH'"
+              exit 1
+            fi
+            if ! printf '%s' "$RUN_URL_FROM_DISPATCH" | grep -Eq '^https://[A-Za-z0-9.-]+/[A-Za-z0-9._/-]+/actions/runs/[0-9]+$'; then
+              echo "::error::client_payload.run_url is not a GitHub Actions run URL: '$RUN_URL_FROM_DISPATCH'"
+              exit 1
+            fi
+            echo "issue_number=$ISSUE_FROM_DISPATCH" >> "$GITHUB_OUTPUT"
+            echo "run_url=$RUN_URL_FROM_DISPATCH" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Count prior attempt markers on the issue. The marker is an HTML comment
+      # so it never renders to the human reader but is greppable via the API.
+      # NOTE: the marker string `<!-- claude-build-fix-attempt -->` is also
+      # written below in the "Mark this attempt" step. Keep them in sync.
+      - name: Count prior fix attempts
+        id: count
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ steps.ctx.outputs.issue_number }}
+        run: |
+          # pipefail so a `gh` API failure doesn't silently leave $attempts blank
+          # and let the workflow no-op forever on the next dispatch.
+          set -eo pipefail
+          attempts=$(gh issue view "$ISSUE" --json comments \
+                       --jq '[.comments[] | select(.body | contains("<!-- claude-build-fix-attempt -->"))] | length')
+          attempt_num=$((attempts + 1))
+          echo "attempts=$attempts" >> "$GITHUB_OUTPUT"
+          echo "attempt_num=$attempt_num" >> "$GITHUB_OUTPUT"
+          echo "::notice::Prior attempts on issue #$ISSUE: $attempts (cap is 3)"
+
+      # Cap-hit branch: post the summary comment FIRST (audit record), then
+      # swap labels, then surface the terminal state on the Actions UI.
+      # Order matters: if the label PATCH fails after a successful comment, the
+      # next dispatch will hit the cap again and re-run this step idempotently.
+      # If we swapped labels first and the comment failed, the label would say
+      # "human owns this" with no explanatory record on the issue thread.
+      # The workflow itself still exits 0 — we don't want it filing a
+      # build-failure issue against itself.
+      - name: Give up at cap
+        if: fromJSON(steps.count.outputs.attempts) >= 3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ steps.ctx.outputs.issue_number }}
+          RUN_URL: ${{ steps.ctx.outputs.run_url }}
+        run: |
+          set -eo pipefail
+          # If we've already announced the cap on this issue, short-circuit:
+          # otherwise a human re-pushing to the fix PR (which re-fires
+          # report-pr-failure) would re-trigger this step on every iteration
+          # and append duplicate "Auto-fix loop stopped" comments forever.
+          # The `needs-human` label is the canonical signal that we already
+          # gave up; `gh issue view --json labels --jq` returns the list,
+          # `grep -qx` matches exact lines (so 'needs-human-review' or
+          # similar wouldn't false-positive).
+          if gh issue view "$ISSUE" --json labels --jq '.labels[].name' | grep -qx needs-human; then
+            echo "::notice::Cap already announced on issue #$ISSUE; skipping duplicate summary"
+            exit 0
+          fi
+          gh issue comment "$ISSUE" --body "$(cat <<EOF
+          Auto-fix loop stopped after 3 attempts.
+
+          Latest failing run: ${RUN_URL:-(see workflow history)}
+
+          Swapping label \`build-failure\` -> \`needs-human\`. A person needs to look at the fix PR (or open one manually). The three prior attempt markers are above; \`gh run list --workflow cron-build-and-release.yml --status failure\` shows what each iteration tried.
+          EOF
+          )"
+          # Defensively create `needs-human` so first-use on a repo without
+          # the label pre-defined doesn't fail the workflow. `|| true` covers
+          # the already-exists case across gh CLI versions.
+          gh label create needs-human --color FBCA04 --description "Auto-fix loop gave up; human needs to take it from here" 2>/dev/null || true
+          # Tolerate `build-failure` being already absent: on a re-trigger
+          # after the cap already swapped labels, the human may have removed
+          # the label or only the dispatch was re-fired. Either way, removing
+          # an absent label should not red-X the workflow.
+          gh issue edit "$ISSUE" --remove-label build-failure 2>/dev/null || true
+          gh issue edit "$ISSUE" --add-label needs-human
+          # Surface on the Actions run page itself — without this the workflow
+          # finishes green and three failed iterations + one give-up look like a
+          # successful run from the UI.
+          echo "::warning::Auto-fix cap reached on issue #$ISSUE; label swapped to needs-human"
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Cap reached on issue #$ISSUE
+
+          Auto-fix loop stopped after **3 attempts**. Label swapped from \`build-failure\` to \`needs-human\`.
+
+          - Latest failing run: ${RUN_URL:-(see workflow history)}
+          - Issue: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/issues/$ISSUE
+          EOF
+
+      # Below-cap branch: mark this attempt BEFORE invoking Claude, so a crash
+      # mid-action still counts. Avoids infinite-retry-on-transient-error.
+      # NOTE: the marker string `<!-- claude-build-fix-attempt -->` is also
+      # read above in the "Count prior fix attempts" step. Keep them in sync.
+      - name: Mark this attempt
+        if: fromJSON(steps.count.outputs.attempts) < 3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ATTEMPT_NUM: ${{ steps.count.outputs.attempt_num }}
+          ISSUE: ${{ steps.ctx.outputs.issue_number }}
+          RUN_URL: ${{ steps.ctx.outputs.run_url }}
+        run: |
+          set -eo pipefail
+          gh issue comment "$ISSUE" --body "$(cat <<EOF
+          <!-- claude-build-fix-attempt -->
+          Starting fix attempt ${ATTEMPT_NUM}/3 in run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}.
+          Triggering failure: ${RUN_URL:-(none, manual label add)}
+          EOF
+          )"
+
+      - name: Run Claude
+        if: fromJSON(steps.count.outputs.attempts) < 3
+        uses: anthropics/claude-code-action@593d7a5c4e0073569f74772c2b7b64c30ec14707 # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          settings: .github/claude-code-settings.json
+          # The superpowers plugin lives in the `claude-plugins-official`
+          # marketplace at github.com/anthropics/claude-plugins-official.
+          # NOT anthropics/claude-code (that's the CLI source repo, not a
+          # plugin marketplace) and NOT obra/superpowers (a personal mirror
+          # that diverges from the official set).
+          plugin_marketplaces: 'https://github.com/anthropics/claude-plugins-official.git'
+          plugins: 'superpowers@claude-plugins-official'
+          additional_permissions: |
+            actions: read
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --disallowedTools "Bash(gh pr merge:*),Bash(git push --force:*),Bash(git push --force-with-lease:*),Bash(git push -f:*)"
+          # Branch protection on `main` is the only meaningful guard against
+          # Claude pushing to / merging into main. The disallowedTools list
+          # above only blocks the most obvious force-push and gh-merge paths;
+          # it can't catch every refspec variant pointing at main (a previous
+          # attempt at `Bash(git push:*main*)` was syntactically dead — `:*` is
+          # only recognized at the end of a pattern, and no glob can cover
+          # every `git push origin <sha>:refs/heads/main` shape Claude could
+          # construct). Repo settings MUST keep branch protection on main:
+          # require PR review + status checks before merge. If protection is
+          # ever disabled, this loop loses its safety net.
+          prompt: |
+            /superpowers:systematic-debugging
+
+            A BradfordCode build has failed and we need to fix it.
+
+            Context:
+            - Issue: #${{ steps.ctx.outputs.issue_number }}
+            - Failing run: ${{ steps.ctx.outputs.run_url }}
+            - This is attempt ${{ steps.count.outputs.attempt_num }} of 3.
+
+            If the failing run URL above is empty, fall back to:
+              gh run list --workflow cron-build-and-release.yml --status failure --limit 1 --json databaseId,url
+
+            Follow systematic-debugging Phase 1 (root cause via `gh run view --log-failed`)
+            BEFORE proposing any fix. Common failure classes from prior incidents:
+              - patch apply rejections after upstream rebase (00-brand-remove-branding,
+                51-ext-copilot-remove-it, etc.)
+              - compile-src TypeScript errors from dangling references after our patches
+              - `vscode-min-prepack` ASCII hygiene check on non-ASCII regex literals
+              - native module ABI mismatch (NODE_MODULE_VERSION) after Node version bumps
+
+            Verify locally where possible using the dry-apply pattern in CLAUDE.md
+            (clone fresh vscode/ at the pinned commit, apply patches in CI order,
+            check for failures) BEFORE pushing.
+
+            Open a PR (or push to the existing fix PR for this issue) that addresses
+            the root cause.
+
+            Hard rules:
+              - Never push to main.
+              - Never force-push.
+              - Never merge.
+              - If opening a new PR, the PR body MUST contain the line:
+
+                  Refs #${{ steps.ctx.outputs.issue_number }}
+
+                on its own line. The cron's `report-pr-failure` job parses this line
+                to dispatch the next iteration; without it, the loop breaks.
