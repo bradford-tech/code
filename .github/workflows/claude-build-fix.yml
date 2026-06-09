@@ -197,6 +197,79 @@ jobs:
           EOF
           )"
 
+      # Pre-stage upstream vscode/ at the currently-pinned commit so Claude
+      # doesn't burn 3–5 min of its 45-min budget on the clone every iteration.
+      # The split between cache/restore and cache/save (instead of the combined
+      # actions/cache action) is deliberate: actions/cache auto-saves at job
+      # end, which would persist Claude's *patch-modified* vscode/ as the cache
+      # entry. Dry-apply on the next iteration would then start from a dirty
+      # state. Save explicitly here, right after the clone, so the cache always
+      # holds a clean pre-patch tree.
+      #
+      # Key is hashFiles('upstream/stable.json'): when Spencer (or Claude)
+      # bumps the pinned commit, the cache key changes and the next run does a
+      # fresh clone at the new commit. GitHub LRU-evicts old entries; the
+      # ~500MB-1GB vscode/ entries are well within the 10GB per-repo budget.
+      - name: Restore vscode/ cache
+        id: vscode_cache
+        if: fromJSON(steps.count.outputs.attempts) < 3
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: vscode
+          key: vscode-${{ hashFiles('upstream/stable.json') }}
+
+      # Cache miss → clone fresh. Partial clone + shallow fetch keeps the
+      # network cost to ~30–60s. If the failing build was actually against an
+      # upstream tag NEWER than what's pinned on main (cron fired on an
+      # advance before the auto-release PR merged), Claude can `git fetch
+      # --depth 1 origin <commit> && git checkout FETCH_HEAD` in place from
+      # this base — still much faster than a full re-clone.
+      - name: Pre-stage vscode/ at the pinned commit
+        if: |
+          fromJSON(steps.count.outputs.attempts) < 3 &&
+          steps.vscode_cache.outputs.cache-hit != 'true'
+        run: |
+          set -eo pipefail
+          # Defensive: if actions/cache/restore partially populated vscode/
+          # without reporting cache-hit (cache-service blip; rare but observed
+          # in the wild), the clone below would fail with "destination path
+          # 'vscode' already exists" and burn an attempt on infra noise.
+          rm -rf vscode
+          tag=$(jq -r '.tag' upstream/stable.json)
+          commit=$(jq -r '.commit' upstream/stable.json)
+          # Defensive shape check on values flowing into shell commands.
+          # upstream/stable.json is trusted (only `main` can write it), but
+          # validate anyway — cheap defense against a future supply-chain
+          # mishap that lands a crafted .tag/.commit value on main. The same
+          # values would otherwise be interpolated into `git fetch <commit>`
+          # and a notice log without escaping.
+          if ! printf '%s' "$tag" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::upstream/stable.json .tag is not semver-shaped: '$tag'"
+            exit 1
+          fi
+          if ! printf '%s' "$commit" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::upstream/stable.json .commit is not a 40-char hex SHA: '$commit'"
+            exit 1
+          fi
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/microsoft/vscode.git vscode
+          cd vscode
+          git fetch --depth 1 origin "$commit"
+          git checkout FETCH_HEAD
+          echo "::notice::vscode/ ready at tag $tag commit $commit ($(du -sh . | cut -f1))"
+
+      # Save the clean tree NOW, before Claude touches it. Skipped on cache
+      # hit (entry already exists; save would no-op anyway, but the explicit
+      # guard saves a 1–2s upload check).
+      - name: Save clean vscode/ to cache
+        if: |
+          fromJSON(steps.count.outputs.attempts) < 3 &&
+          steps.vscode_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: vscode
+          key: vscode-${{ hashFiles('upstream/stable.json') }}
+
       - name: Run Claude
         if: fromJSON(steps.count.outputs.attempts) < 3
         uses: anthropics/claude-code-action@593d7a5c4e0073569f74772c2b7b64c30ec14707 # v1
@@ -252,9 +325,14 @@ jobs:
               - `vscode-min-prepack` ASCII hygiene check on non-ASCII regex literals
               - native module ABI mismatch (NODE_MODULE_VERSION) after Node version bumps
 
-            Verify locally where possible using the dry-apply pattern in CLAUDE.md
-            (clone fresh vscode/ at the pinned commit, apply patches in CI order,
-            check for failures) BEFORE pushing.
+            The workflow has already staged `vscode/` for you at the commit
+            pinned in `upstream/stable.json` (partial clone, shallow fetch).
+            Use it directly for the dry-apply pattern in CLAUDE.md — apply
+            patches in CI order against the staged tree to confirm a fix
+            before pushing. If the failing build was against a NEWER upstream
+            tag than what's pinned, `cd vscode && git fetch --depth 1 origin
+            <commit> && git checkout FETCH_HEAD` to roll the staged tree
+            forward; it's faster than re-cloning.
 
             Open a PR (or push to the existing fix PR for this issue) that addresses
             the root cause.
