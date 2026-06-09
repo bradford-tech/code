@@ -80,6 +80,19 @@ jobs:
       # so it never renders to the human reader but is greppable via the API.
       # NOTE: the marker string `<!-- claude-build-fix-attempt -->` is also
       # written below in the "Mark this attempt" step. Keep them in sync.
+      #
+      # Two filters combine to close the channel:
+      #   1. author.login == "github-actions[bot]" — excludes human-pasted
+      #      markers AND markers in claude[bot]-authored PR comments.
+      #   2. body | startswith("<!-- claude-build-fix-attempt -->") — the
+      #      marker must be the FIRST line of the comment. Claude has
+      #      `gh issue comment` access (Bash is in the settings allowlist
+      #      with GH_TOKEN in the env), so if a Claude iteration quoted or
+      #      paraphrased a prior marker, the marker text would land on a
+      #      later line (Markdown blockquote prefix, intro sentence, etc.) —
+      #      `contains` would inflate the counter, `startswith` won't.
+      # The Mark this attempt step below preserves the "marker is first line"
+      # invariant. If you ever reorder its heredoc body, also revisit here.
       - name: Count prior fix attempts
         id: count
         env:
@@ -90,7 +103,10 @@ jobs:
           # and let the workflow no-op forever on the next dispatch.
           set -eo pipefail
           attempts=$(gh issue view "$ISSUE" --json comments \
-                       --jq '[.comments[] | select(.body | contains("<!-- claude-build-fix-attempt -->"))] | length')
+                       --jq '[.comments[]
+                              | select(.author.login == "github-actions[bot]")
+                              | select(.body | startswith("<!-- claude-build-fix-attempt -->"))]
+                              | length')
           attempt_num=$((attempts + 1))
           echo "attempts=$attempts" >> "$GITHUB_OUTPUT"
           echo "attempt_num=$attempt_num" >> "$GITHUB_OUTPUT"
@@ -159,6 +175,12 @@ jobs:
       # mid-action still counts. Avoids infinite-retry-on-transient-error.
       # NOTE: the marker string `<!-- claude-build-fix-attempt -->` is also
       # read above in the "Count prior fix attempts" step. Keep them in sync.
+      #
+      # INVARIANT: the marker MUST be the first line of the comment body.
+      # The counter step uses `startswith` to filter out cases where the
+      # marker text leaks into a Claude-paraphrased or human-quoted comment
+      # (where it would naturally land on a later line). Don't reorder the
+      # heredoc body to put a header line ahead of the marker.
       - name: Mark this attempt
         if: fromJSON(steps.count.outputs.attempts) < 3
         env:
@@ -181,11 +203,16 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           settings: .github/claude-code-settings.json
-          # The superpowers plugin lives in the `claude-plugins-official`
-          # marketplace at github.com/anthropics/claude-plugins-official.
-          # NOT anthropics/claude-code (that's the CLI source repo, not a
-          # plugin marketplace) and NOT obra/superpowers (a personal mirror
-          # that diverges from the official set).
+          # The superpowers plugin is published via the
+          # `claude-plugins-official` marketplace at
+          # github.com/anthropics/claude-plugins-official. That marketplace's
+          # manifest pins a specific commit of github.com/obra/superpowers
+          # (which is the actual source-of-truth repo for the skill). Using
+          # the marketplace ref here means we pick up whatever SHA Anthropic
+          # has curated; don't point at obra/superpowers directly unless you
+          # specifically need to bypass that curation.
+          # NOT anthropics/claude-code — that's the CLI source repo, not a
+          # plugin marketplace.
           plugin_marketplaces: 'https://github.com/anthropics/claude-plugins-official.git'
           plugins: 'superpowers@claude-plugins-official'
           additional_permissions: |

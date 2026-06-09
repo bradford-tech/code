@@ -47,6 +47,12 @@ concurrency:
   # not queue behind a 25-min macOS build). Cron + workflow_dispatch + push
   # events all collapse to refs/heads/main, preserving the original "don't
   # overlap cron runs" property.
+  #
+  # Note: `cancel-in-progress` is evaluated against the NEW event's context,
+  # not the in-flight run's. That's safe here because the group key already
+  # isolates cron (refs/heads/main) from per-PR runs (PR number) — a cron
+  # event can never land in the same concurrency group as a PR build, so
+  # turning cancel on for PRs can't cancel an in-flight cron run.
   group: cron-build-and-release-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -445,7 +451,22 @@ jobs:
           branch="release/${RELEASE_VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$branch"
+          # Idempotent: if a previous partial run of this job left the branch
+          # around (e.g. the gh-release call failed after the push), blow it
+          # away and recreate. Safe because RELEASE_VERSION is timestamp-derived
+          # per run, so the branch we'd overwrite came from this exact (failed)
+          # iteration — nothing a human could be tracking yet.
+          #
+          # Use ls-remote to distinguish "branch absent" (expected on first
+          # run, OK) from "delete failed" (auth, branch protection on
+          # release/**, etc — should fail loudly, not be swallowed by
+          # `|| true`). Without this check, a future branch-protection rule
+          # on release/** would surface as a confusing non-fast-forward
+          # error on the next `git push -u` instead of "couldn't delete".
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git push origin --delete "$branch"
+          fi
+          git checkout -B "$branch"
           git add upstream/stable.json versions/stable/darwin-arm64/latest.json
           git commit -m "chore(release): ${RELEASE_VERSION} (vscode ${MS_TAG})"
           git push -u origin "$branch"
@@ -535,12 +556,25 @@ jobs:
           \`.github/workflows/cron-build-and-release.yml\`.
           EOF
 
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "chore(release): ${RELEASE_VERSION} (vscode ${MS_TAG})" \
-            --label auto-release \
-            --body-file "$body_file"
+          # Idempotent: if an OPEN PR already exists for this branch, leave
+          # it in place rather than failing. Must filter on `--state open`
+          # explicitly — `gh pr view <branch>` doesn't filter by state and
+          # would return a closed PR. That matters here because the previous
+          # step ran `git push origin --delete "$branch"` which auto-closes
+          # any prior PR pointed at this branch. Falling for the closed PR
+          # would leave us with a release + branch but no open PR, and the
+          # next cron's `--state open` filter would never see it.
+          existing=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "::notice::Open PR #$existing already exists for $BRANCH; skipping create"
+          else
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "chore(release): ${RELEASE_VERSION} (vscode ${MS_TAG})" \
+              --label auto-release \
+              --body-file "$body_file"
+          fi
 
   report-failure:
     name: Open issue on failure
@@ -669,7 +703,12 @@ jobs:
             //     no dispatch needed, no red check. Reviewers shouldn't see a
             //     failing "Dispatch Claude fix loop" status on every WIP PR.
             const body = context.payload.pull_request.body || '';
-            const m = body.match(/Refs #(\d+)/);
+            // Anchor to a full line: `^…$` with the `m` flag matches the
+            // marker only when `Refs #<n>` is the entire line. Without `m`,
+            // a stray "...originally tracked in #5..." in prose would
+            // false-match and dispatch the loop against the wrong issue,
+            // silently desynchronizing the counter.
+            const m = body.match(/^Refs #(\d+)$/m);
             if (!m) {
               const author = context.payload.pull_request.user.login;
               if (author === 'claude[bot]') {

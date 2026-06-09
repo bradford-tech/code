@@ -38,4 +38,14 @@ jobs:
           track_progress: true
           additional_permissions: |
             actions: read
-          claude_args: '--model opus'
+          # Defense in depth. The actual guard against pushing changes back
+          # is the job-level `permissions: contents: read` above — even if
+          # Claude wrote files, it couldn't push them. Stripping
+          # Edit/Write/NotebookEdit here additionally prevents the
+          # code-review skill from calling those tools in response to a
+          # prompt-injection attempt in the PR body, keeping the session's
+          # behavior intent-aligned ("review only"). Bash stays allowed
+          # because the code-review skill uses `gh` to read the PR; note
+          # that Bash can still write files via `tee` / `sed -i` / `cat >`,
+          # but again, the contents: read permission keeps that local.
+          claude_args: '--model opus --disallowedTools "Edit,Write,NotebookEdit"'
