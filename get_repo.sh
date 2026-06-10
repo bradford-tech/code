@@ -92,6 +92,24 @@ fi
 echo "MS_TAG=\"${MS_TAG}\""
 echo "MS_COMMIT=\"${MS_COMMIT}\""
 
+# Verify the git tag is actually present in microsoft/vscode. The update API
+# sometimes announces a new release before the git tag is pushed to GitHub,
+# causing the fetch below to fail with the opaque "not our ref" error. If the
+# tag is present but points at a different commit than what the API reported
+# (e.g. after a force-push), adopt the git-authoritative hash since that is
+# what GitHub can serve.
+GIT_TAG_COMMIT=$( git ls-remote origin "refs/tags/${MS_TAG}" | awk '{print $1}' )
+if [[ -z "${GIT_TAG_COMMIT}" ]]; then
+  echo "Error: Tag ${MS_TAG} is not yet present in microsoft/vscode (update API announced commit ${MS_COMMIT})."
+  echo "Microsoft typically pushes the git tag within a few hours of the binary release."
+  echo "The next scheduled cron run will retry automatically."
+  exit 1
+fi
+if [[ "${GIT_TAG_COMMIT}" != "${MS_COMMIT}" ]]; then
+  echo "Warning: git tag ${MS_TAG} points at ${GIT_TAG_COMMIT}, not update-API hash ${MS_COMMIT}; using git-authoritative hash."
+  MS_COMMIT="${GIT_TAG_COMMIT}"
+fi
+
 git fetch --depth 1 origin "${MS_COMMIT}"
 git checkout FETCH_HEAD
 
