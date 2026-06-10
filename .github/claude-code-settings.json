@@ -13,7 +13,6 @@
   "autoMemoryEnabled": false,
   "includeGitInstructions": false,
   "feedbackSurveyRate": 0,
-  "model": "opus",
   "permissions": {
     "allow": [
       "Agent",
