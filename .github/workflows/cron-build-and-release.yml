@@ -117,10 +117,16 @@ jobs:
           #   into a different tag, or (b) be skipped entirely when upstream
           #   already matches the pin, leaving report-pr-failure dormant and the
           #   PR misleadingly green. See spec section "Architecture / PR builds".
-          # Cron (force_build=false): build only if upstream advanced past the pin
-          #   AND no auto-release PR is already pending for that upstream tag.
-          #   The PR guard avoids rebuilding the same version daily while the
-          #   release PR is waiting for human review.
+          # Cron (force_build=false): build only if upstream advanced past the
+          #   pin AND no auto-release PR is already pending for that upstream
+          #   tag AND microsoft/vscode has actually pushed the git tag. The PR
+          #   guard avoids rebuilding the same version daily while the release
+          #   PR is waiting for human review. The tag-existence guard catches
+          #   the MS update API announcing a release before the corresponding
+          #   git tag is pushed (typically a few-hour gap) — without it, the
+          #   build job spins up a macOS-15 runner for ~25 min only to fail at
+          #   `Clone VS Code source` (issue #10). get_repo.sh has the same
+          #   check as defense-in-depth; catching it here saves the runner.
           if [[ "$FORCE_BUILD" == "true" || "$EVENT_NAME" == "pull_request" ]]; then
             ms_tag="$CURRENT_TAG"
             ms_commit="$CURRENT_COMMIT"
@@ -131,7 +137,7 @@ jobs:
             # tag. `--search "$UPSTREAM_TAG in:title"` matches the title we set
             # in the release job ("chore(release): <RELEASE_VERSION> (vscode
             # <MS_TAG>)"). Empty result → field is absent in jq output → falls
-            # through to the build branch.
+            # through to the next guard.
             existing_pr=$(gh pr list \
               --state open \
               --label auto-release \
@@ -143,6 +149,17 @@ jobs:
               ms_commit="$CURRENT_COMMIT"
               needs_build=false
               reason="open auto-release PR #$existing_pr already pins $UPSTREAM_TAG; awaiting human merge"
+            # Tag-existence guard: wire-protocol query against microsoft/vscode
+            # (no clone, ~1s). git ls-remote prints `<sha> refs/tags/<tag>` if
+            # the ref exists, nothing otherwise — `grep -q .` distinguishes.
+            # A network failure surfaces as step failure (set -eo pipefail is
+            # GitHub Actions' default for `run:` blocks), not a silent skip,
+            # so a real outage doesn't quietly stop daily builds.
+            elif ! git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$UPSTREAM_TAG" | grep -q .; then
+              ms_tag="$CURRENT_TAG"
+              ms_commit="$CURRENT_COMMIT"
+              needs_build=false
+              reason="update API announced $UPSTREAM_TAG but microsoft/vscode hasn't pushed the tag yet; next cron will retry"
             else
               ms_tag="$UPSTREAM_TAG"
               ms_commit="$UPSTREAM_COMMIT"
