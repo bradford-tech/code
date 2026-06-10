@@ -83,7 +83,7 @@ jobs:
       # written below in the "Mark this attempt" step. Keep them in sync.
       #
       # Two filters combine to close the channel:
-      #   1. author.login == "github-actions[bot]" — excludes human-pasted
+      #   1. user.login == "github-actions[bot]" — excludes human-pasted
       #      markers AND markers in claude[bot]-authored PR comments.
       #   2. body | startswith("<!-- claude-build-fix-attempt -->") — the
       #      marker must be the FIRST line of the comment. Claude has
@@ -94,6 +94,15 @@ jobs:
       #      `contains` would inflate the counter, `startswith` won't.
       # The Mark this attempt step below preserves the "marker is first line"
       # invariant. If you ever reorder its heredoc body, also revisit here.
+      #
+      # Why raw REST instead of `gh issue view --json comments`: `gh` normalizes
+      # bot logins by stripping the `[bot]` suffix (`github-actions[bot]` becomes
+      # `github-actions`). The author-scoping filter was silently never matching
+      # — counter always returned 0, cap was effectively disabled. The raw API
+      # preserves the canonical `[bot]`-suffixed login on `.user.login`, which
+      # also matches the GitHub UI's attribution and what every other GitHub
+      # actor-filter in this org keys on. --paginate handles any issue thread
+      # with >30 comments (the per-page default) so the counter doesn't undercount.
       - name: Count prior fix attempts
         id: count
         env:
@@ -103,9 +112,9 @@ jobs:
           # pipefail so a `gh` API failure doesn't silently leave $attempts blank
           # and let the workflow no-op forever on the next dispatch.
           set -eo pipefail
-          attempts=$(gh issue view "$ISSUE" --json comments \
-                       --jq '[.comments[]
-                              | select(.author.login == "github-actions[bot]")
+          attempts=$(gh api "/repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --paginate \
+                       --jq '[.[]
+                              | select(.user.login == "github-actions[bot]")
                               | select(.body | startswith("<!-- claude-build-fix-attempt -->"))]
                               | length')
           attempt_num=$((attempts + 1))
