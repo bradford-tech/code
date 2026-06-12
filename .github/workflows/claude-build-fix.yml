@@ -302,7 +302,7 @@ jobs:
           additional_permissions: |
             actions: read
           claude_args: |
-            --model sonnet
+            --model opus
             --max-turns 50
             --disallowedTools "Bash(gh pr merge:*),Bash(git push --force:*),Bash(git push --force-with-lease:*),Bash(git push -f:*)"
           # Branch protection on `main` is the only meaningful guard against
@@ -344,6 +344,30 @@ jobs:
             tag than what's pinned, `cd vscode && git fetch --depth 1 origin
             <commit> && git checkout FETCH_HEAD` to roll the staged tree
             forward; it's faster than re-cloning.
+
+            Two anti-patterns from prior iterations to avoid (1.124.0 hit both):
+
+            1. Opening duplicate orphan PRs. Before opening a new PR, look
+               for an existing fix PR tracking this issue:
+                 gh pr list \
+                   --search "Refs #${{ steps.ctx.outputs.issue_number }} in:body state:open" \
+                   --json number,headRefName,author --jq '.[]'
+               If one exists AND its author is `claude[bot]`, push your
+               commit to ITS head ref instead of opening another PR:
+                 git fetch origin && git switch <headRefName> && git push
+               Each duplicate PR splits attempts across orphan branches that
+               can never be merged together — the cap is hit before either
+               branch carries all the fixes.
+
+            2. Fixing only the first broken patch. `prepare_vscode.sh` halts
+               on the first patch-apply failure, so the failing log shows
+               ONE rejection — but patches later in CI order may also be
+               broken for the same upstream reason. Use the dry-apply
+               pattern in CLAUDE.md to enumerate EVERY broken patch in one
+               session, then commit all rebases together. With a 3-attempt
+               cap, per-patch sequential iteration cannot converge for
+               multi-break upstream releases (1.124.0 broke patches 11 AND
+               20; each got its own PR, neither was mergeable).
 
             Open a PR (or push to the existing fix PR for this issue) that addresses
             the root cause.
