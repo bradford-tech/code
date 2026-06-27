@@ -1,5 +1,5 @@
 diff --git a/.npmrc b/.npmrc
-index 8c21e58ef14..25a93f408ad 100644
+index 8c21e58e..25a93f40 100644
 --- a/.npmrc
 +++ b/.npmrc
 @@ -4,5 +4,6 @@ ms_build_id="14159160"
@@ -10,7 +10,7 @@ index 8c21e58ef14..25a93f408ad 100644
  legacy-peer-deps="true"
  timeout=180000
 diff --git a/build/.moduleignore b/build/.moduleignore
-index 90780acffa9..b226373f632 100644
+index 8eb8da15..da57545b 100644
 --- a/build/.moduleignore
 +++ b/build/.moduleignore
 @@ -63,11 +63,11 @@ fsevents/test/**
@@ -31,10 +31,10 @@ index 90780acffa9..b226373f632 100644
  native-is-elevated/binding.gyp
  native-is-elevated/build/**
 diff --git a/eslint.config.js b/eslint.config.js
-index fda37713fee..a2150a119a6 100644
+index 51b085ee..938419e2 100644
 --- a/eslint.config.js
 +++ b/eslint.config.js
-@@ -1530,7 +1530,7 @@ export default defineConfig(
+@@ -1561,7 +1561,7 @@ export default defineConfig(
  						'inspector',
  						'minimist',
  						'node:module',
@@ -44,7 +44,7 @@ index fda37713fee..a2150a119a6 100644
  						'node-pty',
  						'os',
 diff --git a/package-lock.json b/package-lock.json
-index 38d50ffa4de..cad1ae14f2c 100644
+index 81d315f0..1d99e154 100644
 --- a/package-lock.json
 +++ b/package-lock.json
 @@ -41,6 +41,7 @@
@@ -52,10 +52,10 @@ index 38d50ffa4de..cad1ae14f2c 100644
          "@vscode/windows-process-tree": "^0.7.0",
          "@vscode/windows-registry": "^1.2.0",
 +        "@vscodium/native-keymap": "3.3.7-258424",
-         "@xterm/addon-clipboard": "^0.3.0-beta.220",
-         "@xterm/addon-image": "^0.10.0-beta.220",
-         "@xterm/addon-ligatures": "^0.11.0-beta.220",
-@@ -59,7 +60,6 @@
+         "@xterm/addon-clipboard": "^0.3.0-beta.285",
+         "@xterm/addon-image": "^0.10.0-beta.285",
+         "@xterm/addon-ligatures": "^0.11.0-beta.285",
+@@ -60,7 +61,6 @@
          "kerberos": "2.1.1",
          "minimist": "^1.2.8",
          "native-is-elevated": "0.9.0",
@@ -63,7 +63,7 @@ index 38d50ffa4de..cad1ae14f2c 100644
          "node-addon-api": "^6.0.0",
          "node-pty": "^1.2.0-beta.13",
          "open": "^10.1.2",
-@@ -4466,6 +4466,13 @@
+@@ -4496,6 +4496,13 @@
        "hasInstallScript": true,
        "license": "MIT"
      },
@@ -77,7 +77,7 @@ index 38d50ffa4de..cad1ae14f2c 100644
      "node_modules/@webgpu/types": {
        "version": "0.1.66",
        "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.66.tgz",
-@@ -14114,9 +14121,10 @@
+@@ -14157,9 +14164,10 @@
        }
      },
      "node_modules/napi-build-utils": {
@@ -91,7 +91,7 @@ index 38d50ffa4de..cad1ae14f2c 100644
      },
      "node_modules/native-is-elevated": {
        "version": "0.9.0",
-@@ -14125,13 +14133,6 @@
+@@ -14168,13 +14176,6 @@
        "hasInstallScript": true,
        "license": "MIT"
      },
@@ -105,7 +105,7 @@ index 38d50ffa4de..cad1ae14f2c 100644
      "node_modules/natural-compare": {
        "version": "1.4.0",
        "resolved": "https://registry.npmjs.org/natural-compare/-/natural-compare-1.4.0.tgz",
-@@ -15526,16 +15527,17 @@
+@@ -15580,16 +15581,17 @@
        "license": "ISC"
      },
      "node_modules/prebuild-install": {
@@ -128,10 +128,10 @@ index 38d50ffa4de..cad1ae14f2c 100644
          "pump": "^3.0.0",
          "rc": "^1.2.7",
 diff --git a/package.json b/package.json
-index a43d079633a..508acdfb4dd 100644
+index 36485330..2a5830cd 100644
 --- a/package.json
 +++ b/package.json
-@@ -141,7 +141,7 @@
+@@ -144,7 +144,7 @@
      "kerberos": "2.1.1",
      "minimist": "^1.2.8",
      "native-is-elevated": "0.9.0",
@@ -141,7 +141,7 @@ index a43d079633a..508acdfb4dd 100644
      "node-pty": "^1.2.0-beta.13",
      "open": "^10.1.2",
 diff --git a/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts b/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
-index 9b11a712c25..975c312747a 100644
+index 9b11a712..975c3127 100644
 --- a/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
 +++ b/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
 @@ -42,12 +42,12 @@ flakySuite('Native Modules (all platforms)', () => {
@@ -162,7 +162,7 @@ index 9b11a712c25..975c312747a 100644
  
  	test('@vscode/native-watchdog', async () => {
 diff --git a/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts b/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts
-index 8950ce2184a..f31cea623bc 100644
+index 8950ce21..f31cea62 100644
 --- a/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts
 +++ b/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts
 @@ -3,7 +3,7 @@
