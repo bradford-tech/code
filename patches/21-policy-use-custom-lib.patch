@@ -341,7 +341,7 @@ index 6039dbb7..6fe3fe47 100644
  					c();
  				});
 diff --git a/src/vs/platform/policy/node/copilotManagedSettingsService.ts b/src/vs/platform/policy/node/copilotManagedSettingsService.ts
-index 5b76979d..40abf52e 100644
+index 5b76979d..d8223ab9 100644
 --- a/src/vs/platform/policy/node/copilotManagedSettingsService.ts
 +++ b/src/vs/platform/policy/node/copilotManagedSettingsService.ts
 @@ -11,7 +11,7 @@ import { IManagedSettingsPolicyDefinitions, ManagedSettingsData } from '../../..
@@ -353,12 +353,27 @@ index 5b76979d..40abf52e 100644
  
  export interface ICopilotPolicyWatcherOptions {
  	readonly registryPath?: string;
-@@ -89,7 +89,7 @@ export class CopilotManagedSettingsService extends Disposable implements ICopilo
+@@ -89,7 +89,22 @@ export class CopilotManagedSettingsService extends Disposable implements ICopilo
  			return;
  		}
  
 -		const { createWatcher } = this.watcherFactory ? { createWatcher: this.watcherFactory } : (await import('@vscode/policy-watcher') as { createWatcher: CopilotPolicyWatcherFactory });
-+		const { createWatcher } = this.watcherFactory ? { createWatcher: this.watcherFactory } : (await import('@vscodium/policy-watcher') as { createWatcher: CopilotPolicyWatcherFactory });
++		let createWatcher: CopilotPolicyWatcherFactory;
++		if (this.watcherFactory) {
++			createWatcher = this.watcherFactory;
++		} else {
++			const policyWatcher = await import('@vscodium/policy-watcher');
++			// `@vscodium/policy-watcher`'s `createWatcher` takes a leading vendor name
++			// and no options argument, unlike upstream `@vscode/policy-watcher`; adapt
++			// it to this service's CopilotPolicyWatcherFactory shape.
++			const createNativeWatcher = policyWatcher.createWatcher as unknown as (
++				vendorName: string,
++				productName: string,
++				policies: Record<string, { type: 'string' | 'number' | 'boolean' }>,
++				onDidChange: (update: Record<string, PolicyValue | undefined>) => void,
++			) => Watcher;
++			createWatcher = (productName, policies, onDidChange) => createNativeWatcher('BradfordCode', productName, policies, onDidChange);
++		}
  		await this.throttler.queue(() => new Promise<void>((c, e) => {
  			try {
  				this.logService.trace(`Creating Copilot managed-settings watcher for productName ${this.productName}`);
