@@ -340,3 +340,25 @@ index 6039dbb7..6fe3fe47 100644
  					this._onDidPolicyChange(update);
  					c();
  				});
+diff --git a/src/vs/platform/policy/node/copilotManagedSettingsService.ts b/src/vs/platform/policy/node/copilotManagedSettingsService.ts
+index 5b76979d..40abf52e 100644
+--- a/src/vs/platform/policy/node/copilotManagedSettingsService.ts
++++ b/src/vs/platform/policy/node/copilotManagedSettingsService.ts
+@@ -11,7 +11,7 @@ import { IManagedSettingsPolicyDefinitions, ManagedSettingsData } from '../../..
+ import { ILogService } from '../../log/common/log.js';
+ import { collectManagedSettingsDefinitions, ICopilotManagedSettingsService } from '../common/copilotManagedSettings.js';
+ import { PolicyDefinition, PolicyValue } from '../common/policy.js';
+-import type { Watcher } from '@vscode/policy-watcher';
++import type { Watcher } from '@vscodium/policy-watcher';
+ 
+ export interface ICopilotPolicyWatcherOptions {
+ 	readonly registryPath?: string;
+@@ -89,7 +89,7 @@ export class CopilotManagedSettingsService extends Disposable implements ICopilo
+ 			return;
+ 		}
+ 
+-		const { createWatcher } = this.watcherFactory ? { createWatcher: this.watcherFactory } : (await import('@vscode/policy-watcher') as { createWatcher: CopilotPolicyWatcherFactory });
++		const { createWatcher } = this.watcherFactory ? { createWatcher: this.watcherFactory } : (await import('@vscodium/policy-watcher') as { createWatcher: CopilotPolicyWatcherFactory });
+ 		await this.throttler.queue(() => new Promise<void>((c, e) => {
+ 			try {
+ 				this.logService.trace(`Creating Copilot managed-settings watcher for productName ${this.productName}`);

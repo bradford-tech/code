@@ -9421,7 +9421,7 @@ index 3a4c2d71..f596430b 100644
 +// `PermissionRequest` originally came from '@github/copilot-sdk' (removed in
 +// !!APP_NAME!!). Only its `kind` discriminator is referenced here, so model it
 +// as a minimal local shape.
-+type PermissionRequest = { kind: string };
++type PermissionRequest = { kind: 'shell' | 'write' | 'mcp' | 'read' | 'url' | 'custom-tool' | 'hook' | 'memory' | 'extension-management' | 'extension-permission-access' };
  import { hasKey } from '../../../../base/common/types.js';
  import { URI } from '../../../../base/common/uri.js';
  import { appendEscapedMarkdownInlineCode, escapeMarkdownLinkLabel, MarkdownString } from '../../../../base/common/htmlContent.js';
