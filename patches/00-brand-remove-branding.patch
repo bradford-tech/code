@@ -136,7 +136,7 @@ index 1be4d0e1..d60d8357 100644
 -export const redundantImplicitActivationEvent = l10n.t("This activation event can be removed as VS Code generates these automatically from your package.json contribution declarations.");
 +export const redundantImplicitActivationEvent = l10n.t("This activation event can be removed as !!APP_NAME!! generates these automatically from your package.json contribution declarations.");
 diff --git a/extensions/extension-editing/src/extensionLinter.ts b/extensions/extension-editing/src/extensionLinter.ts
-index 00b153a4..b81b6428 100644
+index a6ab287a..dc928226 100644
 --- a/extensions/extension-editing/src/extensionLinter.ts
 +++ b/extensions/extension-editing/src/extensionLinter.ts
 @@ -32,7 +32,7 @@ const embeddedSvgsNotValid = l10n.t("Embedded SVGs are not a valid image source.
@@ -145,9 +145,9 @@ index 00b153a4..b81b6428 100644
  const relativeBadgeUrlRequiresHttpsRepository = l10n.t("Relative badge URLs require a repository with HTTPS protocol to be specified in this package.json.");
 -const apiProposalNotListed = l10n.t("This proposal cannot be used because for this extension the product defines a fixed set of API proposals. You can test your extension but before publishing you MUST reach out to the VS Code team.");
 +const apiProposalNotListed = l10n.t("This proposal cannot be used because for this extension the product defines a fixed set of API proposals. You can test your extension but before publishing you MUST reach out to the !!APP_NAME!! team.");
+ const apiProposalVersionNotSupported = l10n.t("API proposal versions are no longer supported. Remove the '@<version>' suffix.");
  
  const starActivation = l10n.t("Using '*' activation is usually a bad idea as it impacts performance.");
- const parsingErrorHeader = l10n.t("Error parsing the when-clause:");
 diff --git a/extensions/git/package.nls.json b/extensions/git/package.nls.json
 index 147a75f9..33aeb0d4 100644
 --- a/extensions/git/package.nls.json
@@ -548,7 +548,7 @@ index 032dd35d..0b893063 100644
  				"mimeTypes": [
  					"image/gif",
 diff --git a/extensions/npm/package.nls.json b/extensions/npm/package.nls.json
-index 1235a551..451c90f0 100644
+index 5c77708d..8a988891 100644
 --- a/extensions/npm/package.nls.json
 +++ b/extensions/npm/package.nls.json
 @@ -1,6 +1,6 @@
@@ -640,7 +640,7 @@ index a697f8c0..f55ecc02 100644
 +	"walkthroughs.nodejsWelcome.learnMoreAboutJs.altText": "Learn more about JavaScript and Node.js in !!APP_NAME!!."
  }
 diff --git a/extensions/typescript-language-features/src/tsServer/versionManager.ts b/extensions/typescript-language-features/src/tsServer/versionManager.ts
-index 8d99637d..5114c543 100644
+index 1154a29c..a42a1d25 100644
 --- a/extensions/typescript-language-features/src/tsServer/versionManager.ts
 +++ b/extensions/typescript-language-features/src/tsServer/versionManager.ts
 @@ -110,7 +110,7 @@ export class TypeScriptVersionManager extends Disposable {
@@ -822,10 +822,10 @@ index a351aa77..8d4e933d 100644
  	}
  	return Promise.resolve(extractDir);
 diff --git a/extensions/vscode-test-resolver/src/extension.ts b/extensions/vscode-test-resolver/src/extension.ts
-index 373c8809..a8af4574 100644
+index 5c9b4785..dfe21380 100644
 --- a/extensions/vscode-test-resolver/src/extension.ts
 +++ b/extensions/vscode-test-resolver/src/extension.ts
-@@ -209,7 +209,7 @@ export function activate(context: vscode.ExtensionContext) {
+@@ -213,7 +213,7 @@ export function activate(context: vscode.ExtensionContext) {
  				let serverLocation = env['VSCODE_REMOTE_SERVER_PATH']; // support environment variable to specify location of server on disk
  				if (!serverLocation) {
  					const serverBin = path.join(remoteDataDir, 'bin');
@@ -835,10 +835,10 @@ index 373c8809..a8af4574 100644
  				}
  
 diff --git a/src/main.ts b/src/main.ts
-index e92fe6af..48d1734c 100644
+index f70cf87e..a3aa84bf 100644
 --- a/src/main.ts
 +++ b/src/main.ts
-@@ -415,16 +415,16 @@ function createDefaultArgvConfigSync(argvConfigPath: string): void {
+@@ -419,16 +419,16 @@ function createDefaultArgvConfigSync(argvConfigPath: string): void {
  
  		// Default argv content
  		const defaultArgvConfigContent = [
@@ -859,10 +859,10 @@ index e92fe6af..48d1734c 100644
  			'}'
  		];
 diff --git a/src/vs/code/electron-main/app.ts b/src/vs/code/electron-main/app.ts
-index 9a1041f1..50934b0c 100644
+index 811673d0..6860fa57 100644
 --- a/src/vs/code/electron-main/app.ts
 +++ b/src/vs/code/electron-main/app.ts
-@@ -604,7 +604,7 @@ export class CodeApplication extends Disposable {
+@@ -608,7 +608,7 @@ export class CodeApplication extends Disposable {
  	}
  
  	async startup(): Promise<void> {
@@ -928,22 +928,6 @@ index 6eefd716..4e8cb6af 100644
  				}
  			}
  
-diff --git a/src/vs/platform/extensions/common/extensionValidator.ts b/src/vs/platform/extensions/common/extensionValidator.ts
-index 6346b9d4..7b2c68de 100644
---- a/src/vs/platform/extensions/common/extensionValidator.ts
-+++ b/src/vs/platform/extensions/common/extensionValidator.ts
-@@ -378,9 +378,9 @@ export function areApiProposalsCompatible(apiProposals: string[], arg1?: string[
- 	if (incompatibleProposals.length) {
- 		if (notices) {
- 			if (incompatibleProposals.length === 1) {
--				notices.push(nls.localize('apiProposalMismatch1', "This extension is using the API proposal '{0}' that is not compatible with the current version of VS Code.", incompatibleProposals[0]));
-+				notices.push(nls.localize('apiProposalMismatch1', "This extension is using the API proposal '{0}' that is not compatible with the current version of !!APP_NAME!!.", incompatibleProposals[0]));
- 			} else {
--				notices.push(nls.localize('apiProposalMismatch2', "This extension is using the API proposals {0} and '{1}' that are not compatible with the current version of VS Code.",
-+				notices.push(nls.localize('apiProposalMismatch2', "This extension is using the API proposals {0} and '{1}' that are not compatible with the current version of !!APP_NAME!!.",
- 					incompatibleProposals.slice(0, incompatibleProposals.length - 1).map(p => `'${p}'`).join(', '),
- 					incompatibleProposals[incompatibleProposals.length - 1]));
- 			}
 diff --git a/src/vs/platform/externalTerminal/node/externalTerminalService.ts b/src/vs/platform/externalTerminal/node/externalTerminalService.ts
 index e7cf3f54..ac295f0a 100644
 --- a/src/vs/platform/externalTerminal/node/externalTerminalService.ts
@@ -1102,7 +1086,7 @@ index 0d713847..33749645 100644
  		disposables.add(extHostNotebooks.onDidChangeActiveNotebookEditor(() => count += 1));
  
 diff --git a/src/vs/workbench/browser/actions/developerActions.ts b/src/vs/workbench/browser/actions/developerActions.ts
-index cdc59743..b4e742f9 100644
+index ee85640c..bddb01c5 100644
 --- a/src/vs/workbench/browser/actions/developerActions.ts
 +++ b/src/vs/workbench/browser/actions/developerActions.ts
 @@ -688,7 +688,7 @@ class PolicyDiagnosticsAction extends Action2 {
@@ -1141,10 +1125,10 @@ index e342f838..98e500bc 100644
  		created = true;
  	}
 diff --git a/src/vs/workbench/browser/workbench.contribution.ts b/src/vs/workbench/browser/workbench.contribution.ts
-index eeddba00..fd4e677f 100644
+index f2a3b35e..1fecb536 100644
 --- a/src/vs/workbench/browser/workbench.contribution.ts
 +++ b/src/vs/workbench/browser/workbench.contribution.ts
-@@ -827,7 +827,7 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
+@@ -833,7 +833,7 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
  		localize('rootNameShort', "`${rootNameShort}`: shortened name of the workspace without suffixes (e.g. myFolder, myRemoteFolder or myWorkspace)."),
  		localize('rootPath', "`${rootPath}`: file path of the opened workspace or folder (e.g. /Users/Development/myWorkspace)."),
  		localize('profileName', "`${profileName}`: name of the profile in which the workspace is opened (e.g. Data Science (Profile)). Ignored if default profile is used."),
@@ -1154,7 +1138,7 @@ index eeddba00..fd4e677f 100644
  		localize('dirty', "`${dirty}`: an indicator for when the active editor has unsaved changes."),
  		localize('focusedView', "`${focusedView}`: the name of the view that is currently focused."),
 diff --git a/src/vs/workbench/common/contextkeys.ts b/src/vs/workbench/common/contextkeys.ts
-index c650e128..802a5f21 100644
+index 51a4a3f2..0e3b27dc 100644
 --- a/src/vs/workbench/common/contextkeys.ts
 +++ b/src/vs/workbench/common/contextkeys.ts
 @@ -38,7 +38,7 @@ export const HasWebFileSystemAccess = new RawContextKey<boolean>('hasWebFileSyst
@@ -1167,10 +1151,10 @@ index c650e128..802a5f21 100644
  //#endregion
  
 diff --git a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-index f97bccf1..bb326157 100644
+index 883dab9e..3fcf5140 100644
 --- a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-@@ -734,7 +734,7 @@ configurationRegistry.registerConfiguration({
+@@ -802,7 +802,7 @@ configurationRegistry.registerConfiguration({
  			],
  			enumDescriptions: [
  				nls.localize('chat.mcp.access.none', "No access to MCP servers."),
@@ -1179,7 +1163,7 @@ index f97bccf1..bb326157 100644
  				nls.localize('chat.mcp.access.any', "Allow access to any installed MCP server.")
  			],
  			default: McpAccessValue.All,
-@@ -761,7 +761,7 @@ configurationRegistry.registerConfiguration({
+@@ -829,7 +829,7 @@ configurationRegistry.registerConfiguration({
  							key: 'chat.mcp.access.none', value: nls.localize('chat.mcp.access.none', "No access to MCP servers."),
  						},
  						{
@@ -1265,10 +1249,10 @@ index 0b9ced32..b5ed7134 100644
  					},
  					'preLaunchTask': {
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-index 695b1ed1..d886ff59 100644
+index 0c0965d3..f4b0faef 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-@@ -380,24 +380,24 @@ CommandsRegistry.registerCommand({
+@@ -417,24 +417,24 @@ CommandsRegistry.registerCommand({
  			{
  				name: 'options',
  				description: '(optional) Options for installing the extension. Object with the following properties: ' +
@@ -1297,7 +1281,7 @@ index 695b1ed1..d886ff59 100644
  							default: false
  						},
  						'justification': {
-@@ -922,8 +922,8 @@ class ExtensionsContributions extends Disposable implements IWorkbenchContributi
+@@ -959,8 +959,8 @@ class ExtensionsContributions extends Disposable implements IWorkbenchContributi
  				if (requireReload) {
  					notificationService.prompt(
  						Severity.Info,
@@ -1309,7 +1293,7 @@ index 695b1ed1..d886ff59 100644
  							label: localize('InstallVSIXAction.reloadNow', "Reload Now"),
  							run: () => hostService.reload()
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensionsActions.ts b/src/vs/workbench/contrib/extensions/browser/extensionsActions.ts
-index 37b94354..3d1916fd 100644
+index 452db88d..282c9b5a 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensionsActions.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensionsActions.ts
 @@ -107,7 +107,7 @@ export class PromptExtensionInstallFailureAction extends Action {
@@ -1349,10 +1333,10 @@ index 37b94354..3d1916fd 100644
  				const message = new MarkdownString(localize('deprecated tooltip', "This extension is deprecated as it is no longer being maintained."));
  				if (this.extension.deprecationInfo.additionalInfo) {
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
-index 43d2b947..2a89a908 100644
+index a58d77d1..cc5004c7 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
-@@ -478,7 +478,7 @@ export class Extension implements IExtension {
+@@ -477,7 +477,7 @@ export class Extension implements IExtension {
  
  		if (this.type === ExtensionType.System) {
  			return Promise.resolve(`# ${this.displayName || this.name}
@@ -1361,7 +1345,7 @@ index 43d2b947..2a89a908 100644
  ## Features
  ${this.description}
  `);
-@@ -516,7 +516,7 @@ ${this.description}
+@@ -515,7 +515,7 @@ ${this.description}
  		}
  
  		if (this.type === ExtensionType.System) {
@@ -1578,7 +1562,7 @@ index c43718e3..ca17a601 100644
  	fi
  	# Remove any leftover Python activation env vars.
 diff --git a/src/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish b/src/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish
-index 6cff7487..37c8342b 100644
+index f87fc762..15ffe678 100644
 --- a/src/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish
 +++ b/src/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish
 @@ -92,7 +92,7 @@ if not set -q VSCODE_PYTHON_AUTOACTIVATE_GUARD
@@ -2026,7 +2010,7 @@ index 168a3d01..fd76dda2 100644
  				},
  				{
 diff --git a/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts b/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts
-index ad276fc2..90e1e643 100644
+index c1fb3e12..4bbf4eb3 100644
 --- a/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts
 +++ b/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts
 @@ -180,7 +180,7 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
@@ -2079,7 +2063,7 @@ index bdd30bf2..cc397e9c 100644
  - Work with version control by pressing kb(workbench.view.scm). Understand how to stage, commit, change branches, and view diffs and more by reviewing the [version control documentation](https://code.visualstudio.com/docs/editor/versioncontrol)
  - Browse thousands of extensions in our integrated gallery by pressing kb(workbench.view.extensions). The [documentation](https://code.visualstudio.com/docs/editor/extension-gallery) will show you how to see the most popular extensions, disable installed ones and more.
 diff --git a/src/vs/workbench/contrib/workspace/browser/workspace.contribution.ts b/src/vs/workbench/contrib/workspace/browser/workspace.contribution.ts
-index 64b8586a..20b82d7c 100644
+index 6cccbced..1e404b92 100644
 --- a/src/vs/workbench/contrib/workspace/browser/workspace.contribution.ts
 +++ b/src/vs/workbench/contrib/workspace/browser/workspace.contribution.ts
 @@ -799,7 +799,7 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
@@ -2101,10 +2085,10 @@ index 64b8586a..20b82d7c 100644
  				scope: ConfigurationScope.APPLICATION
  			}
 diff --git a/src/vs/workbench/electron-browser/desktop.contribution.ts b/src/vs/workbench/electron-browser/desktop.contribution.ts
-index 885cbf9b..4d008991 100644
+index 9db62d8f..26208123 100644
 --- a/src/vs/workbench/electron-browser/desktop.contribution.ts
 +++ b/src/vs/workbench/electron-browser/desktop.contribution.ts
-@@ -450,11 +450,11 @@ import product from '../../platform/product/common/product.js';
+@@ -451,11 +451,11 @@ import product from '../../platform/product/common/product.js';
  			},
  			'disable-chromium-sandbox': {
  				type: 'boolean',
@@ -2216,7 +2200,7 @@ index 09dd590e..d3fc08d7 100644
  				}
  			}
 diff --git a/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts b/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts
-index 2b6104a7..1eb63831 100644
+index 4340604b..9ea3a495 100644
 --- a/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts
 +++ b/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts
 @@ -165,7 +165,7 @@ export class NativeExtensionService extends AbstractExtensionService implements

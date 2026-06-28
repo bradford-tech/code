@@ -1,5 +1,5 @@
 diff --git a/build/.moduleignore b/build/.moduleignore
-index b226373f..7750bbf0 100644
+index da57545b..5056155d 100644
 --- a/build/.moduleignore
 +++ b/build/.moduleignore
 @@ -151,13 +151,15 @@ vsda/**
@@ -39,10 +39,10 @@ index 7f650ba7..3e3521fd 100644
  			`	<supportedOn ref="Supported_${this.minimumVersion.replace(/\./g, '_')}" />`,
  			`	<elements>`,
 diff --git a/build/lib/policies/render.ts b/build/lib/policies/render.ts
-index 47b485d1..c314d031 100644
+index bd5958cb..b45f99b9 100644
 --- a/build/lib/policies/render.ts
 +++ b/build/lib/policies/render.ts
-@@ -47,7 +47,7 @@ export function renderADMX(regKey: string, versions: string[], categories: Categ
+@@ -54,7 +54,7 @@ export function renderADMX(regKey: string, versions: string[], categories: Categ
  	return `<?xml version="1.0" encoding="utf-8"?>
  <policyDefinitions revision="1.1" schemaVersion="1.0">
  	<policyNamespaces>
@@ -51,7 +51,7 @@ index 47b485d1..c314d031 100644
  	</policyNamespaces>
  	<resources minRequiredRevision="1.0" />
  	<supportedOn>
-@@ -165,7 +165,7 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
+@@ -172,7 +172,7 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
  		</dict>
  		<dict>
  			<key>pfm_default</key>
@@ -60,7 +60,7 @@ index 47b485d1..c314d031 100644
  			<key>pfm_name</key>
  			<string>PayloadOrganization</string>
  			<key>pfm_title</key>
-@@ -183,11 +183,11 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
+@@ -190,11 +190,11 @@ export function renderProfileManifest(appName: string, bundleIdentifier: string,
  <plist version="1.0">
  <dict>
      <key>pfm_app_url</key>
@@ -74,7 +74,7 @@ index 47b485d1..c314d031 100644
      <key>pfm_domain</key>
      <string>${bundleIdentifier}</string>
      <key>pfm_format_version</key>
-@@ -253,13 +253,13 @@ ${policyEntries}
+@@ -260,13 +260,13 @@ ${policyEntries}
  			</dict>
  		</array>
  		<key>PayloadDescription</key>
@@ -91,10 +91,10 @@ index 47b485d1..c314d031 100644
  		<string>Configuration</string>
  		<key>PayloadUUID</key>
 diff --git a/eslint.config.js b/eslint.config.js
-index a6dd3274..96b0db3b 100644
+index 938419e2..f3a103ca 100644
 --- a/eslint.config.js
 +++ b/eslint.config.js
-@@ -1512,7 +1512,7 @@ export default defineConfig(
+@@ -1542,7 +1542,7 @@ export default defineConfig(
  						'@vscode/ripgrep-universal',
  						'@vscode/iconv-lite-umd',
  						'@vscode/native-watchdog',
@@ -104,33 +104,35 @@ index a6dd3274..96b0db3b 100644
  						'@vscode/spdlog',
  						'@vscode/windows-process-tree',
 diff --git a/package-lock.json b/package-lock.json
-index ab7a6f15..3a191a0f 100644
+index 1d99e154..4acb64a7 100644
 --- a/package-lock.json
 +++ b/package-lock.json
 @@ -29,7 +29,6 @@
          "@vscode/diff": "0.0.2-7",
          "@vscode/iconv-lite-umd": "0.7.1",
          "@vscode/native-watchdog": "^1.4.6",
--        "@vscode/policy-watcher": "^1.3.2",
+-        "@vscode/policy-watcher": "^1.4.0",
          "@vscode/proxy-agent": "^0.42.0",
          "@vscode/ripgrep-universal": "^1.18.0",
          "@vscode/sandbox-runtime": "0.0.1",
-@@ -42,6 +41,7 @@
-         "@vscode/windows-process-tree": "^0.7.0",
-         "@vscode/windows-registry": "^1.2.0",
-         "@vscodium/native-keymap": "3.3.7-258424",
-+        "@vscodium/policy-watcher": "^1.3.2-252465",
-         "@xterm/addon-clipboard": "^0.3.0-beta.220",
-         "@xterm/addon-image": "^0.10.0-beta.220",
-         "@xterm/addon-ligatures": "^0.11.0-beta.220",
-@@ -4103,26 +4103,6 @@
+@@ -74,7 +73,8 @@
+         "ws": "^8.19.0",
+         "yauzl": "^3.3.1",
+         "yazl": "^2.4.3",
+-        "zod": "^3.25.76"
++        "zod": "^3.25.76",
++        "@vscodium/policy-watcher": "^1.3.2-252465"
+       },
+       "devDependencies": {
+         "@anthropic-ai/claude-agent-sdk": "0.3.169",
+@@ -4120,26 +4120,6 @@
        "hasInstallScript": true,
        "license": "MIT"
      },
 -    "node_modules/@vscode/policy-watcher": {
--      "version": "1.3.7",
--      "resolved": "https://registry.npmjs.org/@vscode/policy-watcher/-/policy-watcher-1.3.7.tgz",
--      "integrity": "sha512-OvIczTbtGLZs7YU0ResbjM0KEB2ORBnlJ4ICxaB9fKHNVBwNVp4i2qIkDQGp3UBGtu7P8/+eg4/ZKk2oJGFcug==",
+-      "version": "1.4.0",
+-      "resolved": "https://registry.npmjs.org/@vscode/policy-watcher/-/policy-watcher-1.4.0.tgz",
+-      "integrity": "sha512-QKTLV/UtV0HH5AJELfN5D3Jcxj2hB9CYT9GtG334I8bU5TdusaSGYSpDjumZBGWO2YxwVYpBNytA7mq/I3ZtzA==",
 -      "hasInstallScript": true,
 -      "license": "MIT",
 -      "dependencies": {
@@ -150,30 +152,10 @@ index ab7a6f15..3a191a0f 100644
      "node_modules/@vscode/proxy-agent": {
        "version": "0.42.0",
        "resolved": "https://registry.npmjs.org/@vscode/proxy-agent/-/proxy-agent-0.42.0.tgz",
-@@ -4459,6 +4439,46 @@
+@@ -4503,6 +4483,26 @@
        "hasInstallScript": true,
        "license": "MIT"
      },
-+    "node_modules/@vscodium/policy-watcher": {
-+      "version": "1.3.2-255408",
-+      "resolved": "https://registry.npmjs.org/@vscodium/policy-watcher/-/policy-watcher-1.3.2-255408.tgz",
-+      "integrity": "sha512-0KERmB+VkSz9hvFWEDGalCpxQ9+qjLaUazXMBkzWQ9SjKPaD6zU9u6wA4/OUu816JnvCFEeJYEe9WcDZPnKQ1w==",
-+      "hasInstallScript": true,
-+      "license": "MIT",
-+      "dependencies": {
-+        "bindings": "^1.5.0",
-+        "node-addon-api": "^8.2.0"
-+      }
-+    },
-+    "node_modules/@vscodium/policy-watcher/node_modules/node-addon-api": {
-+      "version": "8.6.0",
-+      "resolved": "https://registry.npmjs.org/node-addon-api/-/node-addon-api-8.6.0.tgz",
-+      "integrity": "sha512-uH63yYpyBQOzHTSDcN+yYRsetH8U4hd6Bb+kZTZRRzAGiWcUOMdsWlqkOICUqWy/zUWxlDmpywXmH4M0fNu5SQ==",
-+      "license": "MIT",
-+      "engines": {
-+        "node": "^18 || ^20 || >= 21"
-+      }
-+    },
 +    "node_modules/@vscodium/policy-watcher": {
 +      "version": "1.3.2-255408",
 +      "resolved": "https://registry.npmjs.org/@vscodium/policy-watcher/-/policy-watcher-1.3.2-255408.tgz",
@@ -198,14 +180,14 @@ index ab7a6f15..3a191a0f 100644
        "version": "0.1.66",
        "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.66.tgz",
 diff --git a/package.json b/package.json
-index 433f446d..942259cc 100644
+index 2a5830cd..9a425766 100644
 --- a/package.json
 +++ b/package.json
-@@ -108,7 +108,7 @@
+@@ -113,7 +113,7 @@
      "@vscode/diff": "0.0.2-7",
      "@vscode/iconv-lite-umd": "0.7.1",
      "@vscode/native-watchdog": "^1.4.6",
--    "@vscode/policy-watcher": "^1.3.2",
+-    "@vscode/policy-watcher": "^1.4.0",
 +    "@vscodium/policy-watcher": "^1.3.2-252465",
      "@vscode/proxy-agent": "^0.42.0",
      "@vscode/ripgrep-universal": "^1.18.0",
@@ -358,3 +340,40 @@ index 6039dbb7..6fe3fe47 100644
  					this._onDidPolicyChange(update);
  					c();
  				});
+diff --git a/src/vs/platform/policy/node/copilotManagedSettingsService.ts b/src/vs/platform/policy/node/copilotManagedSettingsService.ts
+index 5b76979d..d8223ab9 100644
+--- a/src/vs/platform/policy/node/copilotManagedSettingsService.ts
++++ b/src/vs/platform/policy/node/copilotManagedSettingsService.ts
+@@ -11,7 +11,7 @@ import { IManagedSettingsPolicyDefinitions, ManagedSettingsData } from '../../..
+ import { ILogService } from '../../log/common/log.js';
+ import { collectManagedSettingsDefinitions, ICopilotManagedSettingsService } from '../common/copilotManagedSettings.js';
+ import { PolicyDefinition, PolicyValue } from '../common/policy.js';
+-import type { Watcher } from '@vscode/policy-watcher';
++import type { Watcher } from '@vscodium/policy-watcher';
+ 
+ export interface ICopilotPolicyWatcherOptions {
+ 	readonly registryPath?: string;
+@@ -89,7 +89,22 @@ export class CopilotManagedSettingsService extends Disposable implements ICopilo
+ 			return;
+ 		}
+ 
+-		const { createWatcher } = this.watcherFactory ? { createWatcher: this.watcherFactory } : (await import('@vscode/policy-watcher') as { createWatcher: CopilotPolicyWatcherFactory });
++		let createWatcher: CopilotPolicyWatcherFactory;
++		if (this.watcherFactory) {
++			createWatcher = this.watcherFactory;
++		} else {
++			const policyWatcher = await import('@vscodium/policy-watcher');
++			// `@vscodium/policy-watcher`'s `createWatcher` takes a leading vendor name
++			// and no options argument, unlike upstream `@vscode/policy-watcher`; adapt
++			// it to this service's CopilotPolicyWatcherFactory shape.
++			const createNativeWatcher = policyWatcher.createWatcher as unknown as (
++				vendorName: string,
++				productName: string,
++				policies: Record<string, { type: 'string' | 'number' | 'boolean' }>,
++				onDidChange: (update: Record<string, PolicyValue | undefined>) => void,
++			) => Watcher;
++			createWatcher = (productName, policies, onDidChange) => createNativeWatcher('BradfordCode', productName, policies, onDidChange);
++		}
+ 		await this.throttler.queue(() => new Promise<void>((c, e) => {
+ 			try {
+ 				this.logService.trace(`Creating Copilot managed-settings watcher for productName ${this.productName}`);
