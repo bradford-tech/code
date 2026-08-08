@@ -1,21 +1,16 @@
 diff --git a/.npmrc b/.npmrc
-index 8c21e58e..25a93f40 100644
+index 02f65e85..e2530b3a 100644
 --- a/.npmrc
 +++ b/.npmrc
-@@ -4,5 +4,6 @@ ms_build_id="14159160"
- runtime="electron"
- ignore-scripts=false
+@@ -6,2 +6,3 @@ ignore-scripts=false
  build_from_source="true"
 +build_from_source_native_keymap="no"
  legacy-peer-deps="true"
- timeout=180000
 diff --git a/build/.moduleignore b/build/.moduleignore
-index 8eb8da15..da57545b 100644
+index ed8de136..e148aa55 100644
 --- a/build/.moduleignore
 +++ b/build/.moduleignore
-@@ -63,11 +63,11 @@ fsevents/test/**
- !@vscode/tree-sitter-wasm/wasm/tree-sitter-powershell.wasm
- !@vscode/tree-sitter-wasm/wasm/tree-sitter-bash.wasm
+@@ -69,7 +69,7 @@ fsevents/test/**
  
 -native-keymap/binding.gyp
 -native-keymap/build/**
@@ -28,44 +23,28 @@ index 8eb8da15..da57545b 100644
 +@vscodium/native-keymap/deps/**
 +!@vscodium/native-keymap/build/Release/*.node
  
- native-is-elevated/binding.gyp
- native-is-elevated/build/**
 diff --git a/eslint.config.js b/eslint.config.js
-index 51b085ee..938419e2 100644
+index 0e48d130..ec666735 100644
 --- a/eslint.config.js
 +++ b/eslint.config.js
-@@ -1561,7 +1561,7 @@ export default defineConfig(
- 						'inspector',
- 						'minimist',
+@@ -1564,3 +1564,3 @@ export default defineConfig(
  						'node:module',
 -						'native-keymap',
 +						'@vscodium/native-keymap',
  						'net',
- 						'node-pty',
- 						'os',
 diff --git a/package-lock.json b/package-lock.json
-index 81d315f0..1d99e154 100644
+index 7c4b3c2f..d3cffeca 100644
 --- a/package-lock.json
 +++ b/package-lock.json
-@@ -41,6 +41,7 @@
-         "@vscode/windows-mutex": "^0.5.0",
-         "@vscode/windows-process-tree": "^0.7.0",
+@@ -45,2 +45,3 @@
          "@vscode/windows-registry": "^1.2.0",
 +        "@vscodium/native-keymap": "3.3.7-258424",
-         "@xterm/addon-clipboard": "^0.3.0-beta.285",
-         "@xterm/addon-image": "^0.10.0-beta.285",
-         "@xterm/addon-ligatures": "^0.11.0-beta.285",
-@@ -60,7 +61,6 @@
-         "kerberos": "2.1.1",
-         "minimist": "^1.2.8",
+         "@xterm/addon-clipboard": "^0.3.0-beta.291",
+@@ -65,3 +66,2 @@
          "native-is-elevated": "0.9.0",
 -        "native-keymap": "^3.3.5",
          "node-addon-api": "^6.0.0",
-         "node-pty": "^1.2.0-beta.13",
-         "open": "^10.1.2",
-@@ -4496,6 +4496,13 @@
-       "hasInstallScript": true,
-       "license": "MIT"
+@@ -4981,2 +4981,9 @@
      },
 +    "node_modules/@vscodium/native-keymap": {
 +      "version": "3.3.7-258424",
@@ -75,11 +54,7 @@ index 81d315f0..1d99e154 100644
 +      "license": "MIT"
 +    },
      "node_modules/@webgpu/types": {
-       "version": "0.1.66",
-       "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.66.tgz",
-@@ -14157,9 +14164,10 @@
-       }
-     },
+@@ -14854,5 +14861,6 @@
      "node_modules/napi-build-utils": {
 -      "version": "1.0.2",
 -      "resolved": "https://registry.npmjs.org/napi-build-utils/-/napi-build-utils-1.0.2.tgz",
@@ -89,11 +64,7 @@ index 81d315f0..1d99e154 100644
 +      "integrity": "sha512-GEbrYkbfF7MoNaoh2iGG84Mnf/WZfB0GdGEsM8wz7Expx/LlWf5U8t9nvJKXSp3qr5IsEbK04cBGhol/KwOsWA==",
 +      "license": "MIT"
      },
-     "node_modules/native-is-elevated": {
-       "version": "0.9.0",
-@@ -14168,13 +14176,6 @@
-       "hasInstallScript": true,
-       "license": "MIT"
+@@ -14865,9 +14873,2 @@
      },
 -    "node_modules/native-keymap": {
 -      "version": "3.3.9",
@@ -103,11 +74,7 @@ index 81d315f0..1d99e154 100644
 -      "license": "MIT"
 -    },
      "node_modules/natural-compare": {
-       "version": "1.4.0",
-       "resolved": "https://registry.npmjs.org/natural-compare/-/natural-compare-1.4.0.tgz",
-@@ -15580,16 +15581,17 @@
-       "license": "ISC"
-     },
+@@ -16279,5 +16280,6 @@
      "node_modules/prebuild-install": {
 -      "version": "7.1.2",
 -      "resolved": "https://registry.npmjs.org/prebuild-install/-/prebuild-install-7.1.2.tgz",
@@ -117,36 +84,25 @@ index 81d315f0..1d99e154 100644
 +      "integrity": "sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug==",
 +      "license": "MIT",
        "dependencies": {
-         "detect-libc": "^2.0.0",
-         "expand-template": "^2.0.3",
-         "github-from-package": "0.0.0",
-         "minimist": "^1.2.3",
+@@ -16288,3 +16290,3 @@
          "mkdirp-classic": "^0.5.3",
 -        "napi-build-utils": "^1.0.1",
 +        "napi-build-utils": "^2.0.0",
          "node-abi": "^3.3.0",
-         "pump": "^3.0.0",
-         "rc": "^1.2.7",
 diff --git a/package.json b/package.json
-index 36485330..2a5830cd 100644
+index c80e65a6..6b0ff734 100644
 --- a/package.json
 +++ b/package.json
-@@ -144,7 +144,7 @@
-     "kerberos": "2.1.1",
-     "minimist": "^1.2.8",
+@@ -151,3 +151,3 @@
      "native-is-elevated": "0.9.0",
 -    "native-keymap": "^3.3.5",
 +    "@vscodium/native-keymap": "3.3.7-258424",
      "node-addon-api": "^6.0.0",
-     "node-pty": "^1.2.0-beta.13",
-     "open": "^10.1.2",
 diff --git a/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts b/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
-index 9b11a712..975c3127 100644
+index 4b0ef7f2..90667682 100644
 --- a/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
 +++ b/src/vs/platform/environment/test/node/nativeModules.integrationTest.ts
-@@ -42,12 +42,12 @@ flakySuite('Native Modules (all platforms)', () => {
- 	});
- 
+@@ -44,8 +44,8 @@ flakySuite('Native Modules (all platforms)', () => {
  	test('native-keymap', async () => {
 -		const keyMap = await import('native-keymap');
 -		assert.ok(typeof keyMap.onDidChangeKeyboardLayout === 'function', testErrorMessage('native-keymap'));
@@ -159,27 +115,17 @@ index 9b11a712..975c3127 100644
 -		assert.ok(result, testErrorMessage('native-keymap'));
 +		assert.ok(result, testErrorMessage('@vscodium/native-keymap'));
  	});
- 
- 	test('@vscode/native-watchdog', async () => {
 diff --git a/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts b/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts
 index 8950ce21..f31cea62 100644
 --- a/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts
 +++ b/src/vs/platform/keyboardLayout/electron-main/keyboardLayoutMainService.ts
-@@ -3,7 +3,7 @@
-  *  Licensed under the MIT License. See License.txt in the project root for license information.
-  *--------------------------------------------------------------------------------------------*/
+@@ -5,3 +5,3 @@
  
 -import type * as nativeKeymap from 'native-keymap';
 +import type * as nativeKeymap from '@vscodium/native-keymap';
  import * as platform from '../../../base/common/platform.js';
- import { Emitter } from '../../../base/common/event.js';
- import { Disposable } from '../../../base/common/lifecycle.js';
-@@ -46,7 +46,7 @@ export class KeyboardLayoutMainService extends Disposable implements INativeKeyb
- 	}
- 
+@@ -48,3 +48,3 @@ export class KeyboardLayoutMainService extends Disposable implements INativeKeyb
  	private async _doInitialize(): Promise<void> {
 -		const nativeKeymapMod = await import('native-keymap');
 +		const nativeKeymapMod = await import('@vscodium/native-keymap');
  
- 		this._keyboardLayoutData = readKeyboardLayoutData(nativeKeymapMod);
- 		if (!platform.isCI) {
