@@ -13076,118 +13076,27 @@ index 34a750af..cab1676d 100644
 +};
  import { ILogService } from '../../../log/common/log.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts b/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts
-deleted file mode 100644
-index 56653c57..00000000
+index 56653c57..f5ff0ae4 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts
-+++ /dev/null
-@@ -1,75 +0,0 @@
--/*---------------------------------------------------------------------------------------------
-- *  Copyright (c) Microsoft Corporation. All rights reserved.
-- *  Licensed under the MIT License. See License.txt in the project root for license information.
-- *--------------------------------------------------------------------------------------------*/
--
++++ b/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts
+@@ -5,3 +5,9 @@
+ 
 -import type { SessionEventPayload, SystemNotification } from '@github/copilot-sdk';
--import { softAssertNever } from '../../../../base/common/assert.js';
--import { localize } from '../../../../nls.js';
--
--export interface ICopilotSystemNotification {
--	/** Text for a new system-origin AHP turn; derived from SDK `data.kind` metadata, e.g. shell completion `description`. */
--	readonly messageText: string;
--	/** Whether the runtime notification wakes the agent loop when it arrives while idle. */
--	readonly startsTurn: boolean;
--}
--
--export function buildCopilotSystemNotification(event: SessionEventPayload<'system.notification'>): ICopilotSystemNotification | undefined {
--	const data = event.data;
--	const kind: SystemNotification = data.kind;
--	const content = cleanSystemNotificationContent(data.content);
--	if (!content) {
--		return undefined;
--	}
--
--	switch (kind.type) {
--		case 'shell_completed':
--		case 'shell_detached_completed': {
--			const description = kind.description;
--			return {
--				messageText: description
--					? localize('agentHost.copilot.systemNotification.shellDescriptionCompleted', "`{0}` completed", description)
--					: localize('agentHost.copilot.systemNotification.shellCompleted', "Shell completed"),
--				startsTurn: true,
--			};
--		}
--		case 'agent_completed':
--			return {
--				messageText: kind.status === 'failed'
--					? localize('agentHost.copilot.systemNotification.agentFailed', "Background agent {0} failed", kind.agentId)
--					: localize('agentHost.copilot.systemNotification.agentCompleted', "Background agent {0} completed", kind.agentId),
--				startsTurn: true,
--			};
--		case 'agent_idle':
--			return {
--				messageText: localize('agentHost.copilot.systemNotification.agentIdle', "Background agent {0} is complete", kind.agentId),
--				startsTurn: true,
--			};
--		case 'new_inbox_message':
--			return {
--				messageText: localize('agentHost.copilot.systemNotification.newInboxMessage', "New inbox message from {0}", kind.senderName),
--				startsTurn: false,
--			};
--		case 'instruction_discovered':
--			return {
--				messageText: localize('agentHost.copilot.systemNotification.instructionDiscovered', "Instruction discovered: {0}", kind.description ?? kind.sourcePath),
--				startsTurn: false,
--			};
--		case 'unclassified':
--			// External-host notifications that do not match a runtime-owned kind.
--			// Use the cleaned content and wake the agent when idle.
--			return {
--				messageText: content,
--				startsTurn: true,
--			};
--		default:
++// `SessionEventPayload`/`SystemNotification` originally came from
++// '@github/copilot-sdk' (removed in !!APP_NAME!!); alias them locally so this
++// module keeps compiling.
++/* eslint-disable @typescript-eslint/no-explicit-any */
++type SessionEventPayload<T extends string = string> = any;
++type SystemNotification = any;
++/* eslint-enable @typescript-eslint/no-explicit-any */
+ import { softAssertNever } from '../../../../base/common/assert.js';
+@@ -65,3 +71,5 @@ export function buildCopilotSystemNotification(event: SessionEventPayload<'syste
+ 		default:
 -			softAssertNever(kind);
--			return undefined;
--	}
--}
--
--function cleanSystemNotificationContent(content: string): string {
--	const trimmed = content.trim();
--	const match = /^<system_notification>\s*([\s\S]*?)\s*<\/system_notification>$/.exec(trimmed);
--	return (match?.[1] ?? trimmed).trim();
--}
-diff --git a/src/vs/platform/agentHost/node/copilot/copilotTokenFields.ts b/src/vs/platform/agentHost/node/copilot/copilotTokenFields.ts
-deleted file mode 100644
-index 998236f0..00000000
---- a/src/vs/platform/agentHost/node/copilot/copilotTokenFields.ts
-+++ /dev/null
-@@ -1,26 +0,0 @@
--/*---------------------------------------------------------------------------------------------
-- *  Copyright (c) Microsoft Corporation. All rights reserved.
-- *  Licensed under the MIT License. See License.txt in the project root for license information.
-- *--------------------------------------------------------------------------------------------*/
--
--/** Parses the `key=value;...` field map from the leading colon-delimited segment of a Copilot token (e.g. `tid=abc;exp=123;rt=1:HMAC...`). */
--export function parseCopilotTokenFields(token: string | undefined): ReadonlyMap<string, string> {
--	const result = new Map<string, string>();
--	if (!token) {
--		return result;
--	}
--	const colonIdx = token.indexOf(':');
--	const header = colonIdx === -1 ? token : token.substring(0, colonIdx);
--	for (const field of header.split(';')) {
--		const eqIdx = field.indexOf('=');
--		if (eqIdx <= 0) {
--			continue;
--		}
--		result.set(field.substring(0, eqIdx), field.substring(eqIdx + 1));
--	}
--	return result;
--}
--
--export function isRestrictedTelemetryEnabled(token: string | undefined): boolean {
--	return parseCopilotTokenFields(token).get('rt') === '1';
--}
++			// `kind` is locally aliased to `any` (SDK types removed); cast for the
++			// exhaustiveness helper.
++			softAssertNever(kind as never);
+ 			return undefined;
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 index ccd83b10..c006701d 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
@@ -13881,25 +13790,34 @@ index 78dbfd71..00000000
 -	};
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts b/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
-index 7977aed4..61206e5d 100644
+index 7977aed4..e76618e0 100644
 --- a/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
 +++ b/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
-@@ -5,3 +5,15 @@
+@@ -5,3 +5,24 @@
  
 -import type { CopilotClient } from '@github/copilot-sdk';
 +// `CopilotClient` came from '@github/copilot-sdk' (removed in !!APP_NAME!!).
 +// `discover()` only touches the RPC discovery endpoints and is no longer reached
 +// by a live Copilot client; model the minimal surface it uses locally.
++/* eslint-disable @typescript-eslint/no-explicit-any */
++type DiscoveryPathsResult = { paths?: any[] };
 +type CopilotClient = {
 +	rpc: {
-+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-+		agents: { discover(params: unknown): Promise<any> };
-+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-+		instructions: { discover(params: unknown): Promise<any> };
-+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-+		skills: { discover(params: unknown): Promise<any> };
++		agents: {
++			discover(params: unknown): Promise<{ agents: any[] }>;
++			getDiscoveryPaths(params: unknown): Promise<DiscoveryPathsResult>;
++		};
++		instructions: {
++			discover(params: unknown): Promise<{ sources: any[] }>;
++			getDiscoveryPaths(params: unknown): Promise<DiscoveryPathsResult>;
++		};
++		skills: {
++			discover(params: unknown): Promise<{ skills: any[] }>;
++			getDiscoveryPaths(params: unknown): Promise<DiscoveryPathsResult>;
++		};
 +	};
 +};
++/* eslint-enable @typescript-eslint/no-explicit-any */
  import { appendFile, mkdir } from 'fs/promises';
 diff --git a/src/vs/platform/agentHost/node/otel/agentHostOTelService.ts b/src/vs/platform/agentHost/node/otel/agentHostOTelService.ts
 index 090437f5..1a933ef8 100644
@@ -31415,7 +31333,7 @@ index 0351b053..00000000
 -	});
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotTestEvents.ts b/src/vs/platform/agentHost/test/node/copilotTestEvents.ts
-index ab23cc65..a333e567 100644
+index ab23cc65..42ce5485 100644
 --- a/src/vs/platform/agentHost/test/node/copilotTestEvents.ts
 +++ b/src/vs/platform/agentHost/test/node/copilotTestEvents.ts
 @@ -5,3 +5,12 @@
@@ -31428,7 +31346,7 @@ index ab23cc65..a333e567 100644
 +/* eslint-disable @typescript-eslint/no-explicit-any */
 +type Attachment = any;
 +type SessionEvent = any;
-+type SessionEventPayload = any;
++type SessionEventPayload<T extends string = string> = any;
 +type ToolExecutionCompleteContent = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  
