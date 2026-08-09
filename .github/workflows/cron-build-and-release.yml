@@ -357,6 +357,153 @@ jobs:
       dmg_sha256: ${{ steps.hash.outputs.dmg_sha256 }}
       zip_sha256: ${{ steps.hash.outputs.zip_sha256 }}
 
+  # Remote extension host server, consumed by jeanp413.open-remote-ssh when
+  # connecting BradfordCode to a linux-x64 host. Runs in parallel with the
+  # macOS client job and takes RELEASE_VERSION from the same `check` output —
+  # that shared value is what makes the client's and server's synthetic
+  # commits match, so the extension's default `strict` validation passes with
+  # no user settings. See docs/superpowers/plans/2026-08-09-linux-reh-server-build.md.
+  build-reh:
+    name: Build REH server (linux x64)
+    needs: check
+    # Same gating as the macOS build job: skip fork PRs and auto-release PRs.
+    if: |
+      needs.check.outputs.needs_build == 'true' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        !contains(github.event.pull_request.labels.*.name, 'auto-release')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      APP_NAME: BradfordCode
+      OS_NAME: linux
+      VSCODE_ARCH: x64
+      VSCODE_QUALITY: stable
+      SHOULD_BUILD: "yes"
+      SHOULD_BUILD_REH: "yes"
+      SHOULD_BUILD_REH_WEB: "no"
+      SHOULD_BUILD_CLI: "no"
+      SHOULD_BUILD_ZIP: "no"
+      SHOULD_BUILD_DMG: "no"
+      CI_BUILD: "yes"
+      DISABLE_UPDATE: "no"
+      MS_TAG: ${{ needs.check.outputs.ms_tag }}
+      MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
+      RELEASE_VERSION: ${{ needs.check.outputs.release_version }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # This job only reads the recipe and uploads artifacts; it never
+          # pushes. Leaving the token in .git/config would hand it to every
+          # npm postinstall script the VS Code build runs.
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      # Native modules built during `npm ci`: kerberos needs libkrb5-dev,
+      # keytar/secret needs libsecret-1-dev, and the shared VS Code build
+      # needs the X11 headers even though we only ship the server.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libkrb5-dev \
+            libsecret-1-dev \
+            libx11-dev \
+            libxkbfile-dev
+
+      - name: Cache npm packages
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          key: npm-reh-${{ hashFiles('.nvmrc') }}-${{ env.MS_COMMIT }}
+          path: ~/.npm
+          restore-keys: |
+            npm-reh-${{ hashFiles('.nvmrc') }}-
+
+      - name: Pin upstream VS Code (in-job, not committed)
+        run: |
+          jq --arg tag "$MS_TAG" --arg commit "$MS_COMMIT" \
+            '.tag = $tag | .commit = $commit' \
+            upstream/stable.json > /tmp/stable.json
+          mv /tmp/stable.json upstream/stable.json
+          cat upstream/stable.json
+
+      - name: Clone VS Code source
+        run: ./get_repo.sh
+
+      - name: Build REH server
+        run: ./build.sh
+
+      - name: Package REH tarball
+        run: ./prepare_assets.sh
+
+      # The contract that actually matters at connect time. The remote install
+      # script runs `tar -xf ... --strip-components 1` and then executes
+      # $SERVER_DIR/bin/code-server, so the archive must carry `./bin/code-server`
+      # and product.json must agree on the commit the client will send.
+      - name: Verify REH tarball layout
+        id: hash
+        run: |
+          asset="assets/bradfordcode-reh-linux-x64-${RELEASE_VERSION}.tar.gz"
+          sha_file="${asset}.sha256"
+          for f in "$asset" "$sha_file"; do
+            if [[ ! -f "$f" ]]; then
+              echo "Expected REH artifact not found: $f" >&2
+              ls -la assets/ >&2
+              exit 1
+            fi
+          done
+          if ! tar -tzf "$asset" | grep -qx './bin/code-server'; then
+            echo "REH tarball does not contain ./bin/code-server" >&2
+            tar -tzf "$asset" | head -40 >&2
+            exit 1
+          fi
+          server_commit=$(tar -xzOf "$asset" ./product.json | jq -r '.commit')
+          client_commit=$(jq -r '.commit' vscode/product.json)
+          if [[ "$server_commit" != "$client_commit" ]]; then
+            echo "REH commit $server_commit != client commit $client_commit" >&2
+            exit 1
+          fi
+          reh_sha256=$(awk '{print $1}' "$sha_file")
+          echo "reh_sha256=$reh_sha256" >> "$GITHUB_OUTPUT"
+          echo "::notice::REH SHA-256 = $reh_sha256"
+          echo "::notice::REH commit = $server_commit"
+
+      - name: Upload REH artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reh-linux-x64
+          path: assets/bradfordcode-reh-linux-x64-${{ env.RELEASE_VERSION }}.tar.gz
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Upload REH SHA-256 sidecar artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reh-linux-x64-sha256
+          path: assets/bradfordcode-reh-linux-x64-${{ env.RELEASE_VERSION }}.tar.gz.sha256
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Upload build logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-reh-logs
+          path: |
+            *.log
+            vscode/.build/extensions/*.failed
+          retention-days: 30
+          if-no-files-found: ignore
+    outputs:
+      reh_sha256: ${{ steps.hash.outputs.reh_sha256 }}
+
   release:
     name: Publish release + update versions pin
     needs: [check, build]

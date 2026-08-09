@@ -138,6 +138,24 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
+# --- CI wiring ------------------------------------------------------------
+WF=".github/workflows/cron-build-and-release.yml"
+
+if grep -q '^  build-reh:' "${WF}"; then
+  echo "ok   - workflow defines the build-reh job"
+else
+  echo "FAIL - workflow has no build-reh job"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
+# The macOS client job must keep REH off.
+if grep -q 'SHOULD_BUILD_REH: "no"' "${WF}"; then
+  echo "ok   - macOS client job still has SHOULD_BUILD_REH: no"
+else
+  echo "FAIL - macOS client job must keep SHOULD_BUILD_REH: no"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
 echo
 if (( FAILURES > 0 )); then
   echo "${FAILURES} assertion(s) failed"
