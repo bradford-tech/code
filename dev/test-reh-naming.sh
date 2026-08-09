@@ -121,6 +121,23 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
+# --- prepare_assets.sh packaging ------------------------------------------
+if grep -q 'reh_asset_name' prepare_assets.sh; then
+  echo "ok   - prepare_assets.sh names the tarball via reh_asset_name"
+else
+  echo "FAIL - prepare_assets.sh does not use reh_asset_name"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
+# The tarball MUST be created from inside the build dir (trailing ` .`), so
+# that `tar --strip-components 1` on the remote yields bin/code-server.
+if grep -q 'tar czf "../assets/${REH_ASSET}" \.' prepare_assets.sh; then
+  echo "ok   - REH tarball is created from inside the build directory"
+else
+  echo "FAIL - REH tarball must be created from inside the build directory"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
 echo
 if (( FAILURES > 0 )); then
   echo "${FAILURES} assertion(s) failed"
