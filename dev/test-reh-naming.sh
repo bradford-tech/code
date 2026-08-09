@@ -182,6 +182,23 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
+# The REH commit check must compare against BUILD_SOURCEVERSION. Reading
+# `vscode/product.json` instead yields null — the source product.json carries
+# no `commit` key, because gulp injects it at package time.
+if grep -q 'server_commit" != "\$BUILD_SOURCEVERSION' "${WF}"; then
+  echo "ok   - REH commit check compares against BUILD_SOURCEVERSION"
+else
+  echo "FAIL - REH commit check must compare against BUILD_SOURCEVERSION"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
+if grep -q "jq -r '.commit' vscode/product.json" "${WF}"; then
+  echo "FAIL - REH commit check reads vscode/product.json, which has no commit key"
+  FAILURES=$(( FAILURES + 1 ))
+else
+  echo "ok   - REH commit check does not read the source vscode/product.json"
+fi
+
 echo
 if (( FAILURES > 0 )); then
   echo "${FAILURES} assertion(s) failed"

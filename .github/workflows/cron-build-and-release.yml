@@ -464,10 +464,20 @@ jobs:
             tar -tzf "$asset" | head -40 >&2
             exit 1
           fi
+          # Compare against BUILD_SOURCEVERSION, NOT vscode/product.json. The
+          # source product.json has no `commit` key at all — gulp injects it at
+          # package time from BUILD_SOURCEVERSION (sha1 of RELEASE_VERSION, set
+          # by version.sh and exported to GITHUB_ENV by the build step). The
+          # macOS client derives its commit the same way from the same
+          # RELEASE_VERSION, so this asserts client and server agree — which is
+          # what open-remote-ssh's default `strict` validation checks.
+          if [[ -z "$BUILD_SOURCEVERSION" ]]; then
+            echo "BUILD_SOURCEVERSION is unset; ./build.sh should have exported it via GITHUB_ENV" >&2
+            exit 1
+          fi
           server_commit=$(tar -xzOf "$asset" ./product.json | jq -r '.commit')
-          client_commit=$(jq -r '.commit' vscode/product.json)
-          if [[ "$server_commit" != "$client_commit" ]]; then
-            echo "REH commit $server_commit != client commit $client_commit" >&2
+          if [[ "$server_commit" != "$BUILD_SOURCEVERSION" ]]; then
+            echo "REH commit $server_commit != expected client commit $BUILD_SOURCEVERSION" >&2
             exit 1
           fi
           reh_sha256=$(awk '{print $1}' "$sha_file")
