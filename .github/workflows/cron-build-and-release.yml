@@ -199,14 +199,21 @@ jobs:
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.full_name == github.repository &&
         !contains(github.event.pull_request.labels.*.name, 'auto-release')))
-    # macos-15-xlarge: Apple Silicon, 6 vCPU / 14 GB (vs macos-15's 3 vCPU /
-    # 7 GB). Must stay an arm64 runner — VSCODE_ARCH is arm64 and this recipe
-    # builds natively; macos-15-*-large* variants are Intel x86_64 and would
-    # force an untested cross-compile. The 14 GB also gives build.sh's
-    # NODE_OPTIONS=--max-old-space-size=8192 real headroom, which 7 GB did not.
-    # Billed at roughly 2x the standard macOS rate, and larger runners are not
-    # free for public repos — revert to macos-15 if the spend isn't worth it.
-    runs-on: macos-15-xlarge
+    # Standard runner, deliberately: this repo is public, so macos-15 is free
+    # with unlimited minutes. Larger runners ARE billed on public repos, so the
+    # daily cron would cost real money (~$1.90/build, ~$57/month).
+    #
+    # Measured on run 31301283190: macos-15-xlarge built in 6m33s vs 30-41 min
+    # here (whole job 11m42s vs ~36-45 min). The likely cause is RAM, not just
+    # cores — build.sh sets NODE_OPTIONS=--max-old-space-size=8192, an 8 GB
+    # heap that does not fit macos-15's 7 GB, so this runner is probably
+    # swapping through the compile. Lowering that heap below 7 GB may recover
+    # much of the gap for free and is worth trying before paying for a runner.
+    #
+    # If you ever do switch, it must stay an arm64 runner: VSCODE_ARCH is arm64
+    # and macos-15-large is Intel x86_64, which would force an untested
+    # cross-compile. macos-15-xlarge is the Apple Silicon variant.
+    runs-on: macos-15
     timeout-minutes: 120
     env:
       APP_NAME: BradfordCode
