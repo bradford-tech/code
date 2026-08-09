@@ -33,7 +33,11 @@ if [[ -n "${CERTIFICATE_OSX_P12_DATA}" ]]; then
   echo "+ signing"
   export CODESIGN_IDENTITY AGENT_TEMPDIRECTORY
 
-  DEBUG="electron-osx-sign*" node vscode/build/darwin/sign.ts "$( pwd )"
+  # Wrapped for retry: electron-osx-sign runs `codesign --timestamp` per nested
+  # binary, so a blip at Apple's timestamp service fails the whole pass. See
+  # build/osx/codesign-with-retry.sh for why re-running it is safe.
+  DEBUG="electron-osx-sign*" ./build/osx/codesign-with-retry.sh \
+    node vscode/build/darwin/sign.ts "$( pwd )"
   # codesign --display --entitlements :- ""
 
   echo "+ notarize"

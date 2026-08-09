@@ -199,7 +199,14 @@ jobs:
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.full_name == github.repository &&
         !contains(github.event.pull_request.labels.*.name, 'auto-release')))
-    runs-on: macos-15
+    # macos-15-xlarge: Apple Silicon, 6 vCPU / 14 GB (vs macos-15's 3 vCPU /
+    # 7 GB). Must stay an arm64 runner — VSCODE_ARCH is arm64 and this recipe
+    # builds natively; macos-15-*-large* variants are Intel x86_64 and would
+    # force an untested cross-compile. The 14 GB also gives build.sh's
+    # NODE_OPTIONS=--max-old-space-size=8192 real headroom, which 7 GB did not.
+    # Billed at roughly 2x the standard macOS rate, and larger runners are not
+    # free for public repos — revert to macos-15 if the spend isn't worth it.
+    runs-on: macos-15-xlarge
     timeout-minutes: 120
     env:
       APP_NAME: BradfordCode
