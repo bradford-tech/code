@@ -8,6 +8,35 @@ GH_REPO_PATH="${GH_REPO_PATH:-bradford-tech/code}"
 ORG_NAME="${ORG_NAME:-bradford-tech}"
 TUNNEL_APP_NAME="${TUNNEL_APP_NAME:-"${BINARY_NAME}-tunnel"}"
 
+# --- Remote extension host (REH) naming contract --------------------------
+#
+# `patches/10-version-add-release.patch` makes the extension host report
+# `vscode.version` as the upstream tag only — RELEASE_VERSION with its 4-digit
+# build suffix stripped. jeanp413.open-remote-ssh expands `${version}` from
+# that value and `${release}` from product.json's `release` field, so
+# `${version}${release}` — concatenated with NO dot — reconstructs
+# RELEASE_VERSION, which is exactly the GitHub release tag we publish under.
+#
+# These three helpers are the single source of truth. prepare_vscode.sh writes
+# the template into product.json, prepare_assets.sh names the tarball, and the
+# release job uploads it — all from here. dev/test-reh-naming.sh asserts they
+# round-trip; run it after touching any of them.
+
+reh_release_suffix() {
+  local release_version="${1%-insider}"
+  local ms_tag="${2}"
+  echo "${release_version#"${ms_tag}"}"
+}
+
+reh_asset_name() {
+  local platform="${1}" arch="${2}" release_version="${3}"
+  echo "${APP_NAME_LC}-reh-${platform}-${arch}-${release_version}.tar.gz"
+}
+
+reh_url_template() {
+  echo "https://github.com/${GH_REPO_PATH}/releases/download/\${version}\${release}/${APP_NAME_LC}-reh-\${os}-\${arch}-\${version}\${release}.tar.gz"
+}
+
 if [[ "${VSCODE_QUALITY}" == "insider" ]]; then
   GLOBAL_DIRNAME="${GLOBAL_DIRNAME:-"${APP_NAME}"}-Insiders"
 else
