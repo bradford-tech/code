@@ -129,6 +129,30 @@ The workflow opens (or comments on) a GitHub issue labeled `build-failure`. Clic
 `https://github.com/bradford-tech/code/releases`. Each release contains:
 - `BradfordCode.arm64.<version>.dmg` — the notarized installer.
 - `BradfordCode.arm64.<version>.dmg.sha256` — checksum sidecar.
+- `bradfordcode-reh-linux-x64-<version>.tar.gz` — the remote extension host server (see [Remote SSH](#remote-ssh)).
+- `bradfordcode-reh-linux-x64-<version>.tar.gz.sha256` — checksum sidecar.
+
+## Remote SSH
+
+BradfordCode publishes a `linux-x64` remote extension host (REH) server with every
+release, so `jeanp413.open-remote-ssh` can set up a remote automatically.
+
+Install the extension from Open VSX, then connect with **Remote-SSH: Connect to
+Host...**. On first connect the extension downloads
+
+```
+https://github.com/bradford-tech/code/releases/download/<RELEASE_VERSION>/bradfordcode-reh-linux-x64-<RELEASE_VERSION>.tar.gz
+```
+
+and installs it to `~/.bradfordcode-server` on the remote. No settings required —
+the server and client are built from the same commit in the same CI run.
+
+Only `linux-x64` remotes are supported. For any other remote architecture, build
+your own REH or point `remote.SSH.serverDownloadUrlTemplate` at a compatible one.
+
+If a connection fails, open **Output → Remote SSH** and check the resolved
+download URL. A URL with an empty or doubled version segment means `product.json`'s
+`release` field didn't make it into the build.
 
 ## License
 
