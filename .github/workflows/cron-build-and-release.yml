@@ -506,8 +506,11 @@ jobs:
 
   release:
     name: Publish release + update versions pin
-    needs: [check, build]
-    if: needs.build.result == 'success' && github.event_name != 'pull_request'
+    needs: [check, build, build-reh]
+    if: |
+      needs.build.result == 'success' &&
+      needs['build-reh'].result == 'success' &&
+      github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -516,6 +519,7 @@ jobs:
       RELEASE_VERSION: ${{ needs.check.outputs.release_version }}
       DMG_SHA256: ${{ needs.build.outputs.dmg_sha256 }}
       ZIP_SHA256: ${{ needs.build.outputs.zip_sha256 }}
+      REH_SHA256: ${{ needs['build-reh'].outputs.reh_sha256 }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
@@ -548,19 +552,35 @@ jobs:
           name: zip-sha256
           path: assets/
 
+      - name: Download REH tarball
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: reh-linux-x64
+          path: assets/
+
+      - name: Download REH SHA-256 sidecar
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: reh-linux-x64-sha256
+          path: assets/
+
       - name: Sanity-check downloaded artifacts
         run: |
           dmg="assets/BradfordCode.arm64.${RELEASE_VERSION}.dmg"
           dmg_sha="assets/BradfordCode.arm64.${RELEASE_VERSION}.dmg.sha256"
           zip="assets/BradfordCode-darwin-arm64-${RELEASE_VERSION}.zip"
           zip_sha="assets/BradfordCode-darwin-arm64-${RELEASE_VERSION}.zip.sha256"
-          for f in "$dmg" "$dmg_sha" "$zip" "$zip_sha"; do
+          reh="assets/bradfordcode-reh-linux-x64-${RELEASE_VERSION}.tar.gz"
+          reh_sha="assets/bradfordcode-reh-linux-x64-${RELEASE_VERSION}.tar.gz.sha256"
+          for f in "$dmg" "$dmg_sha" "$zip" "$zip_sha" "$reh" "$reh_sha"; do
             test -f "$f" || { echo "Missing $f" >&2; exit 1; }
           done
           echo "DMG size: $(stat -c%s "$dmg") bytes"
           echo "DMG SHA-256: ${DMG_SHA256}"
           echo "ZIP size: $(stat -c%s "$zip") bytes"
           echo "ZIP SHA-256: ${ZIP_SHA256}"
+          echo "REH size: $(stat -c%s "$reh") bytes"
+          echo "REH SHA-256: ${REH_SHA256}"
 
       - name: Update upstream/stable.json
         run: |
@@ -678,7 +698,9 @@ jobs:
             "assets/BradfordCode.arm64.${RELEASE_VERSION}.dmg" \
             "assets/BradfordCode.arm64.${RELEASE_VERSION}.dmg.sha256" \
             "assets/BradfordCode-darwin-arm64-${RELEASE_VERSION}.zip" \
-            "assets/BradfordCode-darwin-arm64-${RELEASE_VERSION}.zip.sha256"
+            "assets/BradfordCode-darwin-arm64-${RELEASE_VERSION}.zip.sha256" \
+            "assets/bradfordcode-reh-linux-x64-${RELEASE_VERSION}.tar.gz" \
+            "assets/bradfordcode-reh-linux-x64-${RELEASE_VERSION}.tar.gz.sha256"
 
       - name: Open auto-release PR
         env:
@@ -742,7 +764,7 @@ jobs:
 
   report-failure:
     name: Open issue on failure
-    needs: [check, build, release]
+    needs: [check, build, build-reh, release]
     if: failure() && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5

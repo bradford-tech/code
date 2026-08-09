@@ -156,6 +156,32 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
+if grep -q "needs\['build-reh'\]" "${WF}"; then
+  echo "ok   - release job gates on build-reh"
+else
+  echo "FAIL - release job does not gate on build-reh"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
+# Scoped to the `gh release create` invocation specifically — a bare grep of
+# the whole file would match the build-reh job's own references and pass even
+# with the release job left unwired.
+if sed -n '/gh release create/,/^$/p' "${WF}" \
+     | grep -q 'assets/bradfordcode-reh-linux-x64-\${RELEASE_VERSION}.tar.gz"'; then
+  echo "ok   - gh release create uploads the REH tarball"
+else
+  echo "FAIL - gh release create does not upload the REH tarball"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
+if sed -n '/gh release create/,/^$/p' "${WF}" \
+     | grep -q 'assets/bradfordcode-reh-linux-x64-\${RELEASE_VERSION}.tar.gz.sha256"'; then
+  echo "ok   - gh release create uploads the REH SHA-256 sidecar"
+else
+  echo "FAIL - gh release create does not upload the REH SHA-256 sidecar"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
 echo
 if (( FAILURES > 0 )); then
   echo "${FAILURES} assertion(s) failed"
