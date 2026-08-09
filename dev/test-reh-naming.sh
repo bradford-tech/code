@@ -106,6 +106,21 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
+# --- build.sh REH target --------------------------------------------------
+if grep -q 'vscode-reh-\${VSCODE_PLATFORM}-\${VSCODE_ARCH}-min-ci' build.sh; then
+  echo "ok   - build.sh invokes the REH gulp target"
+else
+  echo "FAIL - build.sh has no REH gulp target"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
+if grep -q 'if \[\[ "\${OS_NAME}" == "osx" \]\]; then' build.sh; then
+  echo "ok   - build.sh gates the darwin client steps on OS_NAME"
+else
+  echo "FAIL - build.sh does not gate the darwin client steps on OS_NAME"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
 echo
 if (( FAILURES > 0 )); then
   echo "${FAILURES} assertion(s) failed"

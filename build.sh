@@ -20,13 +20,26 @@ if [[ "${SHOULD_BUILD}" == "yes" ]]; then
   # remove win32 node modules
   rm -f .build/extensions/ms-vscode.js-debug/src/win32-app-container-tokens.*.node
 
-  # generate Group Policy definitions
-  npm run copy-policy-dto --prefix build
-  node build/lib/policies/policyGenerator.ts build/lib/policies/policyData.jsonc darwin
+  if [[ "${OS_NAME}" == "osx" ]]; then
+    # generate Group Policy definitions
+    npm run copy-policy-dto --prefix build
+    node build/lib/policies/policyGenerator.ts build/lib/policies/policyData.jsonc darwin
 
-  npm run gulp "vscode-darwin-${VSCODE_ARCH}-min-packing"
+    npm run gulp "vscode-darwin-${VSCODE_ARCH}-min-packing"
 
-  find "../VSCode-darwin-${VSCODE_ARCH}" -print0 | xargs -0 touch -c
+    find "../VSCode-darwin-${VSCODE_ARCH}" -print0 | xargs -0 touch -c
+
+    VSCODE_PLATFORM="darwin"
+  else
+    # The linux job builds the remote extension host only — no desktop client,
+    # so no policy generation and no `vscode-linux-*-min-packing`.
+    VSCODE_PLATFORM="linux"
+  fi
+
+  if [[ "${SHOULD_BUILD_REH}" == "yes" ]]; then
+    npm run gulp minify-vscode-reh
+    npm run gulp "vscode-reh-${VSCODE_PLATFORM}-${VSCODE_ARCH}-min-ci"
+  fi
 
   cd ..
 fi
