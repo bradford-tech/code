@@ -83,6 +83,29 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
+# --- prepare_vscode.sh wiring ---------------------------------------------
+# Both channel branches must set `release` and `serverDownloadUrlTemplate`.
+for field in "release" "serverDownloadUrlTemplate"; do
+  count="$( grep -c "setpath \"product\" \"${field}\"" prepare_vscode.sh || true )"
+  assert_eq "2" "${count}" \
+    "prepare_vscode.sh sets product.${field} in both channel branches"
+done
+
+# utils.sh defines the reh_* helpers, so it must be sourced BEFORE the
+# product.json block that calls them — it used to be sourced further down,
+# next to the patch loop, where the helpers would not yet exist.
+# `|| true` on both: grep exits 1 when there is no match, and `set -o pipefail`
+# would otherwise abort this script before the assertion could report.
+utils_line="$( grep -n '^\. \.\./utils\.sh' prepare_vscode.sh | head -1 | cut -d: -f1 || true )"
+tmpl_line="$( grep -n 'reh_url_template' prepare_vscode.sh | head -1 | cut -d: -f1 || true )"
+if [[ -n "${utils_line}" && -n "${tmpl_line}" ]] && (( utils_line < tmpl_line )); then
+  echo "ok   - prepare_vscode.sh sources utils.sh before calling reh_* helpers"
+else
+  echo "FAIL - utils.sh must be sourced before the reh_* helpers are called"
+  echo "         . ../utils.sh at line ${utils_line:-<none>}, reh_url_template at line ${tmpl_line:-<none>}"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
 echo
 if (( FAILURES > 0 )); then
   echo "${FAILURES} assertion(s) failed"

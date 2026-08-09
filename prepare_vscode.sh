@@ -13,6 +13,11 @@ cp -f LICENSE vscode/LICENSE.txt
 
 cd vscode || { echo "'vscode' dir not found"; exit 1; }
 
+# include common functions
+# Sourced here, before the product.json block, because that block calls the
+# reh_* naming helpers defined in utils.sh.
+. ../utils.sh
+
 rm -rf extensions/copilot
 
 { set +x; } 2>/dev/null
@@ -76,6 +81,8 @@ if [[ "${VSCODE_QUALITY}" == "insider" ]]; then
   setpath "product" "urlProtocol" "bradfordcode-insiders"
   setpath "product" "serverApplicationName" "code-server-insiders"
   setpath "product" "serverDataFolderName" ".bradfordcode-server-insiders"
+  setpath "product" "release" "$( reh_release_suffix "${RELEASE_VERSION}" "${MS_TAG}" )"
+  setpath "product" "serverDownloadUrlTemplate" "$( reh_url_template )"
   setpath "product" "darwinBundleIdentifier" "tech.bradford.code-insiders"
   setpath "product" "win32AppUserModelId" "BradfordCode.BradfordCodeInsiders"
   setpath "product" "win32DirName" "BradfordCode Insiders"
@@ -104,6 +111,8 @@ else
   setpath "product" "urlProtocol" "bradfordcode"
   setpath "product" "serverApplicationName" "code-server"
   setpath "product" "serverDataFolderName" ".bradfordcode-server"
+  setpath "product" "release" "$( reh_release_suffix "${RELEASE_VERSION}" "${MS_TAG}" )"
+  setpath "product" "serverDownloadUrlTemplate" "$( reh_url_template )"
   setpath "product" "darwinBundleIdentifier" "tech.bradford.code"
   setpath "product" "win32AppUserModelId" "BradfordCode.BradfordCode"
   setpath "product" "win32DirName" "BradfordCode"
@@ -131,9 +140,6 @@ echo "${jsonTmp}" > product.json && unset jsonTmp
 
 cat product.json
 # }}}
-
-# include common functions
-. ../utils.sh
 
 # {{{ apply patches
 
