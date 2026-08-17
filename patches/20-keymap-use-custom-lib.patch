@@ -39,7 +39,7 @@ index 7c4b3c2f..d3cffeca 100644
 @@ -45,2 +45,3 @@
          "@vscode/windows-registry": "^1.2.0",
 +        "@vscodium/native-keymap": "3.3.7-258424",
-         "@xterm/addon-clipboard": "^0.3.0-beta.291",
+         "@xterm/addon-clipboard": "^0.3.0-beta.292",
 @@ -65,3 +66,2 @@
          "native-is-elevated": "0.9.0",
 -        "native-keymap": "^3.3.5",
