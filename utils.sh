@@ -63,12 +63,22 @@ apply_patch() {
   replace "s|!!RELEASE_VERSION!!|${RELEASE_VERSION}|g" "$1"
   replace "s|!!TUNNEL_APP_NAME!!|${TUNNEL_APP_NAME}|g" "$1"
 
-  if ! git apply --ignore-whitespace "$1"; then
+  local rc=0
+  git apply --ignore-whitespace "$1" || rc=$?
+
+  # Restore the tokenized original BEFORE reacting to failure. This used to sit
+  # after the `exit 1`, so a failed apply left the patch on disk with tokens
+  # already substituted. Anyone dry-applying patches to diagnose a break (the
+  # pattern in CLAUDE.md, and what claude-build-fix.yml tells Claude to do) then
+  # silently corrupted every patch that failed, and committing that would bake
+  # literal values in and break the token mechanism for every other build.
+  # dev/test-apply-patch-restore.sh locks this down.
+  mv -f $1{.bak,}
+
+  if (( rc != 0 )); then
     echo failed to apply patch "$1" >&2
     exit 1
   fi
-
-  mv -f $1{.bak,}
 }
 
 exists() { type -t "$1" &> /dev/null; }
