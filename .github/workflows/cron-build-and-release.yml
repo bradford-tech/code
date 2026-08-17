@@ -244,6 +244,39 @@ jobs:
       - name: Clone VS Code source
         run: ./get_repo.sh
 
+      # Same rationale as the REH job's baseline: record the machine before the
+      # long step, via channels that outlive it. This job has its own history of
+      # memory trouble — build.sh asks for an 8 GB Node heap, which did not fit
+      # macos-15's 7 GB and made the build take 30-41 min instead of 6m33s.
+      # No `free` on macOS, so sysctl/df stand in; available memory needs vm_stat
+      # and is not worth the arithmetic when total is what sizing turns on.
+      - name: Record runner baseline
+        run: |
+          set -eo pipefail
+          cores=$( sysctl -n hw.ncpu )
+          mem_total=$(( $( sysctl -n hw.memsize ) / 1024 / 1024 ))
+          disk_avail=$( df -m / | tail -1 | awk '{print $4}' )
+          baseline="cores=${cores} mem_total=${mem_total}MB disk_avail=${disk_avail}MB"
+
+          echo "${baseline}"
+          echo "::notice::macOS runner baseline: ${baseline}"
+          {
+            echo "### macOS runner baseline"
+            echo
+            echo '| metric | value |'
+            echo '| --- | --- |'
+            echo "| cores | ${cores} |"
+            echo "| memory total | ${mem_total} MB |"
+            echo "| disk available (/) | ${disk_avail} MB |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # A silent fallback to the 7 GB standard runner does not fail — it just
+          # swaps for half an hour. Surface it as a warning rather than an error:
+          # unlike REH, this configuration does still complete.
+          if [ "${mem_total}" -lt 12000 ]; then
+            echo "::warning::macOS runner has ${mem_total}MB RAM; build.sh requests an 8GB Node heap, so expect heavy swapping and a 30-40 min build. Check the macos-15-xlarge label still resolves."
+          fi
+
       - name: Build BradfordCode.app
         run: ./build.sh
 
@@ -433,11 +466,49 @@ jobs:
       # survived on the run whose log blob did not. Sampling is best-effort and
       # can never fail the build: it runs detached and its exit status is
       # discarded.
+      # Its own step, and emitted three ways on purpose. A runner that dies
+      # mid-build takes its logs with it — `gh api .../logs` returns BlobNotFound
+      # for both a killed job and an in-flight one — which is precisely when you
+      # want to know how the machine was sized. Annotations and the job summary
+      # are written when THIS step ends, so they survive a later death; stdout is
+      # just convenience for a healthy run. Sizing the 32 GB runner was held up
+      # for a round trip because none of this was recorded.
+      - name: Record runner baseline
+        run: |
+          set -eo pipefail
+          cores=$( nproc )
+          mem_total=$( awk '/MemTotal/{print int($2/1024)}' /proc/meminfo )
+          mem_avail=$( awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo )
+          swap_total=$( free -m | awk '/^Swap:/{print $2}' )
+          disk_avail=$( df -m --output=avail / | tail -1 | tr -d ' ' )
+          baseline="cores=${cores} mem_total=${mem_total}MB mem_avail=${mem_avail}MB swap_total=${swap_total}MB disk_avail=${disk_avail}MB"
+
+          echo "${baseline}"
+          echo "::notice::REH runner baseline: ${baseline}"
+          {
+            echo "### REH runner baseline"
+            echo
+            echo '| metric | value |'
+            echo '| --- | --- |'
+            echo "| runner label | \`${RUNNER_NAME:-unknown}\` |"
+            echo "| cores | ${cores} |"
+            echo "| memory total | ${mem_total} MB |"
+            echo "| memory available | ${mem_avail} MB |"
+            echo "| swap total | ${swap_total} MB |"
+            echo "| disk available (/) | ${disk_avail} MB |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Sized for the observed compile peak (~7.8 GB and still climbing when
+          # the 4-core runner died). Fail loudly rather than burning ~15 min to
+          # rediscover that the label silently resolved to a smaller machine.
+          if [ "${mem_total}" -lt 24000 ]; then
+            echo "::error::REH runner has ${mem_total}MB RAM; compile-src needs >=8GB and thrashed to death at 16GB. Expected the 32GB larger runner — check the ubuntu-latest-8-core label still resolves."
+            exit 1
+          fi
+
       - name: Build REH server
         run: |
           set -eo pipefail
-          echo "=== baseline ==="
-          nproc; free -h; df -h /
           echo "NODE_OPTIONS=${NODE_OPTIONS:-<unset, build.sh sets it>}"
 
           (
