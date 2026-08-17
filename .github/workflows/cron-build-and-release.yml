@@ -342,7 +342,23 @@ jobs:
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.full_name == github.repository &&
         !contains(github.event.pull_request.labels.*.name, 'auto-release')))
-    runs-on: ubuntu-latest
+    # Larger runner (org-provisioned, 8 vCPU / 32 GB, x64). The standard runner
+    # ran out of memory during compile-src on 1.133.0: run 32077438671 sampled
+    # 4938 MB available as compilation started, 428 MB forty-seven seconds
+    # later, then swap climbing to ~3 GB and plateauing while available memory
+    # kept falling. Disk was flat at ~6 GB free throughout, so this was memory,
+    # not space. Thrashing is also why run 32072041321 spent 56 minutes in a
+    # phase that takes ~7 before the runner stopped answering the server.
+    #
+    # build.sh sets --max-old-space-size=8192, which V8 treats as licence to
+    # grow to 8 GB regardless of what the box can actually back — so the heap
+    # has to fit in RAM, and 32 GB gives it ~4x the observed peak. The 4-core
+    # larger runner would NOT have helped: it is also 16 GB, and only adds disk.
+    #
+    # Must stay x64: VSCODE_ARCH is x64 and this publishes
+    # bradfordcode-reh-linux-x64. The `Install build dependencies` apt names
+    # assume Ubuntu 24.04, matching what ubuntu-latest resolves to.
+    runs-on: ubuntu-latest-8-core
     timeout-minutes: 90
     env:
       APP_NAME: BradfordCode
