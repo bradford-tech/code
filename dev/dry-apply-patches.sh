@@ -50,16 +50,24 @@ if [[ ! -d vscode ]]; then
   exit 2
 fi
 
+# Clean FIRST, then roll forward. The tree is almost always dirty when this
+# script runs — it leaves patches applied, and any earlier diagnosis does too —
+# and `git checkout` refuses to move with local modifications ("Please commit
+# your changes or stash them"). Cleaning after the checkout, as this did
+# originally, meant --commit failed exactly when you needed it most: on the
+# second run.
+( cd vscode && git reset --hard -q HEAD && git clean -fdxq )
+
 if [[ -n "${COMMIT}" ]]; then
   if ! printf '%s' "${COMMIT}" | grep -Eq '^[0-9a-f]{40}$'; then
     echo "--commit must be a 40-char hex SHA: '${COMMIT}'" >&2
     exit 2
   fi
   echo "Rolling vscode/ to ${COMMIT}"
-  ( cd vscode && git fetch --depth 1 origin "${COMMIT}" -q && git checkout -q FETCH_HEAD )
+  ( cd vscode && git fetch --depth 1 origin "${COMMIT}" -q && git checkout -q --detach FETCH_HEAD )
+  ( cd vscode && git reset --hard -q HEAD && git clean -fdxq )
 fi
 
-( cd vscode && git reset --hard -q HEAD && git clean -fdxq )
 echo "Tree at: $( cd vscode && git rev-parse HEAD )"
 echo
 
