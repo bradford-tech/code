@@ -722,21 +722,21 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           MS_TAG: ${{ needs.check.outputs.ms_tag }}
+          MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
         with:
           script: |
             const msTag = process.env.MS_TAG || 'unknown';
+            const msCommit = process.env.MS_COMMIT || '';
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const titleStem = `Build failure: vscode ${msTag}`;
 
-            // Look for an existing open issue for this VS Code tag
-            const { data: issues } = await github.rest.issues.listForRepo({
+            const openIssuesLabelled = async (label) => (await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              labels: 'build-failure',
+              labels: label,
               per_page: 100,
-            });
-            const existing = issues.find(i => i.title.startsWith(titleStem));
+            })).data.filter(i => i.title.startsWith(titleStem));
 
             const commentBody = [
               `Build failure on workflow run [${context.runId}](${runUrl}).`,
@@ -747,6 +747,30 @@ jobs:
               ``,
               `See the run for full logs.`,
             ].join('\n');
+
+            // If this tag already escalated to a human, record the recurrence
+            // and STOP. Without this the loop is perpetual: the auto-fix cap
+            // relabels build-failure -> needs-human, the next cron finds no
+            // build-failure issue, opens a fresh one with a fresh 3-attempt
+            // budget, and burns another Claude run plus two build jobs every
+            // day on a problem already handed to a person. 1.133.0 did exactly
+            // that (issue #45 escalated, #46 opened three days later).
+            const [escalated] = await openIssuesLabelled('needs-human');
+            if (escalated) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: escalated.number,
+                body: `${commentBody}\n\nStill failing while \`needs-human\` is set on this issue; not re-running the auto-fix loop. Remove the \`needs-human\` label (or add \`build-failure\`) to restart it.`,
+              });
+              core.warning(
+                `vscode ${msTag} already escalated to a human on issue #${escalated.number}; ` +
+                `recorded the recurrence and skipped the fix-loop dispatch.`
+              );
+              return;
+            }
+
+            const [existing] = await openIssuesLabelled('build-failure');
 
             let issueNumber;
             if (existing) {
@@ -785,6 +809,13 @@ jobs:
                 client_payload: {
                   issue_number: issueNumber,
                   run_url: runUrl,
+                  // The tag/commit the build actually failed on. Without these
+                  // the fix workflow stages vscode/ at main's pin, which lags
+                  // whenever release PRs sit unmerged — so every attempt began
+                  // at the wrong commit and had to roll forward before it could
+                  // start, and the vscode/ cache key never matched the target.
+                  ms_tag: msTag,
+                  ms_commit: msCommit,
                 },
               });
             } catch (err) {

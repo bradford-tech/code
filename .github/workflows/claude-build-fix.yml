@@ -20,12 +20,22 @@ jobs:
       (github.event_name == 'issues' && github.event.label.name == 'build-failure') ||
       github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
-    # 45 min budget: Claude clones a fresh vscode/ (1-3 min shallow), dry-applies
-    # ~30 patches sequentially, analyzes failure logs, edits patch files, and
-    # pushes — with --max-turns 50 this can creep past 30 min on multi-patch
-    # breaks. Hitting the timeout still marks the attempt as consumed, so a
-    # tight cap accelerates needs-human on transient slowness.
-    timeout-minutes: 45
+    # 90 min budget. Was 45 with --max-turns 50, and 1.133.0 showed that is not
+    # enough: two of three attempts died on "Reached maximum number of turns
+    # (50)" without ever opening a PR. That release broke four patches at once,
+    # and one of them needed a full regenerate — enumerate the breaks, roll the
+    # tree, rebase each, re-verify, push. Hitting either ceiling still consumes
+    # an attempt, so an under-sized budget doesn't fail safe, it just burns the
+    # cap without producing a fix.
+    timeout-minutes: 90
+    env:
+      # Single source of truth for the attempt cap; every gate, message and the
+      # prompt read it. Raised 3 -> 5 because attempts are marked BEFORE Claude
+      # runs (deliberately, so a crash can't retry forever), which means infra
+      # failures spend them: on 1.133.0 attempt 1 died instantly on "your
+      # organization has disabled Claude subscription access" having done no
+      # work at all, leaving only two real attempts for a four-patch break.
+      FIX_ATTEMPT_CAP: "5"
     permissions:
       contents: write
       pull-requests: write
@@ -56,8 +66,15 @@ jobs:
           ISSUE_FROM_LABEL: ${{ github.event.issue.number }}
           ISSUE_FROM_DISPATCH: ${{ github.event.client_payload.issue_number }}
           RUN_URL_FROM_DISPATCH: ${{ github.event.client_payload.run_url }}
+          MS_TAG_FROM_DISPATCH: ${{ github.event.client_payload.ms_tag }}
+          MS_COMMIT_FROM_DISPATCH: ${{ github.event.client_payload.ms_commit }}
         run: |
           set -eo pipefail
+          # Default to main's pin; the dispatch overrides it below when it
+          # carries the tag/commit the build actually failed on.
+          target_tag=$(jq -r '.tag' upstream/stable.json)
+          target_commit=$(jq -r '.commit' upstream/stable.json)
+
           if [ "$EVENT_NAME" = "issues" ]; then
             # github.event.issue.number is GitHub-generated, always numeric.
             echo "issue_number=$ISSUE_FROM_LABEL" >> "$GITHUB_OUTPUT"
@@ -75,7 +92,30 @@ jobs:
             fi
             echo "issue_number=$ISSUE_FROM_DISPATCH" >> "$GITHUB_OUTPUT"
             echo "run_url=$RUN_URL_FROM_DISPATCH" >> "$GITHUB_OUTPUT"
+
+            # ms_tag/ms_commit are optional (older dispatches and human label
+            # adds omit them) but attacker-controllable when present, and they
+            # flow into `git fetch` and a cache key. Same tight shape checks the
+            # other dispatched fields get; a bad value fails loudly rather than
+            # silently falling back, so a malformed payload can't quietly build
+            # the wrong commit.
+            if [ -n "$MS_COMMIT_FROM_DISPATCH" ] || [ -n "$MS_TAG_FROM_DISPATCH" ]; then
+              if ! printf '%s' "$MS_TAG_FROM_DISPATCH" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+                echo "::error::client_payload.ms_tag is not semver-shaped: '$MS_TAG_FROM_DISPATCH'"
+                exit 1
+              fi
+              if ! printf '%s' "$MS_COMMIT_FROM_DISPATCH" | grep -Eq '^[0-9a-f]{40}$'; then
+                echo "::error::client_payload.ms_commit is not a 40-char hex SHA: '$MS_COMMIT_FROM_DISPATCH'"
+                exit 1
+              fi
+              target_tag="$MS_TAG_FROM_DISPATCH"
+              target_commit="$MS_COMMIT_FROM_DISPATCH"
+            fi
           fi
+
+          echo "target_tag=$target_tag" >> "$GITHUB_OUTPUT"
+          echo "target_commit=$target_commit" >> "$GITHUB_OUTPUT"
+          echo "::notice::Fix target: vscode $target_tag ($target_commit)"
 
       # Count prior attempt markers on the issue. The marker is an HTML comment
       # so it never renders to the human reader but is greppable via the API.
@@ -120,7 +160,7 @@ jobs:
           attempt_num=$((attempts + 1))
           echo "attempts=$attempts" >> "$GITHUB_OUTPUT"
           echo "attempt_num=$attempt_num" >> "$GITHUB_OUTPUT"
-          echo "::notice::Prior attempts on issue #$ISSUE: $attempts (cap is 3)"
+          echo "::notice::Prior attempts on issue #$ISSUE: $attempts (cap is ${FIX_ATTEMPT_CAP})"
 
       # Cap-hit branch: post the summary comment FIRST (audit record), then
       # swap labels, then surface the terminal state on the Actions UI.
@@ -131,7 +171,7 @@ jobs:
       # The workflow itself still exits 0 — we don't want it filing a
       # build-failure issue against itself.
       - name: Give up at cap
-        if: fromJSON(steps.count.outputs.attempts) >= 3
+        if: fromJSON(steps.count.outputs.attempts) >= fromJSON(env.FIX_ATTEMPT_CAP)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ steps.ctx.outputs.issue_number }}
@@ -151,7 +191,7 @@ jobs:
             exit 0
           fi
           gh issue comment "$ISSUE" --body "$(cat <<EOF
-          Auto-fix loop stopped after 3 attempts.
+          Auto-fix loop stopped after ${FIX_ATTEMPT_CAP} attempts.
 
           Latest failing run: ${RUN_URL:-(see workflow history)}
 
@@ -175,7 +215,7 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## Cap reached on issue #$ISSUE
 
-          Auto-fix loop stopped after **3 attempts**. Label swapped from \`build-failure\` to \`needs-human\`.
+          Auto-fix loop stopped after **${FIX_ATTEMPT_CAP} attempts**. Label swapped from \`build-failure\` to \`needs-human\`.
 
           - Latest failing run: ${RUN_URL:-(see workflow history)}
           - Issue: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/issues/$ISSUE
@@ -192,7 +232,7 @@ jobs:
       # (where it would naturally land on a later line). Don't reorder the
       # heredoc body to put a header line ahead of the marker.
       - name: Mark this attempt
-        if: fromJSON(steps.count.outputs.attempts) < 3
+        if: fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ATTEMPT_NUM: ${{ steps.count.outputs.attempt_num }}
@@ -202,12 +242,12 @@ jobs:
           set -eo pipefail
           gh issue comment "$ISSUE" --body "$(cat <<EOF
           <!-- claude-build-fix-attempt -->
-          Starting fix attempt ${ATTEMPT_NUM}/3 in run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}.
+          Starting fix attempt ${ATTEMPT_NUM}/${FIX_ATTEMPT_CAP} in run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}.
           Triggering failure: ${RUN_URL:-(none, manual label add)}
           EOF
           )"
 
-      # Pre-stage upstream vscode/ at the currently-pinned commit so Claude
+      # Pre-stage upstream vscode/ at the target commit (see ctx) so Claude
       # doesn't burn 3–5 min of its 45-min budget on the clone every iteration.
       # The split between cache/restore and cache/save (instead of the combined
       # actions/cache action) is deliberate: actions/cache auto-saves at job
@@ -216,17 +256,19 @@ jobs:
       # state. Save explicitly here, right after the clone, so the cache always
       # holds a clean pre-patch tree.
       #
-      # Key is hashFiles('upstream/stable.json'): when Spencer (or Claude)
-      # bumps the pinned commit, the cache key changes and the next run does a
-      # fresh clone at the new commit. GitHub LRU-evicts old entries; the
-      # ~500MB-1GB vscode/ entries are well within the 10GB per-repo budget.
+      # Key is the target commit — the one the build actually failed on, which
+      # the dispatch carries. It used to be hashFiles('upstream/stable.json'),
+      # i.e. main's pin; that lags whenever release PRs sit unmerged, so the
+      # cache was keyed to a commit the fix run didn't want and every attempt
+      # both missed the cache and started from the wrong tree. GitHub LRU-evicts
+      # old entries; the ~500MB-1GB vscode/ entries fit the 10GB repo budget.
       - name: Restore vscode/ cache
         id: vscode_cache
-        if: fromJSON(steps.count.outputs.attempts) < 3
+        if: fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: vscode
-          key: vscode-${{ hashFiles('upstream/stable.json') }}
+          key: vscode-${{ steps.ctx.outputs.target_commit }}
 
       # Cache miss → clone fresh. Partial clone + shallow fetch keeps the
       # network cost to ~30–60s. If the failing build was actually against an
@@ -234,10 +276,15 @@ jobs:
       # advance before the auto-release PR merged), Claude can `git fetch
       # --depth 1 origin <commit> && git checkout FETCH_HEAD` in place from
       # this base — still much faster than a full re-clone.
-      - name: Pre-stage vscode/ at the pinned commit
+      - name: Pre-stage vscode/ at the target commit
         if: |
-          fromJSON(steps.count.outputs.attempts) < 3 &&
+          fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP) &&
           steps.vscode_cache.outputs.cache-hit != 'true'
+        env:
+          # Already shape-validated in the ctx step (semver tag, 40-hex commit),
+          # whether it came from the dispatch or from upstream/stable.json.
+          TARGET_TAG: ${{ steps.ctx.outputs.target_tag }}
+          TARGET_COMMIT: ${{ steps.ctx.outputs.target_commit }}
         run: |
           set -eo pipefail
           # Defensive: if actions/cache/restore partially populated vscode/
@@ -245,43 +292,27 @@ jobs:
           # in the wild), the clone below would fail with "destination path
           # 'vscode' already exists" and burn an attempt on infra noise.
           rm -rf vscode
-          tag=$(jq -r '.tag' upstream/stable.json)
-          commit=$(jq -r '.commit' upstream/stable.json)
-          # Defensive shape check on values flowing into shell commands.
-          # upstream/stable.json is trusted (only `main` can write it), but
-          # validate anyway — cheap defense against a future supply-chain
-          # mishap that lands a crafted .tag/.commit value on main. The same
-          # values would otherwise be interpolated into `git fetch <commit>`
-          # and a notice log without escaping.
-          if ! printf '%s' "$tag" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::upstream/stable.json .tag is not semver-shaped: '$tag'"
-            exit 1
-          fi
-          if ! printf '%s' "$commit" | grep -Eq '^[0-9a-f]{40}$'; then
-            echo "::error::upstream/stable.json .commit is not a 40-char hex SHA: '$commit'"
-            exit 1
-          fi
           git clone --filter=blob:none --no-checkout \
             https://github.com/microsoft/vscode.git vscode
           cd vscode
-          git fetch --depth 1 origin "$commit"
+          git fetch --depth 1 origin "$TARGET_COMMIT"
           git checkout FETCH_HEAD
-          echo "::notice::vscode/ ready at tag $tag commit $commit ($(du -sh . | cut -f1))"
+          echo "::notice::vscode/ ready at tag $TARGET_TAG commit $TARGET_COMMIT ($(du -sh . | cut -f1))"
 
       # Save the clean tree NOW, before Claude touches it. Skipped on cache
       # hit (entry already exists; save would no-op anyway, but the explicit
       # guard saves a 1–2s upload check).
       - name: Save clean vscode/ to cache
         if: |
-          fromJSON(steps.count.outputs.attempts) < 3 &&
+          fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP) &&
           steps.vscode_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: vscode
-          key: vscode-${{ hashFiles('upstream/stable.json') }}
+          key: vscode-${{ steps.ctx.outputs.target_commit }}
 
       - name: Run Claude
-        if: fromJSON(steps.count.outputs.attempts) < 3
+        if: fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
         uses: anthropics/claude-code-action@593d7a5c4e0073569f74772c2b7b64c30ec14707 # v1
         with:
           allowed_bots: "*"
@@ -301,9 +332,17 @@ jobs:
           plugins: 'superpowers@claude-plugins-official'
           additional_permissions: |
             actions: read
+          # --max-turns 250: 50 was the binding constraint on 1.133.0, where two
+          # attempts ended on "Reached maximum number of turns (50)" with no PR
+          # opened. A four-patch break costs a turn per dry-apply inspection,
+          # per reject read, per rebase and per re-verify, and the copilot patch
+          # needed a regenerate-and-recheck cycle on top. Turns are only spent
+          # when Claude acts, so a high ceiling costs nothing on easy breaks and
+          # is the difference between converging and burning an attempt on hard
+          # ones; timeout-minutes remains the real wall-clock guard.
           claude_args: |
             --model opus
-            --max-turns 50
+            --max-turns 250
             --disallowedTools "Bash(gh pr merge:*),Bash(git push --force:*),Bash(git push --force-with-lease:*),Bash(git push -f:*)"
           # Branch protection on `main` is the only meaningful guard against
           # Claude pushing to / merging into main. The disallowedTools list
@@ -323,7 +362,8 @@ jobs:
             Context:
             - Issue: #${{ steps.ctx.outputs.issue_number }}
             - Failing run: ${{ steps.ctx.outputs.run_url }}
-            - This is attempt ${{ steps.count.outputs.attempt_num }} of 3.
+            - This is attempt ${{ steps.count.outputs.attempt_num }} of ${{ env.FIX_ATTEMPT_CAP }}.
+            - Upstream target: vscode ${{ steps.ctx.outputs.target_tag }} (${{ steps.ctx.outputs.target_commit }})
 
             If the failing run URL above is empty, fall back to:
               gh run list --workflow cron-build-and-release.yml --status failure --limit 1 --json databaseId,url
@@ -336,19 +376,23 @@ jobs:
               - `vscode-min-prepack` ASCII hygiene check on non-ASCII regex literals
               - native module ABI mismatch (NODE_MODULE_VERSION) after Node version bumps
 
-            The workflow has already staged `vscode/` for you at the commit
-            pinned in `upstream/stable.json` (partial clone, shallow fetch).
-            Use it directly for the dry-apply pattern in CLAUDE.md — apply
-            patches in CI order against the staged tree to confirm a fix
-            before pushing. If the failing build was against a NEWER upstream
-            tag than what's pinned, `cd vscode && git fetch --depth 1 origin
-            <commit> && git checkout FETCH_HEAD` to roll the staged tree
-            forward; it's faster than re-cloning.
+            `vscode/` is already staged at the upstream target above — the commit
+            the build actually failed on, not main's pin. No clone or checkout
+            needed; start diagnosing immediately.
 
-            Two anti-patterns from prior iterations to avoid (1.124.0 hit both):
+            START HERE for any patch-apply failure:
 
-            1. Opening duplicate orphan PRs. Before opening a new PR, look
-               for an existing fix PR tracking this issue:
+              ./dev/dry-apply-patches.sh
+
+            It applies every patch in CI order against the staged tree and, unlike
+            the build, CONTINUES past failures — so one run names every broken
+            patch instead of just the first. `--verbose` shows full rejections.
+            Rebase all of them in this session and commit them together.
+
+            Three anti-patterns from prior incidents to avoid:
+
+            1. Opening duplicate orphan PRs (1.124.0). Before opening a new PR,
+               look for an existing fix PR tracking this issue:
                  gh pr list \
                    --search "Refs #${{ steps.ctx.outputs.issue_number }} in:body state:open" \
                    --json number,headRefName,author --jq '.[]'
@@ -359,15 +403,29 @@ jobs:
                can never be merged together — the cap is hit before either
                branch carries all the fixes.
 
-            2. Fixing only the first broken patch. `prepare_vscode.sh` halts
-               on the first patch-apply failure, so the failing log shows
-               ONE rejection — but patches later in CI order may also be
-               broken for the same upstream reason. Use the dry-apply
-               pattern in CLAUDE.md to enumerate EVERY broken patch in one
-               session, then commit all rebases together. With a 3-attempt
-               cap, per-patch sequential iteration cannot converge for
-               multi-break upstream releases (1.124.0 broke patches 11 AND
-               20; each got its own PR, neither was mergeable).
+            2. Fixing only the first broken patch (1.124.0 broke 2, 1.133.0
+               broke 4). `prepare_vscode.sh` halts at the first rejection, so
+               the log names one patch while others are equally broken. Running
+               dry-apply-patches.sh first makes this a non-issue — do it before
+               you start editing anything.
+
+            3. Declaring victory when patches merely APPLY (1.133.0). Applying
+               is necessary, not sufficient. Before you push, also confirm:
+                 - Deletions really happened. `git apply --reject` cannot delete
+                   a file whose content drifted, and it emits NO .rej for that
+                   case — the deletion just silently vanishes from a regenerated
+                   patch. Check every `deleted file mode` the old patch had is
+                   still present in the new one.
+                 - No dangling imports of modules the patch deletes.
+                 - Upstream has not added NEW files importing something we
+                   remove. 1.133.0 added three files importing types from the
+                   removed @github/copilot-sdk; each needed a local alias.
+                   Sweep with a grep for the removed package across `src/`.
+
+            A patch file must keep its `!!TOKEN!!` placeholders (!!APP_NAME!!
+            etc.) — utils.sh substitutes them per build. If you regenerate a
+            patch, apply it RAW (no substitution) so `git diff` reproduces the
+            tokens; never commit a patch where a token became a literal value.
 
             Open a PR (or push to the existing fix PR for this issue) that addresses
             the root cause.
