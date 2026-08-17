@@ -424,6 +424,19 @@ jobs:
                    remove. 1.133.0 added three files importing types from the
                    removed @github/copilot-sdk; each needed a local alias.
                    Sweep with a grep for the removed package across `src/`.
+                 - Any local type alias standing in for a removed SDK type still
+                   covers how upstream uses it NOW. These go stale silently:
+                   1.133.0's getPermissionDisplay grew from reading only
+                   `.kind` to reading nine fields, and the inherited
+                   `{ kind: ... }` alias (plus its "only `kind` is referenced"
+                   comment) applied fine and then failed the build with ten
+                   TS2339s. Grep every `request.<prop>`-style access against the
+                   alias before trusting it.
+
+            Patches applying is NOT a green build. The compile runs after, and
+            a type-level mistake will not show up in any dry-apply. If you
+            cannot compile, say so explicitly in the PR body rather than
+            implying the fix is verified.
 
             A patch file must keep its `!!TOKEN!!` placeholders (!!APP_NAME!!
             etc.) — utils.sh substitutes them per build. If you regenerate a
