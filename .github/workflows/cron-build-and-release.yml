@@ -699,7 +699,22 @@ jobs:
           # Drives the in-app auto-updater (Squirrel.Mac), which extracts via
           # `ditto -x -k` — so `url` MUST be the ZIP, not the DMG.
           mkdir -p versions/stable/darwin-arm64
-          timestamp_ms=$(($(date +%s) * 1000 + $(date +%N) / 1000000))
+          # One call, already in milliseconds. This was
+          #   $(($(date +%s) * 1000 + $(date +%N) / 1000000))
+          # which failed ~8% of releases: %N is zero-padded, bash reads a
+          # leading zero as octal, and 093499539 contains a 9 — so the
+          # arithmetic aborted with "value too great for base", timestamp_ms
+          # came out empty, and jq rejected `--argjson timestamp ""`. A further
+          # ~2% (all digits octal-legal, e.g. 012345670) decoded silently WRONG
+          # rather than failing. Being probabilistic it survived many green
+          # releases before taking run 32079679658 down after both builds had
+          # already passed. Two `date` calls could also straddle a second
+          # boundary; %s%3N removes that too.
+          timestamp_ms=$( date +%s%3N )
+          if ! printf '%s' "${timestamp_ms}" | grep -Eq '^[0-9]{13}$'; then
+            echo "::error::Expected a 13-digit epoch-ms timestamp from date +%s%3N, got '${timestamp_ms}'"
+            exit 1
+          fi
           jq -n \
             --arg url "https://github.com/bradford-tech/code/releases/download/${RELEASE_VERSION}/BradfordCode-darwin-arm64-${RELEASE_VERSION}.zip" \
             --arg name "$RELEASE_VERSION" \
