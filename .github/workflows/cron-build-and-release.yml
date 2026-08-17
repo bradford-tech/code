@@ -406,8 +406,50 @@ jobs:
       - name: Clone VS Code source
         run: ./get_repo.sh
 
+      # Resource sampling around the build. Two consecutive 1.133.0 REH runs
+      # died with "The hosted runner lost communication with the server", both
+      # during compile-src, one after 48 minutes in a phase that takes ~7 on a
+      # healthy run. That message covers CPU/memory starvation and network
+      # loss alike, and the fatal run's logs were never uploaded (the blob 404s),
+      # so the evidence has to leave the runner as it happens.
+      #
+      # Threshold crossings are emitted as ::warning:: because annotations
+      # survived on the run whose log blob did not. Sampling is best-effort and
+      # can never fail the build: it runs detached and its exit status is
+      # discarded.
       - name: Build REH server
-        run: ./build.sh
+        run: |
+          set -eo pipefail
+          echo "=== baseline ==="
+          nproc; free -h; df -h /
+          echo "NODE_OPTIONS=${NODE_OPTIONS:-<unset, build.sh sets it>}"
+
+          (
+            warned_mem=0; warned_disk=0
+            while true; do
+              mem_avail=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo 2>/dev/null || echo -1)
+              swap_used=$(free -m 2>/dev/null | awk '/^Swap:/{print $3}' || echo -1)
+              disk_avail=$(df -m --output=avail / 2>/dev/null | tail -1 | tr -d ' ' || echo -1)
+              echo "[res] $(date -u +%H:%M:%S) mem_avail=${mem_avail}MB swap_used=${swap_used}MB disk_avail=${disk_avail}MB"
+              # Latched so a sustained squeeze doesn't spam the annotation list.
+              if [ "${mem_avail}" -ge 0 ] && [ "${mem_avail}" -lt 1024 ] && [ "${warned_mem}" -eq 0 ]; then
+                echo "::warning::REH build low on memory: ${mem_avail}MB available, ${swap_used}MB swap in use"
+                warned_mem=1
+              fi
+              if [ "${disk_avail}" -ge 0 ] && [ "${disk_avail}" -lt 2048 ] && [ "${warned_disk}" -eq 0 ]; then
+                echo "::warning::REH build low on disk: ${disk_avail}MB free on /"
+                warned_disk=1
+              fi
+              sleep 20
+            done
+          ) &
+          sampler=$!
+          trap 'kill "${sampler}" 2>/dev/null || true' EXIT
+
+          ./build.sh
+
+          echo "=== after build ==="
+          free -h; df -h /
 
       - name: Package REH tarball
         run: ./prepare_assets.sh
