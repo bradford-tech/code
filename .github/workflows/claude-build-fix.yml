@@ -36,6 +36,9 @@ jobs:
       # organization has disabled Claude subscription access" having done no
       # work at all, leaving only two real attempts for a four-patch break.
       FIX_ATTEMPT_CAP: "5"
+      # Who Claude's fix PRs get assigned to. Must be a repo collaborator;
+      # check with `gh api /repos/<owner>/<repo>/assignees/<login>` (204 = ok).
+      PR_ASSIGNEE: sbs44
     permissions:
       contents: write
       pull-requests: write
@@ -440,3 +443,40 @@ jobs:
 
                 on its own line. The cron's `report-pr-failure` job parses this line
                 to dispatch the next iteration; without it, the loop breaks.
+
+      # Claude opens the fix PR itself, so there is no `gh pr create` here to
+      # hang an --assignee off; assign afterwards instead.
+      #
+      # `always()`: Claude routinely opens the PR and then exhausts turns or
+      # times out, and that PR still needs an owner — gating on success would
+      # leave exactly the PRs a human must pick up unassigned. Never fatal, for
+      # the same reason: the fix work is already pushed by this point.
+      - name: Assign the fix PR
+        if: always() && fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ steps.ctx.outputs.issue_number }}
+        run: |
+          set -eo pipefail
+          # Match `Refs #<issue>` on its own line, the same marker
+          # report-pr-failure keys on. Filtering client-side rather than via
+          # `--search "... in:body"` on purpose: the search index lags PR
+          # creation by seconds-to-minutes, so a just-opened PR is routinely
+          # invisible to it. The line anchors also stop `Refs #45` matching an
+          # issue-450 PR, and stop a quoted/blockquoted mention counting.
+          pr=$(gh pr list --state open --limit 100 --json number,body \
+               | jq -r --arg issue "$ISSUE" '
+                   [ .[] | select(.body | test("(^|\n)Refs #" + $issue + "(\r?\n|$)")) ]
+                   | .[0].number // empty')
+
+          if [ -z "$pr" ]; then
+            echo "::notice::No open PR references \"Refs #${ISSUE}\"; nothing to assign"
+            exit 0
+          fi
+
+          if gh pr edit "$pr" --add-assignee "$PR_ASSIGNEE"; then
+            echo "::notice::Assigned $PR_ASSIGNEE to fix PR #$pr"
+          else
+            echo "::warning::Could not assign $PR_ASSIGNEE to PR #$pr. \
+          Check they are still a collaborator (gh api /repos/${GITHUB_REPOSITORY}/assignees/$PR_ASSIGNEE)."
+          fi

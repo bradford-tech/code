@@ -34,6 +34,14 @@ permissions:
   issues: write
   pull-requests: write   # release job opens the auto-release PR; check job queries open ones
 
+env:
+  # Who every auto-created PR gets assigned to. Assigning needs the assignee to
+  # be a repo collaborator; verify with
+  #   gh api /repos/<owner>/<repo>/assignees/<login>   (204 = assignable)
+  # GITHUB_TOKEN is sufficient here — `pull-requests: write` above covers it, so
+  # no GitHub App token is needed just to assign.
+  PR_ASSIGNEE: sbs44
+
 concurrency:
   # Per-PR concurrency: a new commit supersedes the in-flight run instead of
   # queuing behind a 25-min build. Cron/dispatch/push all collapse to
@@ -705,6 +713,17 @@ jobs:
               --title "chore(release): ${RELEASE_VERSION} (vscode ${MS_TAG})" \
               --label auto-release \
               --body-file "$body_file"
+          fi
+
+          # Assign after create, not via `gh pr create --assignee`, and never
+          # fatally. By this point the release is already published and the
+          # branch pushed; failing the job over an assignment would red-X a run
+          # whose actual work succeeded, and re-running it would try to recreate
+          # an existing release. Runs for the skip branch too, so an existing PR
+          # that somehow lost its assignee gets it back.
+          if ! gh pr edit "$BRANCH" --add-assignee "$PR_ASSIGNEE"; then
+            echo "::warning::Could not assign $PR_ASSIGNEE to the release PR for $BRANCH. \
+          Check they are still a collaborator (gh api /repos/${GITHUB_REPOSITORY}/assignees/$PR_ASSIGNEE)."
           fi
 
   report-failure:
