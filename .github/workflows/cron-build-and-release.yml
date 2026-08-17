@@ -9,17 +9,10 @@ on:
         description: 'Build the pinned VS Code version (from upstream/stable.json) regardless of whether upstream has advanced'
         type: boolean
         default: false
-  # PR trigger feeds the Claude auto-fix loop. The build job builds + bundles
-  # only; release/codesign/notarize jobs are gated out below.
-  #
-  # `paths:` keeps doc-only / workflow-tweak / CLAUDE.md PRs from burning ~25
-  # min of macos-15 runner time. The list covers every input to the build:
-  # patches applied to upstream, `src/stable/` overlay, the build/prepare
-  # scripts, product.json overlay, the pinned upstream commit, and the cron
-  # workflow itself. `.nvmrc` is included because Node-version bumps have
-  # broken builds before (NODE_MODULE_VERSION ABI). If you add a new file
-  # that affects the build, also add it here. See
-  # docs/superpowers/specs/2026-06-08-claude-build-failure-auto-fix-design.md.
+  # PR trigger feeds the Claude auto-fix loop: build + bundle only, with
+  # release/codesign/notarize gated off below. `paths:` lists every input to
+  # the build so doc-only PRs don't burn macOS minutes — add new build inputs
+  # here. `.nvmrc` counts because Node major bumps have broken builds (ABI).
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -42,17 +35,12 @@ permissions:
   pull-requests: write   # release job opens the auto-release PR; check job queries open ones
 
 concurrency:
-  # Per-PR concurrency on PR events (cancel the in-flight run when a new commit
-  # lands — Claude's loop pushes iterations that should supersede each other,
-  # not queue behind a 25-min macOS build). Cron + workflow_dispatch + push
-  # events all collapse to refs/heads/main, preserving the original "don't
-  # overlap cron runs" property.
+  # Per-PR concurrency: a new commit supersedes the in-flight run instead of
+  # queuing behind a 25-min build. Cron/dispatch/push all collapse to
+  # refs/heads/main, preserving "don't overlap cron runs".
   #
-  # Note: `cancel-in-progress` is evaluated against the NEW event's context,
-  # not the in-flight run's. That's safe here because the group key already
-  # isolates cron (refs/heads/main) from per-PR runs (PR number) — a cron
-  # event can never land in the same concurrency group as a PR build, so
-  # turning cancel on for PRs can't cancel an in-flight cron run.
+  # `cancel-in-progress` is evaluated against the NEW event, but the group key
+  # already isolates cron from per-PR runs, so a PR can never cancel a cron.
   group: cron-build-and-release-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -108,36 +96,23 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # force_build: build the *pinned* version regardless of upstream changes.
-          #   Used to verify the workflow against a known-good pin, or to rebuild
-          #   after pushing a workflow/script fix without bumping VS Code.
-          # pull_request: build the *PR's pinned* version so we test what the PR
-          #   actually changes. Critical for the Claude auto-fix loop — without
-          #   this, a PR pinning 1.123.0 would either (a) chase upstream-latest
-          #   into a different tag, or (b) be skipped entirely when upstream
-          #   already matches the pin, leaving report-pr-failure dormant and the
-          #   PR misleadingly green. See spec section "Architecture / PR builds".
-          # Cron (force_build=false): build only if upstream advanced past the
-          #   pin AND no auto-release PR is already pending for that upstream
-          #   tag AND microsoft/vscode has actually pushed the git tag. The PR
-          #   guard avoids rebuilding the same version daily while the release
-          #   PR is waiting for human review. The tag-existence guard catches
-          #   the MS update API announcing a release before the corresponding
-          #   git tag is pushed (typically a few-hour gap) — without it, the
-          #   build job spins up a macOS-15 runner for ~25 min only to fail at
-          #   `Clone VS Code source` (issue #10). get_repo.sh has the same
-          #   check as defense-in-depth; catching it here saves the runner.
+          # force_build / pull_request: build the PINNED version. For PRs this
+          # is critical — chasing upstream-latest would test the wrong tag, and
+          # skipping when upstream already matches the pin would leave the PR
+          # misleadingly green with report-pr-failure dormant.
+          # Cron: build only if upstream advanced past the pin, no auto-release
+          # PR already pins that tag (avoids daily rebuilds while one awaits
+          # review), and microsoft/vscode actually pushed the git tag — the
+          # update API announces it hours early, and catching that here saves a
+          # ~25-min runner that would fail at `Clone VS Code source` (issue #10).
           if [[ "$FORCE_BUILD" == "true" || "$EVENT_NAME" == "pull_request" ]]; then
             ms_tag="$CURRENT_TAG"
             ms_commit="$CURRENT_COMMIT"
             needs_build=true
             reason="$EVENT_NAME: building PR's/pinned $ms_tag"
           elif [[ "$UPSTREAM_TAG" != "$CURRENT_TAG" ]]; then
-            # Check for an open auto-release PR that already pins this upstream
-            # tag. `--search "$UPSTREAM_TAG in:title"` matches the title we set
-            # in the release job ("chore(release): <RELEASE_VERSION> (vscode
-            # <MS_TAG>)"). Empty result → field is absent in jq output → falls
-            # through to the next guard.
+            # Matches the title the release job sets ("chore(release): <ver>
+            # (vscode <tag>)"). Empty result → absent field → next guard.
             existing_pr=$(gh pr list \
               --state open \
               --label auto-release \
@@ -149,12 +124,9 @@ jobs:
               ms_commit="$CURRENT_COMMIT"
               needs_build=false
               reason="open auto-release PR #$existing_pr already pins $UPSTREAM_TAG; awaiting human merge"
-            # Tag-existence guard: wire-protocol query against microsoft/vscode
-            # (no clone, ~1s). git ls-remote prints `<sha> refs/tags/<tag>` if
-            # the ref exists, nothing otherwise — `grep -q .` distinguishes.
-            # A network failure surfaces as step failure (set -eo pipefail is
-            # GitHub Actions' default for `run:` blocks), not a silent skip,
-            # so a real outage doesn't quietly stop daily builds.
+            # Wire-protocol query, no clone (~1s). ls-remote prints the ref if
+            # it exists, nothing otherwise. A network failure fails the step
+            # (Actions defaults to set -eo pipefail), rather than skipping.
             elif ! git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$UPSTREAM_TAG" | grep -q .; then
               ms_tag="$CURRENT_TAG"
               ms_commit="$CURRENT_COMMIT"
@@ -185,35 +157,26 @@ jobs:
   build:
     name: Build BradfordCode (macOS arm64)
     needs: check
-    # Gate three classes of PR out of the build:
-    #   - Fork PRs: would burn ~25–45 min of macos-15 runner time on
-    #     attacker-controllable source (modifications to build.sh, patches/,
-    #     etc.). Cron and same-repo PRs (incl. Claude's auto-fix PRs) still run.
-    #   - `auto-release` PRs: the release job that opened the PR just built
-    #     this exact version seconds before. Rebuilding it on the PR trigger
-    #     would waste another ~25 min for no signal. The required-status-check
-    #     rule has been removed from the ruleset, so a skipped build doesn't
-    #     block merge — see docs/.../2026-06-08-claude-build-failure-auto-fix-design.md.
+    # Skip two PR classes: fork PRs (would run attacker-controllable build
+    # scripts on a paid runner) and `auto-release` PRs (the release job just
+    # built this exact version). Same-repo PRs, including Claude's auto-fix
+    # PRs, still build. No required-status-check rule, so a skipped build
+    # doesn't block merge. See
+    # docs/superpowers/specs/2026-06-08-claude-build-failure-auto-fix-design.md.
     if: |
       needs.check.outputs.needs_build == 'true' &&
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.full_name == github.repository &&
         !contains(github.event.pull_request.labels.*.name, 'auto-release')))
-    # Standard runner, deliberately: this repo is public, so macos-15 is free
-    # with unlimited minutes. Larger runners ARE billed on public repos, so the
-    # daily cron would cost real money (~$1.90/build, ~$57/month).
-    #
-    # Measured on run 31301283190: macos-15-xlarge built in 6m33s vs 30-41 min
-    # here (whole job 11m42s vs ~36-45 min). The likely cause is RAM, not just
-    # cores — build.sh sets NODE_OPTIONS=--max-old-space-size=8192, an 8 GB
-    # heap that does not fit macos-15's 7 GB, so this runner is probably
-    # swapping through the compile. Lowering that heap below 7 GB may recover
-    # much of the gap for free and is worth trying before paying for a runner.
-    #
-    # If you ever do switch, it must stay an arm64 runner: VSCODE_ARCH is arm64
-    # and macos-15-large is Intel x86_64, which would force an untested
-    # cross-compile. macos-15-xlarge is the Apple Silicon variant.
-    runs-on: macos-15
+    # Larger runner, bought deliberately: macos-15 is free with unlimited
+    # minutes on this public repo, but larger runners are billed even here
+    # (~$1.90/build, ~$57/month for the daily cron). Measured on run
+    # 31301283190: 6m33s to build vs 30-41 min on macos-15 (whole job 11m42s
+    # vs ~36-45 min). Cause is likely RAM, not cores — build.sh asks for an
+    # 8 GB Node heap that doesn't fit macos-15's 7 GB. Dropping that heap
+    # under 7 GB may recover the gap for free and let us switch back.
+    # Must stay arm64: macos-15-large is Intel and would cross-compile.
+    runs-on: macos-15-xlarge
     timeout-minutes: 120
     env:
       APP_NAME: BradfordCode
@@ -224,10 +187,9 @@ jobs:
       SHOULD_BUILD_REH: "no"
       SHOULD_BUILD_REH_WEB: "no"
       SHOULD_BUILD_CLI: "no"
-      # ZIP feeds Electron's macOS auto-updater (Squirrel.Mac extracts via
-      # `ditto -x -k`, which only handles PKZip). DMG is for fresh installs.
-      # PR builds skip both: every Claude iteration would otherwise burn Apple
-      # notarytool quota for no extra signal beyond build + bundle success.
+      # ZIP feeds Squirrel.Mac's auto-updater (it extracts via `ditto -x -k`,
+      # PKZip only); DMG is for fresh installs. PR builds skip both to save
+      # Apple notarytool quota.
       SHOULD_BUILD_ZIP: ${{ github.event_name == 'pull_request' && 'no' || 'yes' }}
       SHOULD_BUILD_DMG: ${{ github.event_name == 'pull_request' && 'no' || 'yes' }}
       CI_BUILD: "yes"
@@ -235,8 +197,8 @@ jobs:
       MS_TAG: ${{ needs.check.outputs.ms_tag }}
       MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
       RELEASE_VERSION: ${{ needs.check.outputs.release_version }}
-      # Authenticate api.github.com calls during npm postinstall (ripgrep) and
-      # gulp builtin-extension fetches; raises rate limit from 60/h to 5000/h.
+      # Raises the api.github.com rate limit 60/h → 5000/h for the npm
+      # postinstall and gulp builtin-extension fetches.
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CERTIFICATE_OSX_P12_DATA: ${{ secrets.CERTIFICATE_OSX_P12_DATA }}
       CERTIFICATE_OSX_P12_PASSWORD: ${{ secrets.CERTIFICATE_OSX_P12_PASSWORD }}
@@ -256,10 +218,9 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.npm
-          # Include the .nvmrc hash so changing Node major automatically invalidates
-          # the cache. Without this, native modules built against the old Node
-          # (e.g. macos-alias from `npx create-dmg`, NODE_MODULE_VERSION 127 vs 137)
-          # survive a Node bump and crash with ERR_DLOPEN_FAILED.
+          # The .nvmrc hash invalidates the cache on a Node major bump; without
+          # it, native modules built against the old Node survive and crash
+          # with ERR_DLOPEN_FAILED.
           key: npm-${{ hashFiles('.nvmrc') }}-${{ env.MS_COMMIT }}
           restore-keys: |
             npm-${{ hashFiles('.nvmrc') }}-
@@ -278,20 +239,11 @@ jobs:
       - name: Build BradfordCode.app
         run: ./build.sh
 
-      # Skip the entire sign+notarize+ZIP+DMG+checksum+upload chain on PR
-      # builds. Two reasons, one for each step class:
-      #   - prepare_assets.sh: build/osx/prepare_assets.sh runs `xcrun
-      #     notarytool submit --wait` whenever CERTIFICATE_OSX_P12_DATA is
-      #     set, INDEPENDENT of SHOULD_BUILD_ZIP/DMG. Cert secrets are
-      #     available to same-repo PRs (Claude's auto-fix PRs), so without
-      #     this gate every Claude iteration burns Apple notary quota + 3-10
-      #     min wait — defeating the headline quota-saving goal.
-      #   - SHA-compute / artifact-uploads: with SHOULD_BUILD_ZIP/DMG=no, no
-      #     artifacts land in assets/, prepare_checksums.sh writes no
-      #     sidecars, and the SHA-compute step's [[ -f ]] guard would
-      #     hard-fail every PR build with "Expected SHA-256 sidecar not
-      #     found" — meaningless failure for Claude to chase.
-      # On PR builds, `./build.sh` exit 0 is the success signal.
+      # PR builds stop after build.sh — its exit 0 is the signal. Two reasons
+      # to gate the rest: prepare_assets.sh notarizes whenever the cert secret
+      # is set (independent of SHOULD_BUILD_ZIP/DMG), burning Apple quota on
+      # every Claude iteration; and with no artifacts in assets/, the
+      # SHA-compute guard would hard-fail every PR build anyway.
       - name: Sign + notarize + DMG
         if: github.event_name != 'pull_request'
         run: ./prepare_assets.sh
@@ -334,11 +286,9 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
-      # ZIP filename uses dashes + `darwin-` prefix to match the upstream
-      # `${APP_NAME}-darwin-${VSCODE_ARCH}-${RELEASE_VERSION}.zip` pattern in
-      # build/osx/prepare_assets.sh; the DMG uses dotted segments because
-      # `npx create-dmg` is what produces it. Don't try to unify them here
-      # without also patching upstream.
+      # ZIP uses dashes to match upstream's
+      # `${APP_NAME}-darwin-${VSCODE_ARCH}-${RELEASE_VERSION}.zip`; the DMG
+      # uses dots because `npx create-dmg` produces it. Unifying needs a patch.
       - name: Upload ZIP artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -371,12 +321,10 @@ jobs:
       dmg_sha256: ${{ steps.hash.outputs.dmg_sha256 }}
       zip_sha256: ${{ steps.hash.outputs.zip_sha256 }}
 
-  # Remote extension host server, consumed by jeanp413.open-remote-ssh when
-  # connecting BradfordCode to a linux-x64 host. Runs in parallel with the
-  # macOS client job and takes RELEASE_VERSION from the same `check` output —
-  # that shared value is what makes the client's and server's synthetic
-  # commits match, so the extension's default `strict` validation passes with
-  # no user settings. See docs/superpowers/plans/2026-08-09-linux-reh-server-build.md.
+  # Remote extension host for jeanp413.open-remote-ssh. Runs parallel to the
+  # macOS job and shares RELEASE_VERSION from `check` — that shared value makes
+  # the client's and server's synthetic commits match, so the extension's
+  # default `strict` validation passes with no user settings.
   build-reh:
     name: Build REH server (linux x64)
     needs: check
@@ -409,9 +357,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          # This job only reads the recipe and uploads artifacts; it never
-          # pushes. Leaving the token in .git/config would hand it to every
-          # npm postinstall script the VS Code build runs.
+          # Never pushes; leaving the token in .git/config would expose it to
+          # every npm postinstall script the build runs.
           persist-credentials: false
 
       - name: Setup Node
@@ -419,9 +366,9 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      # Native modules built during `npm ci`: kerberos needs libkrb5-dev,
-      # keytar/secret needs libsecret-1-dev, and the shared VS Code build
-      # needs the X11 headers even though we only ship the server.
+      # npm ci builds native modules: kerberos → libkrb5-dev, secret →
+      # libsecret-1-dev, plus X11 headers the shared build needs even though
+      # we only ship the server.
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -457,10 +404,9 @@ jobs:
       - name: Package REH tarball
         run: ./prepare_assets.sh
 
-      # The contract that actually matters at connect time. The remote install
-      # script runs `tar -xf ... --strip-components 1` and then executes
-      # $SERVER_DIR/bin/code-server, so the archive must carry `./bin/code-server`
-      # and product.json must agree on the commit the client will send.
+      # The contract that matters at connect time: the remote extracts with
+      # `--strip-components 1` then runs $SERVER_DIR/bin/code-server, so the
+      # archive must carry ./bin/code-server and agree on the client's commit.
       - name: Verify REH tarball layout
         id: hash
         run: |
@@ -478,13 +424,11 @@ jobs:
             tar -tzf "$asset" | head -40 >&2
             exit 1
           fi
-          # Compare against BUILD_SOURCEVERSION, NOT vscode/product.json. The
-          # source product.json has no `commit` key at all — gulp injects it at
-          # package time from BUILD_SOURCEVERSION (sha1 of RELEASE_VERSION, set
-          # by version.sh and exported to GITHUB_ENV by the build step). The
-          # macOS client derives its commit the same way from the same
-          # RELEASE_VERSION, so this asserts client and server agree — which is
-          # what open-remote-ssh's default `strict` validation checks.
+          # Compare to BUILD_SOURCEVERSION, NOT vscode/product.json — the
+          # source product.json has no `commit` key (gulp injects it at package
+          # time). The client derives its commit the same way from the same
+          # RELEASE_VERSION, so this asserts the two agree, which is what
+          # open-remote-ssh's default `strict` validation checks.
           if [[ -z "$BUILD_SOURCEVERSION" ]]; then
             echo "BUILD_SOURCEVERSION is unset; ./build.sh should have exported it via GITHUB_ENV" >&2
             exit 1
@@ -615,9 +559,8 @@ jobs:
 
       - name: Write versions/stable/darwin-arm64/latest.json
         run: |
-          # latest.json drives the in-app auto-updater (Squirrel.Mac), which
-          # downloads `url` and extracts it via `ditto -x -k` — so it MUST be
-          # the ZIP. The DMG is still attached to the release for fresh installs.
+          # Drives the in-app auto-updater (Squirrel.Mac), which extracts via
+          # `ditto -x -k` — so `url` MUST be the ZIP, not the DMG.
           mkdir -p versions/stable/darwin-arm64
           timestamp_ms=$(($(date +%s) * 1000 + $(date +%N) / 1000000))
           jq -n \
@@ -631,20 +574,11 @@ jobs:
             > versions/stable/darwin-arm64/latest.json
           cat versions/stable/darwin-arm64/latest.json
 
-      # Replaces the prior "commit & push to main with rebase-and-retry" flow.
-      # Main is now protected by a ruleset that requires every change go
-      # through a PR; the cron's GITHUB_TOKEN has no bypass. Instead:
-      #   1. Ensure the `auto-release` label exists.
-      #   2. Branch off main, commit the pin + latest.json updates, push the
-      #      feature branch.
-      #   3. Create the GitHub Release with --target pointing at that branch
-      #      (so the release tag references the commit that *contains* the pin
-      #      advance, even if the PR sits for hours awaiting human merge).
-      #   4. Open the PR for human review.
-      #
-      # The build job is gated to skip when the PR carries `auto-release`, so
-      # the cron's pull_request trigger doesn't rebuild this same version.
-      # See docs/superpowers/specs/2026-06-08-claude-build-failure-auto-fix-design.md.
+      # Main requires PRs and this token has no bypass, so rather than pushing:
+      # branch off main, commit the pin + latest.json, push, create the Release
+      # with --target on that branch, then open the PR. The build job skips
+      # `auto-release` PRs so this version isn't rebuilt. See
+      # docs/superpowers/specs/2026-06-08-claude-build-failure-auto-fix-design.md.
       - name: Ensure auto-release label exists
         run: |
           gh label create auto-release \
@@ -659,18 +593,11 @@ jobs:
           branch="release/${RELEASE_VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Idempotent: if a previous partial run of this job left the branch
-          # around (e.g. the gh-release call failed after the push), blow it
-          # away and recreate. Safe because RELEASE_VERSION is timestamp-derived
-          # per run, so the branch we'd overwrite came from this exact (failed)
-          # iteration — nothing a human could be tracking yet.
-          #
-          # Use ls-remote to distinguish "branch absent" (expected on first
-          # run, OK) from "delete failed" (auth, branch protection on
-          # release/**, etc — should fail loudly, not be swallowed by
-          # `|| true`). Without this check, a future branch-protection rule
-          # on release/** would surface as a confusing non-fast-forward
-          # error on the next `git push -u` instead of "couldn't delete".
+          # Idempotent: a leftover branch can only come from this run's own
+          # failed attempt (RELEASE_VERSION is per-run), so recreating is safe.
+          # ls-remote separates "absent" (fine) from "delete failed" (auth,
+          # branch protection) so the latter fails loudly instead of surfacing
+          # later as a confusing non-fast-forward push.
           if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
             git push origin --delete "$branch"
           fi
@@ -711,10 +638,8 @@ jobs:
           # Idempotent: if a previous run partially created this release, delete it before recreating.
           gh release delete "${RELEASE_VERSION}" --yes 2>/dev/null || true
 
-          # --target points the release tag at the release branch HEAD rather
-          # than main HEAD. The PR may sit unmerged for hours awaiting human
-          # review; without --target the tag would point at stale main and the
-          # release would advertise the wrong commit on its sidebar.
+          # --target points the tag at the release branch, not main. The PR may
+          # sit unmerged for hours; without it the tag would advertise stale main.
           gh release create "${RELEASE_VERSION}" \
             --title "BradfordCode ${RELEASE_VERSION}" \
             --notes-file "$notes_file" \
@@ -766,14 +691,10 @@ jobs:
           \`.github/workflows/cron-build-and-release.yml\`.
           EOF
 
-          # Idempotent: if an OPEN PR already exists for this branch, leave
-          # it in place rather than failing. Must filter on `--state open`
-          # explicitly — `gh pr view <branch>` doesn't filter by state and
-          # would return a closed PR. That matters here because the previous
-          # step ran `git push origin --delete "$branch"` which auto-closes
-          # any prior PR pointed at this branch. Falling for the closed PR
-          # would leave us with a release + branch but no open PR, and the
-          # next cron's `--state open` filter would never see it.
+          # Idempotent. Must filter `--state open`: the branch delete above
+          # auto-closes any prior PR, and `gh pr view` would happily return
+          # that closed one — leaving a release and branch with no open PR
+          # that the next cron's open-only filter would never find.
           existing=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             echo "::notice::Open PR #$existing already exists for $BRANCH; skipping create"
@@ -794,9 +715,8 @@ jobs:
     timeout-minutes: 5
     permissions:
       issues: write
-      # createDispatchEvent (POST /repos/{owner}/{repo}/dispatches) requires
-      # contents: write. Without it the dispatch returns 403, the issue still
-      # gets filed (issues: write covers that), but the Claude loop never wakes.
+      # createDispatchEvent needs contents: write. Without it the issue still
+      # gets filed but the dispatch 403s and the Claude loop never wakes.
       contents: write
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -850,19 +770,12 @@ jobs:
               issueNumber = created.number;
             }
 
-            // The label-add above does not fire `issues.labeled` on other
-            // workflows because it was performed by GITHUB_TOKEN. Use
-            // repository_dispatch (which IS exempt from that suppression rule)
-            // to wake the claude-build-fix workflow.
-            //
-            // NOTE: the event_type string 'claude-build-fix-trigger' is matched
-            // by claude-build-fix.yml's `on.repository_dispatch.types` and is
-            // ALSO emitted by report-pr-failure below. Keep all three in sync.
-            //
-            // Guard against a future permission regression: if `contents:
-            // write` is ever dropped from this job's permissions, the
-            // dispatch returns 403 silently and the loop never wakes. Surface
-            // it as a job failure instead of a green run.
+            // Label-adds by GITHUB_TOKEN don't fire `issues.labeled` on other
+            // workflows, so wake claude-build-fix via repository_dispatch,
+            // which is exempt. event_type must stay in sync with
+            // claude-build-fix.yml's `on.repository_dispatch.types` and with
+            // report-pr-failure below. The try/catch surfaces a dropped
+            // `contents: write` as a failure rather than a silently green run.
             core.notice(`Dispatching claude-build-fix-trigger for issue #${issueNumber}`);
             try {
               await github.rest.repos.createDispatchEvent({
@@ -892,9 +805,8 @@ jobs:
     timeout-minutes: 5
     permissions:
       pull-requests: read
-      # createDispatchEvent (POST /repos/{owner}/{repo}/dispatches) requires
-      # contents: write — read is not enough. Without it the dispatch returns
-      # 403 and the loop breaks after attempt 1 (cap is unreachable).
+      # createDispatchEvent needs contents: write, not read — otherwise it
+      # 403s and the loop breaks after attempt 1.
       contents: write
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -902,22 +814,16 @@ jobs:
           script: |
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
-            // The PR body must contain `Refs #<n>` (Claude is instructed to
-            // include this in any PR it opens — see the prompt's "Hard rules"
-            // section in claude-build-fix.yml). Parse the original cron-failure
-            // issue number out of it so markers and counter stay on one thread.
-            //
-            // Two cases when Refs # is absent:
-            //   - Claude-authored PR: prompt is misconfigured → fail loudly.
-            //   - Human-authored PR: not part of the auto-fix loop at all →
-            //     no dispatch needed, no red check. Reviewers shouldn't see a
-            //     failing "Dispatch Claude fix loop" status on every WIP PR.
+            // Parse the cron-failure issue number from the PR body's
+            // `Refs #<n>` line (claude-build-fix.yml's prompt requires it) so
+            // markers and the attempt counter stay on one thread. If absent:
+            // Claude-authored → prompt misconfigured, fail loudly;
+            // human-authored → not part of the loop, skip quietly so WIP PRs
+            // don't carry a red check.
             const body = context.payload.pull_request.body || '';
-            // Anchor to a full line: `^…$` with the `m` flag matches the
-            // marker only when `Refs #<n>` is the entire line. Without `m`,
-            // a stray "...originally tracked in #5..." in prose would
-            // false-match and dispatch the loop against the wrong issue,
-            // silently desynchronizing the counter.
+            // `^…$` with `m` matches only when `Refs #<n>` is the whole line;
+            // without it, prose like "tracked in #5" would false-match and
+            // desynchronize the counter against the wrong issue.
             const m = body.match(/^Refs #(\d+)$/m);
             if (!m) {
               const author = context.payload.pull_request.user.login;
@@ -938,13 +844,9 @@ jobs:
             const issueNumber = parseInt(m[1], 10);
             core.notice(`Dispatching claude-build-fix-trigger for issue #${issueNumber} (failing run: ${runUrl})`);
 
-            // NOTE: the event_type string 'claude-build-fix-trigger' must
-            // match claude-build-fix.yml's `on.repository_dispatch.types`.
-            // Same dispatch is also emitted by report-failure above.
-            //
-            // See the matching try/catch in report-failure for rationale: a
-            // silent 403 here would break the loop at attempt 2+ without any
-            // surface signal.
+            // event_type must match claude-build-fix.yml's
+            // `on.repository_dispatch.types` and report-failure above. The
+            // try/catch keeps a silent 403 from breaking the loop invisibly.
             try {
               await github.rest.repos.createDispatchEvent({
                 owner: context.repo.owner,
