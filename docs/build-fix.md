@@ -116,6 +116,22 @@ for a newer upstream tag, the fix PR **must also bump `upstream/stable.json`**
 (both `tag` and `commit`), or the PR build clones the old tree and fails
 instantly. This exact miss cost an attempt on 1.134.0.
 
+**The commit hash must be the git tag's, not the update API's.** Microsoft's
+update API and git tag can name different commits for the same version
+(1.134.0: API `110a328`, tag `474a349` after a re-tag), and `get_repo.sh`
+silently builds the git-authoritative hash. Always resolve the pin with:
+
+```bash
+git ls-remote https://github.com/microsoft/vscode.git "refs/tags/<tag>"
+```
+
+Symptom of getting this wrong: dry-apply and ci-verify green on the staged
+tree, while CI rejects the same patches with "patch does not apply" in
+seconds — you are verifying a commit CI never builds. If CI failures make no
+sense against your local tree, compare `git rev-parse HEAD` in `vscode/`
+against the failing build log's "checkout" / get_repo output (it prints a
+warning when it swaps hashes) before touching any patch.
+
 ## Warm start (CI loop)
 
 Before touching anything: read the failure issue's thread (prior attempt

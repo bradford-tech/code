@@ -1,0 +1,20 @@
+# Keep GitHub Actions pins current. Complements `just ci-update` (pinact):
+# dependabot opens the PR unprompted; pinact is the manual/local path.
+#
+# All action bumps are grouped into ONE weekly PR on purpose: workflow edits
+# match cron-build-and-release.yml's PR `paths:` filter, so every separate
+# bump PR would burn a full macOS build. One grouped PR = one build.
+#
+# Note claude-code-review.yml already skips dependabot-authored PRs.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns:
+          - "*"

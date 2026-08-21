@@ -118,6 +118,20 @@ jobs:
             ms_commit="$CURRENT_COMMIT"
             needs_build=true
             reason="$EVENT_NAME: building PR's/pinned $ms_tag"
+            # The update API and the git tag can name DIFFERENT commits for
+            # the same version (1.134.0: API said 110a328, tag says 474a349
+            # after a Microsoft re-tag). get_repo.sh silently adopts the
+            # git-authoritative hash at clone time, so a pin carrying the API
+            # hash means: patches are rebased and the fix loop verifies
+            # against the pin's tree while every build compiles a different
+            # one — dry-apply green locally, "patch does not apply" in CI,
+            # forever. Fail HERE, in seconds, naming the real problem,
+            # instead of red-herring patch rejects 25 minutes in.
+            tag_commit=$( git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$CURRENT_TAG" | awk '{print $1}' )
+            if [[ -n "$tag_commit" && "$tag_commit" != "$CURRENT_COMMIT" ]]; then
+              echo "::error::upstream/stable.json pins $CURRENT_TAG at $CURRENT_COMMIT, but microsoft/vscode's git tag points at $tag_commit. get_repo.sh would silently build $tag_commit while patches were verified against the pin. Fix the pin to the git-authoritative hash: jq '.commit = \"$tag_commit\"' upstream/stable.json"
+              exit 1
+            fi
           elif [[ "$UPSTREAM_TAG" != "$CURRENT_TAG" ]]; then
             # Matches the title the release job sets ("chore(release): <ver>
             # (vscode <tag>)"). Empty result → absent field → next guard.
@@ -135,14 +149,23 @@ jobs:
             # Wire-protocol query, no clone (~1s). ls-remote prints the ref if
             # it exists, nothing otherwise. A network failure fails the step
             # (Actions defaults to set -eo pipefail), rather than skipping.
-            elif ! git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$UPSTREAM_TAG" | grep -q .; then
+            elif tag_commit=$( git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$UPSTREAM_TAG" | awk '{print $1}' ); [[ -z "$tag_commit" ]]; then
               ms_tag="$CURRENT_TAG"
               ms_commit="$CURRENT_COMMIT"
               needs_build=false
               reason="update API announced $UPSTREAM_TAG but microsoft/vscode hasn't pushed the tag yet; next cron will retry"
             else
               ms_tag="$UPSTREAM_TAG"
-              ms_commit="$UPSTREAM_COMMIT"
+              # Prefer the git tag's hash over the update API's when they
+              # disagree — the tag is what get_repo.sh actually builds, and
+              # this ms_commit flows into the failure issue, the fix-loop
+              # dispatch and the fixer's staged vscode/, all of which must
+              # match the built tree (1.134.0's API/tag split sent the fix
+              # loop verifying against a commit CI never compiled).
+              if [[ "$tag_commit" != "$UPSTREAM_COMMIT" ]]; then
+                echo "::warning::git tag $UPSTREAM_TAG points at $tag_commit, not update-API hash $UPSTREAM_COMMIT; using the git-authoritative hash"
+              fi
+              ms_commit="$tag_commit"
               needs_build=true
               reason="upstream advanced from $CURRENT_TAG to $ms_tag"
             fi
