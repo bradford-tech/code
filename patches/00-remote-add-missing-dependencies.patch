@@ -1,8 +1,8 @@
 diff --git a/remote/package-lock.json b/remote/package-lock.json
-index 30a7391..94f839a 100644
+index f1a5c864..fc9e8cae 100644
 --- a/remote/package-lock.json
 +++ b/remote/package-lock.json
-@@ -1155,2 +1155,8 @@
+@@ -2187,2 +2187,8 @@
      },
 +    "node_modules/tslib": {
 +      "version": "2.7.0",
@@ -12,10 +12,10 @@ index 30a7391..94f839a 100644
 +    },
      "node_modules/tunnel-agent": {
 diff --git a/remote/package.json b/remote/package.json
-index 119d62c..9ef9624 100644
+index 1011b29d..49309a1b 100644
 --- a/remote/package.json
 +++ b/remote/package.json
-@@ -37,2 +37,3 @@
-     "tas-client": "0.3.1",
+@@ -48,2 +48,3 @@
+     "tas-client": "0.4.3",
 +    "tslib": "^2.6.3",
      "vscode-oniguruma": "1.7.0",
