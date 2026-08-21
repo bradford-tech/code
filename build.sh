@@ -12,7 +12,12 @@ if [[ "${SHOULD_BUILD}" == "yes" ]]; then
 
   cd vscode || { echo "'vscode' dir not found"; exit 1; }
 
-  export NODE_OPTIONS="--max-old-space-size=8192"
+  # Overridable per job: V8 treats max-old-space-size as licence to grow to
+  # that size regardless of physical RAM, so the value MUST fit the runner.
+  # 8192 suits the 16 GB macos-15-xlarge builder; the REH job runs on the
+  # standard 7.8 GB ubuntu runner and sets 5120 (1.133.0 thrashed that box
+  # into a 56-minute compile phase and a dead runner with the 8 GB default).
+  export NODE_OPTIONS="--max-old-space-size=${VSCODE_NODE_HEAP_MB:-8192}"
   export VSCODE_PUBLISH_COUNTER=1
 
   npm run gulp vscode-min-prepack

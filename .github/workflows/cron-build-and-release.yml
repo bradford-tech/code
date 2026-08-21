@@ -375,23 +375,29 @@ jobs:
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.full_name == github.repository &&
         !contains(github.event.pull_request.labels.*.name, 'auto-release')))
-    # Larger runner (org-provisioned, 8 vCPU / 32 GB, x64). The standard runner
-    # ran out of memory during compile-src on 1.133.0: run 32077438671 sampled
-    # 4938 MB available as compilation started, 428 MB forty-seven seconds
-    # later, then swap climbing to ~3 GB and plateauing while available memory
-    # kept falling. Disk was flat at ~6 GB free throughout, so this was memory,
-    # not space. Thrashing is also why run 32072041321 spent 56 minutes in a
-    # phase that takes ~7 before the runner stopped answering the server.
-    #
-    # build.sh sets --max-old-space-size=8192, which V8 treats as licence to
-    # grow to 8 GB regardless of what the box can actually back — so the heap
-    # has to fit in RAM, and 32 GB gives it ~4x the observed peak. The 4-core
-    # larger runner would NOT have helped: it is also 16 GB, and only adds disk.
+    # Standard (free) runner: 2 vCPU / 7.8 GB. The 1.133.0 OOM-thrash that
+    # forced a detour through the org's `ubuntu-latest-8-core` larger runner
+    # (run 32077438671: 4938 MB available at compile start, 428 MB forty-seven
+    # seconds later, swap climbing to ~3 GB; run 32072041321 spent 56 minutes
+    # in a phase that takes ~7 before the runner stopped answering) was NOT a
+    # too-small-box problem — it was build.sh's hardcoded 8 GB Node heap on a
+    # 7.8 GB box. V8 treats max-old-space-size as licence to grow past
+    # physical RAM. Two changes let the standard runner carry this job again:
+    #   1. VSCODE_NODE_HEAP_MB=5120 below sizes the heap to fit (~2.5 GB left
+    #      for OS + sibling processes). 1.132.0 built here in 14 min.
+    #   2. The extra swapfile step turns a future peak into slowness instead
+    #      of an OOM-killed runner — and if the heap cap itself is hit, the
+    #      build dies with a crisp "JavaScript heap out of memory" naming the
+    #      real problem, not a 24-hour hang.
+    # The larger runner is deliberately gone: org-provisioned labels are a
+    # scheduling dependency — when the runner/group/billing drifts, jobs on
+    # that label queue silently for 24 h (Aug 20-21, runs 32341660868 and
+    # 32461286205), delaying failure detection by a full day.
     #
     # Must stay x64: VSCODE_ARCH is x64 and this publishes
     # bradfordcode-reh-linux-x64. The `Install build dependencies` apt names
     # assume Ubuntu 24.04, matching what ubuntu-latest resolves to.
-    runs-on: ubuntu-latest-8-core
+    runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
       APP_NAME: BradfordCode
@@ -406,6 +412,9 @@ jobs:
       SHOULD_BUILD_DMG: "no"
       CI_BUILD: "yes"
       DISABLE_UPDATE: "no"
+      # Node heap sized for this runner's 7.8 GB — see the runs-on comment.
+      # build.sh defaults to 8192 when unset (the macOS xlarge builder).
+      VSCODE_NODE_HEAP_MB: "5120"
       MS_TAG: ${{ needs.check.outputs.ms_tag }}
       MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
       RELEASE_VERSION: ${{ needs.check.outputs.release_version }}
@@ -417,6 +426,24 @@ jobs:
           # Never pushes; leaving the token in .git/config would expose it to
           # every npm postinstall script the build runs.
           persist-credentials: false
+
+      # Safety net for the right-sized heap above: total memory across the
+      # build's parallel node processes can still peak past 7.8 GB, and the
+      # runner's stock swap is small. 8 GB more on /mnt (~65 GB free) turns a
+      # peak into a slow patch instead of an OOM-killed runner. Best-effort:
+      # a fallocate/swapon failure should not fail a build that may never
+      # have needed the headroom.
+      - name: Add swap headroom
+        run: |
+          if sudo fallocate -l 8G /mnt/extra-swap \
+             && sudo chmod 600 /mnt/extra-swap \
+             && sudo mkswap /mnt/extra-swap \
+             && sudo swapon /mnt/extra-swap; then
+            echo "::notice::Added 8G swap on /mnt"
+          else
+            echo "::warning::Could not add swap headroom; continuing without it"
+          fi
+          free -h
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
