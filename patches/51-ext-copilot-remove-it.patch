@@ -1,17 +1,27 @@
 diff --git a/build/gulpfile.reh.ts b/build/gulpfile.reh.ts
-index a40ff6f6..241d3dc3 100644
+index a40ff6f6db1..241d3dc3ed7 100644
 --- a/build/gulpfile.reh.ts
 +++ b/build/gulpfile.reh.ts
-@@ -25,3 +25,3 @@ import rceditCallback from 'rcedit';
+@@ -23,7 +23,7 @@ import glob from 'glob';
+ import { promisify } from 'util';
+ import rceditCallback from 'rcedit';
  import { compileBuildWithManglingTask } from './gulpfile.compile.ts';
 -import { cleanExtensionsBuildTask, compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileExtensionMediaBuildTask, compileCopilotExtensionBuildTask } from './gulpfile.extensions.ts';
 +import { cleanExtensionsBuildTask, compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileExtensionMediaBuildTask } from './gulpfile.extensions.ts';
  import { vscodeWebResourceIncludes, createVSCodeWebFileContentMapper } from './gulpfile.vscode.web.ts';
-@@ -33,3 +33,2 @@ import { fetchUrls } from './lib/fetch.ts';
+ import * as cp from 'child_process';
+ import crypto from 'crypto';
+@@ -31,7 +31,6 @@ import log from 'fancy-log';
+ import buildfile from './buildfile.ts';
+ import { fetchUrls } from './lib/fetch.ts';
  import { downloadFeedPackage } from './lib/azureFeed.ts';
 -import { ensureCopilotPlatformPackage, getCopilotExcludeFilter, getCopilotRuntimePrebuildFiles, getCopilotTgrepExcludeFilter, getMxcExcludeFilter, getRipgrepExcludeFilter, prepareBuiltInCopilotRipgrepShim } from './lib/copilot.ts';
  import { readAgentSdkResults } from './agent-sdk/common.ts';
-@@ -444,9 +443,3 @@ function packageTask(type: string, platform: string, arch: string, sourceFolderN
+ 
+ 
+@@ -442,13 +441,7 @@ function packageTask(type: string, platform: string, arch: string, sourceFolderN
+ 			.pipe(filter(['**', '!**/package-lock.json', '!**/*.{js,css}.map']))
+ 			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, '.moduleignore')))
  			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, `.moduleignore.${process.platform}`)));
 -		ensureCopilotPlatformPackage(platform, arch, 'remote/node_modules');
 -		const copilotRuntimePrebuilds = gulp.src(getCopilotRuntimePrebuildFiles(platform, arch, 'remote/node_modules'), { base: 'remote', dot: true, allowEmpty: true });
@@ -22,7 +32,11 @@ index a40ff6f6..241d3dc3 100644
 -			.pipe(filter(getMxcExcludeFilter(arch)))
 +		const deps = cleanedDeps
  			.pipe(jsFilter)
-@@ -604,12 +597,2 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
+ 			.pipe(util.stripSourceMappingURL())
+ 			.pipe(jsFilter.restore);
+@@ -602,16 +595,6 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
+ 	};
+ }
  
 -function prepareCopilotRipgrepShimTaskREH(platform: string, arch: string, destinationFolderName: string) {
 -	return async () => {
@@ -35,26 +49,42 @@ index a40ff6f6..241d3dc3 100644
 -}
 -
  /**
-@@ -663,3 +646,2 @@ function tweakProductForServerWeb(product: typeof import('../product.json')) {
+  * @param product The parsed product.json file contents
+  */
+@@ -661,7 +644,6 @@ function tweakProductForServerWeb(product: typeof import('../product.json')) {
+ 				task.task(`node-${platform}-${arch}`) as task.Task,
+ 				util.rimraf(path.join(BUILD_ROOT, destinationFolderName)),
  				packageTask(type, platform, arch, sourceFolderName, destinationFolderName),
 -				prepareCopilotRipgrepShimTaskREH(platform, arch, destinationFolderName)
  			];
-@@ -677,3 +659,2 @@ function tweakProductForServerWeb(product: typeof import('../product.json')) {
+ 
+ 			if (platform === 'win32') {
+@@ -675,7 +657,6 @@ function tweakProductForServerWeb(product: typeof import('../product.json')) {
+ 				compileBuildWithManglingTask,
+ 				cleanExtensionsBuildTask,
  				compileNonNativeExtensionsBuildTask,
 -				compileCopilotExtensionBuildTask,
  				compileExtensionMediaBuildTask,
+ 				minified ? minifyTask : bundleTask,
+ 				serverTaskCI
 diff --git a/build/gulpfile.vscode.ts b/build/gulpfile.vscode.ts
-index 8996e3ce..aa38b6bc 100644
+index 8996e3ce504..aa38b6bcd18 100644
 --- a/build/gulpfile.vscode.ts
 +++ b/build/gulpfile.vscode.ts
-@@ -28,5 +28,4 @@ import minimist from 'minimist';
+@@ -26,9 +26,8 @@ import { config } from './lib/electron.ts';
+ import { createAsar } from './lib/asar.ts';
+ import minimist from 'minimist';
  import { compileBuildWithoutManglingTask } from './gulpfile.compile.ts';
 -import { compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileAllExtensionsBuildTask, compileExtensionMediaBuildTask, cleanExtensionsBuildTask, compileCopilotExtensionBuildTask } from './gulpfile.extensions.ts';
 +import { compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileAllExtensionsBuildTask, compileExtensionMediaBuildTask, cleanExtensionsBuildTask } from './gulpfile.extensions.ts';
  import { copyCodiconsTask } from './lib/compilation.ts';
 -import { ensureCopilotPlatformPackage, getCopilotExcludeFilter, getCopilotRuntimePrebuildFiles, getCopilotTgrepExcludeFilter, getMxcExcludeFilter, getRipgrepExcludeFilter, prepareBuiltInCopilotRipgrepShim } from './lib/copilot.ts';
  import { ensureOSProxyResolverPlatformPackage, getOSProxyResolverExcludeFilter, getOSProxyResolverPlatformFiles } from './lib/osProxyResolver.ts';
-@@ -46,14 +45,9 @@ const root = path.dirname(import.meta.dirname);
+ import { readAgentSdkResults } from './agent-sdk/common.ts';
+ import { readDictationRuntimeResults } from './dictation-runtime/common.ts';
+@@ -44,18 +43,13 @@ const glob = promisify(globCallback);
+ const rcedit = promisify(rceditCallback);
+ const root = path.dirname(import.meta.dirname);
  const commit = getVersion(root);
 -const packageLock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8')) as {
 -	readonly packages?: Readonly<Record<string, { readonly version?: string }>>;
@@ -76,7 +106,11 @@ index 8996e3ce..aa38b6bc 100644
 +// with the stamp; build/tsconfig.json sets noUnusedLocals, so they cannot be
 +// left behind.
  
-@@ -341,6 +335,7 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
+ // Build
+ const vscodeEntryPoints = [
+@@ -339,10 +333,11 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
+ 				json.date = readISODate(out);
+ 				json.checksums = checksums;
  				json.version = version;
 -				json.copilotVersions = {
 -					runtime: getLockedPackageVersion('@github/copilot'),
@@ -88,7 +122,11 @@ index 8996e3ce..aa38b6bc 100644
 +				// and product.ts's runtime backfill is guarded on both lookups
 +				// resolving, so leaving it unset is safe.
  				// Stamp agentSdks from the per-platform results file produced
-@@ -387,11 +382,5 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
+ 				// by `build/agent-sdk/produce.ts` (an earlier pipeline step).
+ 				// Local dev: file absent → empty → not stamped.
+@@ -385,15 +380,9 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
+ 			.pipe(filter(depFilterPattern))
+ 			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, '.moduleignore')))
  			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, `.moduleignore.${process.platform}`)));
 -		ensureCopilotPlatformPackage(platform, arch);
 -		const copilotRuntimePrebuilds = gulp.src(getCopilotRuntimePrebuildFiles(platform, arch), { base: '.', dot: true, allowEmpty: true });
@@ -101,7 +139,11 @@ index 8996e3ce..aa38b6bc 100644
 -			.pipe(filter(getMxcExcludeFilter(arch)))
 +		const deps = es.merge(cleanedDeps, osProxyResolverPlatformPackage)
  			.pipe(filter(getFoundryLocalExcludeFilter()))
-@@ -676,19 +665,2 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
+ 			.pipe(filter(getOSProxyResolverExcludeFilter(platform, arch)))
+ 			.pipe(jsFilter)
+@@ -674,23 +663,6 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
+ 	};
+ }
  
 -function prepareCopilotRipgrepShimTask(platform: string, arch: string, destinationFolderName: string) {
 -	const outputDir = path.join(path.dirname(root), destinationFolderName);
@@ -121,31 +163,51 @@ index 8996e3ce..aa38b6bc 100644
 -}
 -
  const buildRoot = path.dirname(root);
-@@ -718,3 +690,2 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 
+ const BUILD_TARGETS = [
+@@ -716,7 +688,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 			compileNativeExtensionsBuildTask,
+ 			util.rimraf(path.join(buildRoot, destinationFolderName)),
  			packageTask(platform, arch, sourceFolderName, destinationFolderName, opts),
 -			prepareCopilotRipgrepShimTask(platform, arch, destinationFolderName)
  		];
-@@ -744,3 +715,2 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 
+ 		if (platform === 'win32') {
+@@ -742,7 +713,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 				copyCodiconsTask,
+ 				cleanExtensionsBuildTask,
  				compileNonNativeExtensionsBuildTask,
 -				compileCopilotExtensionBuildTask,
  				compileExtensionMediaBuildTask,
-@@ -765,3 +735,2 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 			));
+ 			task.task(prepackTask);
+@@ -763,7 +733,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 				compileBuildWithoutManglingTask,
+ 				cleanExtensionsBuildTask,
  				compileNonNativeExtensionsBuildTask,
 -				compileCopilotExtensionBuildTask,
  				compileExtensionMediaBuildTask,
+ 				minified ? minifyVSCodeTask : bundleVSCodeTask,
+ 			));
 diff --git a/build/npm/dirs.ts b/build/npm/dirs.ts
-index 289a4697..8c6df6f7 100644
+index 289a469754a..8c6df6f7ede 100644
 --- a/build/npm/dirs.ts
 +++ b/build/npm/dirs.ts
-@@ -17,3 +17,2 @@ export const dirs = [
+@@ -15,7 +15,6 @@ export const dirs = [
+ 	'build/vite',
+ 	'extensions',
  	'extensions/configuration-editing',
 -	'extensions/copilot',
  	'extensions/css-language-features',
+ 	'extensions/css-language-features/server',
+ 	'extensions/debug-auto-launch',
 diff --git a/build/npm/postinstall.ts b/build/npm/postinstall.ts
-index 0dd0b514..f111993a 100644
+index 0dd0b514ecf..f111993a276 100644
 --- a/build/npm/postinstall.ts
 +++ b/build/npm/postinstall.ts
-@@ -337,17 +337,2 @@ async function main() {
+@@ -335,21 +335,6 @@ async function main() {
+ 		log('.', `Created ${claudeSkillsLinkType} .claude/skills -> .agents/skills`);
+ 	}
  
 -	// Temporary: patch @github/copilot-sdk session.js to fix ESM import
 -	// (missing .js extension on vscode-jsonrpc/node). Fixed upstream in v0.1.32.
@@ -163,16 +225,24 @@ index 0dd0b514..f111993a 100644
 -	}
 -
  	// foundry-local-sdk (on-device chat dictation) resolves its prebuilt N-API
+ 	// addon and native core libraries from fixed, package-relative paths. We do
+ 	// not ship that native payload (its addon requires a newer glibc than our
 diff --git a/package-lock.json b/package-lock.json
-index 5a680ac9..a3727c5a 100644
+index a4d72c7c78f..105708336ac 100644
 --- a/package-lock.json
 +++ b/package-lock.json
-@@ -13,4 +13,2 @@
+@@ -11,8 +11,6 @@
+       "license": "MIT",
+       "dependencies": {
          "@anthropic-ai/sdk": "^0.82.0",
 -        "@github/copilot": "1.0.81-0",
 -        "@github/copilot-sdk": "1.0.11",
          "@microsoft/1ds-core-js": "^3.2.13",
-@@ -1154,341 +1152,2 @@
+         "@microsoft/1ds-post-js": "^3.2.13",
+         "@microsoft/dev-tunnels-connections": "^1.3.41",
+@@ -1152,345 +1150,6 @@
+         "node": "^20.19.0 || ^22.13.0 || >=24"
+       }
      },
 -    "node_modules/@github/copilot": {
 -      "version": "1.0.81-0",
@@ -514,20 +584,67 @@ index 5a680ac9..a3727c5a 100644
 -      }
 -    },
      "node_modules/@gulp-sourcemaps/identity-map": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/@gulp-sourcemaps/identity-map/-/identity-map-2.0.1.tgz",
 diff --git a/package.json b/package.json
-index 51c3674f..456ab377 100644
+index 3eda06c13e8..17c9b36d778 100644
 --- a/package.json
 +++ b/package.json
-@@ -101,4 +101,2 @@
+@@ -22,16 +22,15 @@
+     "check-cyclic-dependencies": "node build/lib/checkCyclicDependencies.ts out",
+     "preinstall": "node build/npm/preinstall.ts",
+     "postinstall": "node build/npm/postinstall.ts",
+-    "compile": "npm-run-all2 -lp compile-client compile-copilot",
++    "compile": "npm-run-all2 -lp compile-client",
+     "compile-client": "npm run gulp compile",
+-    "compile-copilot": "npm --prefix extensions/copilot run compile",
+     "build-fast": "node build/next/index.ts build-fast",
+     "build-fast-extensions": "npm run gulp copy-codicons compile-extensions compile-extension-media",
+     "typecheck-client": "tsc --project ./src/tsconfig.json --noEmit --skipLibCheck",
+     "codex:gen-protocol": "node build/codex/generate-protocol.mjs",
+     "codex:check-protocol": "node build/codex/check-protocol-sync.ts",
+-    "watch": "npm-run-all2 -lp watch-client-transpile watch-client watch-extensions watch-copilot",
+-    "watch-transpile": "npm-run-all2 -lp watch-client-transpile watch-extensions watch-copilot",
++    "watch": "npm-run-all2 -lp watch-client-transpile watch-client watch-extensions",
++    "watch-transpile": "npm-run-all2 -lp watch-client-transpile watch-extensions",
+     "watchd": "deemon npm run watch",
+     "watch-webd": "deemon npm run watch-web",
+     "kill-watchd": "deemon --kill npm run watch",
+@@ -48,9 +47,6 @@
+     "watch-extensions": "npm run gulp watch-extensions watch-extension-media",
+     "watch-extensionsd": "deemon npm run watch-extensions",
+     "kill-watch-extensionsd": "deemon --kill npm run watch-extensions",
+-    "watch-copilot": "npm --prefix extensions/copilot run watch",
+-    "watch-copilotd": "deemon npm run watch-copilot",
+-    "kill-watch-copilotd": "deemon --kill npm run watch-copilot",
+     "precommit": "node --experimental-strip-types build/hygiene.ts",
+     "gulp": "node --experimental-strip-types --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js",
+     "electron": "node build/lib/electron.ts",
+@@ -90,8 +86,6 @@
+     "perf": "node scripts/code-perf.js",
+     "perf:chat": "node scripts/chat-simulation/test-chat-perf-regression.js",
+     "perf:chat-leak": "node scripts/chat-simulation/test-chat-mem-leaks.js",
+-    "copilot:setup": "npm --prefix extensions/copilot run setup",
+-    "copilot:get_token": "npm --prefix extensions/copilot run get_token",
+     "update-build-ts-version": "npm install -D typescript@npm:@typescript/typescript6@^6.0.2 && npm install -D @typescript/native@npm:typescript@next && (cd build && npm run typecheck)",
+     "install-local-component-explorer": "npm install ../vscode-packages/js-component-explorer/dist/vscode-component-explorer-0.1.0.tgz ../vscode-packages/js-component-explorer/dist/vscode-component-explorer-cli-0.1.0.tgz --no-save && cd build/rspack && npm install ../../../vscode-packages/js-component-explorer/dist/vscode-component-explorer-webpack-plugin-0.1.0.tgz --no-save && cd ../vite && npm install ../../../vscode-packages/js-component-explorer/dist/vscode-component-explorer-vite-plugin-0.1.0.tgz --no-save",
+     "symlink-local-component-explorer": "npm install ../vscode-packages/js-component-explorer/packages/explorer ../vscode-packages/js-component-explorer/packages/cli --no-save && cd build/rspack && npm install ../../../vscode-packages/js-component-explorer/packages/webpack-plugin ../../../vscode-packages/js-component-explorer/packages/explorer --no-save && cd ../vite && npm install ../../../vscode-packages/js-component-explorer/packages/vite-plugin ../../../vscode-packages/js-component-explorer/packages/explorer --no-save",
+@@ -99,8 +93,6 @@
+   },
+   "dependencies": {
      "@anthropic-ai/sdk": "^0.82.0",
 -    "@github/copilot": "1.0.81-0",
 -    "@github/copilot-sdk": "1.0.11",
      "@microsoft/1ds-core-js": "^3.2.13",
+     "@microsoft/1ds-post-js": "^3.2.13",
+     "@microsoft/dev-tunnels-connections": "^1.3.41",
 diff --git a/src/vs/platform/agentHost/common/otel/agentHostOTelService.ts b/src/vs/platform/agentHost/common/otel/agentHostOTelService.ts
-index 4fb1328b..96c1164d 100644
+index 4fb1328b0d6..96c1164d006 100644
 --- a/src/vs/platform/agentHost/common/otel/agentHostOTelService.ts
 +++ b/src/vs/platform/agentHost/common/otel/agentHostOTelService.ts
-@@ -5,3 +5,13 @@
+@@ -3,7 +3,17 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { TelemetryConfig } from '@github/copilot-sdk';
 +// `TelemetryConfig` was originally imported from '@github/copilot-sdk'; the SDK
@@ -542,11 +659,15 @@ index 4fb1328b..96c1164d 100644
 +	captureContent?: boolean;
 +};
  import type { URI } from '../../../../base/common/uri.js';
+ import { createDecorator } from '../../../instantiation/common/instantiation.js';
+ 
 diff --git a/src/vs/platform/agentHost/node/agentHostGitHubTelemetryRouter.ts b/src/vs/platform/agentHost/node/agentHostGitHubTelemetryRouter.ts
-index ceb02d2f..b6992721 100644
+index ceb02d2f663..b6992721a61 100644
 --- a/src/vs/platform/agentHost/node/agentHostGitHubTelemetryRouter.ts
 +++ b/src/vs/platform/agentHost/node/agentHostGitHubTelemetryRouter.ts
-@@ -5,3 +5,6 @@
+@@ -3,7 +3,10 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { GitHubTelemetryNotification } from '@github/copilot-sdk';
 +// `GitHubTelemetryNotification` originally came from '@github/copilot-sdk'
@@ -554,38 +675,56 @@ index ceb02d2f..b6992721 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type GitHubTelemetryNotification = any;
  import { multiplexProperties, type IAgentHostRestrictedTelemetry, type IAgentHostRestrictedTelemetryContext, type TelemetryProps } from './agentHostRestrictedTelemetry.js';
+ 
+ const enum TelemetryDestination {
 diff --git a/src/vs/platform/agentHost/node/agentHostMain.ts b/src/vs/platform/agentHost/node/agentHostMain.ts
-index beb17659..141b4975 100644
+index ff51ce682eb..e4ee12ebabb 100644
 --- a/src/vs/platform/agentHost/node/agentHostMain.ts
 +++ b/src/vs/platform/agentHost/node/agentHostMain.ts
-@@ -32,3 +32,2 @@ import { IAgentHostCompletions } from './agentHostCompletions.js';
+@@ -30,7 +30,6 @@ import { IAgentHostManagedSettingsService } from './agentHostManagedSettingsServ
+ import { IAgentHostGitHubEndpointService } from './agentHostGitHubEndpointService.js';
+ import { IAgentHostCompletions } from './agentHostCompletions.js';
  import { IAgentHostTerminalManager } from './agentHostTerminalManager.js';
 -import { CopilotAgent } from './copilot/copilotAgent.js';
  import { IAgentHostWorktreeIsolation, WorktreeIsolation } from './shared/worktreeIsolation.js';
-@@ -261,3 +260,2 @@ async function startAgentHost(): Promise<void> {
+ import { CopilotApiService, ICopilotApiService } from './shared/copilotApiService.js';
+ import { ClaudeAgent } from './claude/claudeAgent.js';
+@@ -252,7 +251,6 @@ async function startAgentHost(): Promise<void> {
+ 		diServices.set(IClaudeProxyService, claudeProxyService);
+ 		const codexProxyService = disposables.add(instantiationService.createInstance(CodexProxyService));
  		diServices.set(ICodexProxyService, codexProxyService);
 -		agentService.registerProvider(instantiationService.createInstance(CopilotAgent));
  		// Claude and Codex providers are gated on two things:
+ 		//  1. The user-facing enable toggle (`chat.agentHost.<x>Agent.enabled`,
+ 		//     forwarded as an env var by the starters). Claude defaults to on,
 diff --git a/src/vs/platform/agentHost/node/agentHostServerMain.ts b/src/vs/platform/agentHost/node/agentHostServerMain.ts
-index 0e067070..ff10ac79 100644
+index 9f03ee18a6c..fae923885c0 100644
 --- a/src/vs/platform/agentHost/node/agentHostServerMain.ts
 +++ b/src/vs/platform/agentHost/node/agentHostServerMain.ts
-@@ -37,3 +37,2 @@ import { registerAgentHostNetworkServices } from './agentHostBootstrap.js';
+@@ -35,7 +35,6 @@ import { InstantiationService } from '../../instantiation/common/instantiationSe
+ import { ServiceCollection } from '../../instantiation/common/serviceCollection.js';
+ import { registerAgentHostNetworkServices } from './agentHostBootstrap.js';
  import { BANG_COMMAND_PREFIX } from './agentHostBangCommand.js';
 -import { CopilotAgent } from './copilot/copilotAgent.js';
  import { INetworkDiagnosticsService, NetworkDiagnosticsService } from './networkDiagnosticsService.js';
-@@ -334,5 +333,2 @@ async function main(): Promise<void> {
+ import { IByokLmBridgeRegistry, NullByokLmBridgeRegistry } from './byokLmBridgeRegistry.js';
+ import { IByokLmProxyService, NullByokLmProxyService } from './copilot/byokLmProxyService.js';
+@@ -335,9 +334,6 @@ async function main(): Promise<void> {
+ 		// to satisfy CopilotAgent / CopilotSessionLauncher DI.
+ 		diServices.set(IByokLmBridgeRegistry, new NullByokLmBridgeRegistry());
  		diServices.set(IByokLmProxyService, new NullByokLmProxyService());
 -		const copilotAgent = disposables.add(instantiationService.createInstance(CopilotAgent));
 -		agentService.registerProvider(copilotAgent);
 -		log('CopilotAgent registered');
  		// Claude and Codex providers are gated on two things:
+ 		//  1. The user-facing enable toggle (`chat.agentHost.<x>Agent.enabled`,
+ 		//     forwarded as an env var by the renderer-side starters; the remote
 diff --git a/src/vs/platform/agentHost/node/copilot/agentHostSandboxEngine.ts b/src/vs/platform/agentHost/node/copilot/agentHostSandboxEngine.ts
 deleted file mode 100644
-index 461cf23b..00000000
+index d48314b93ab..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/agentHostSandboxEngine.ts
 +++ /dev/null
-@@ -1,140 +0,0 @@
+@@ -1,148 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -602,9 +741,10 @@ index 461cf23b..00000000
 -import { IProductService } from '../../../product/common/productService.js';
 -import { ISandboxHelperService, type ISandboxDependencyStatus, type IWindowsMxcPolicyContainment, type IWindowsMxcSandboxPolicy } from '../../../sandbox/common/sandboxHelperService.js';
 -import { ITerminalSandboxEngineHost, ITerminalSandboxRuntimeInfo, TerminalSandboxEngine } from '../../../sandbox/common/terminalSandboxEngine.js';
+-import { AgentSandboxEnabledValue } from '../../../sandbox/common/settings.js';
 -import { IAgentConfigurationService } from '../agentConfigurationService.js';
 -import { getAppNodeModulesDirName } from '../appNodeModules.js';
--import { AgentHostSandboxConfigKey, sandboxConfigSchema, sandboxSettingIdToAgentHostKey } from '../../common/sandboxConfigSchema.js';
+-import { AgentHostSandboxConfigKey, AgentHostSandboxKey, sandboxConfigSchema, sandboxSettingIdToAgentHostKey } from '../../common/sandboxConfigSchema.js';
 -
 -/** Subdirectory under the user home + product data folder where the engine creates its temp dir. */
 -const SANDBOX_TEMP_DIR_NAME = 'tmp';
@@ -625,6 +765,7 @@ index 461cf23b..00000000
 -		private readonly _environmentService: INativeEnvironmentService,
 -		private readonly _productService: IProductService,
 -		private readonly _agentConfigurationService: IAgentConfigurationService,
+-		private readonly _getManagedSandboxEnabled: () => boolean | undefined,
 -		sandboxHelper: ISandboxHelperService,
 -	) {
 -		this._sandboxHelper = sandboxHelper;
@@ -702,6 +843,12 @@ index 461cf23b..00000000
 -		if (innerKey === undefined) {
 -			return undefined;
 -		}
+-		if (innerKey === AgentHostSandboxKey.Enabled || innerKey === AgentHostSandboxKey.WindowsEnabled) {
+-			const managedEnabled = this._getManagedSandboxEnabled();
+-			if (typeof managedEnabled === 'boolean') {
+-				return (managedEnabled ? AgentSandboxEnabledValue.On : AgentSandboxEnabledValue.Off) as T;
+-			}
+-		}
 -		const sandbox = this._agentConfigurationService.getRootValue(sandboxConfigSchema, AgentHostSandboxConfigKey.Sandbox);
 -		return sandbox?.[innerKey] as T | undefined;
 -	}
@@ -721,16 +868,18 @@ index 461cf23b..00000000
 -	sandboxHelper: ISandboxHelperService,
 -	sessionId: string,
 -	workingDirectory: URI | undefined,
+-	getManagedSandboxEnabled: () => boolean | undefined,
 -): TerminalSandboxEngine {
--	const host = new AgentHostTerminalSandboxHost(sessionId, workingDirectory, environmentService as INativeEnvironmentService, productService, agentConfigurationService, sandboxHelper);
+-	const host = new AgentHostTerminalSandboxHost(sessionId, workingDirectory, environmentService as INativeEnvironmentService, productService, agentConfigurationService, getManagedSandboxEnabled, sandboxHelper);
 -	return instantiationService.createInstance(TerminalSandboxEngine, host);
 -}
--
 diff --git a/src/vs/platform/agentHost/node/copilot/buildSessionEvents.ts b/src/vs/platform/agentHost/node/copilot/buildSessionEvents.ts
-index 63a5c801..9c1374b7 100644
+index 63a5c801f10..9c1374b791a 100644
 --- a/src/vs/platform/agentHost/node/copilot/buildSessionEvents.ts
 +++ b/src/vs/platform/agentHost/node/copilot/buildSessionEvents.ts
-@@ -5,3 +5,8 @@
+@@ -3,7 +3,12 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { JsonValue, SessionEvent } from '@github/copilot-sdk';
 +// `JsonValue`/`SessionEvent` originally came from '@github/copilot-sdk' (removed
@@ -740,12 +889,14 @@ index 63a5c801..9c1374b7 100644
 +type SessionEvent = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { isObject } from '../../../../base/common/types.js';
+ import { generateUuid, isUUID } from '../../../../base/common/uuid.js';
+ import { getInlineToolInput, ResponsePartKind, ToolCallStatus, ToolResultContentType, TurnState, type ToolCallCompletedState, type ToolResultContent, type ToolResultSubagentContent, type Turn } from '../../common/state/sessionState.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts b/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
 deleted file mode 100644
-index 7099c3c4..00000000
+index 555abb2acab..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
 +++ /dev/null
-@@ -1,5997 +0,0 @@
+@@ -1,6174 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -756,11 +907,11 @@ index 7099c3c4..00000000
 -import * as os from 'os';
 -import { pathToFileURL } from 'url';
 -import { CancelablePromise, createCancelablePromise, DeferredPromise, Delayer, disposableTimeout, Limiter, raceTimeout, retry, Sequencer, SequencerByKey } from '../../../../base/common/async.js';
--import { type CancellationToken } from '../../../../base/common/cancellation.js';
+-import { CancellationToken } from '../../../../base/common/cancellation.js';
 -import { structuralEquals } from '../../../../base/common/equals.js';
 -import { CancellationError, getErrorMessage } from '../../../../base/common/errors.js';
 -import { Emitter, Event } from '../../../../base/common/event.js';
--import { Disposable, DisposableMap, type IDisposable, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+-import { Disposable, DisposableMap, DisposableStore, type IDisposable, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 -import { ResourceMap } from '../../../../base/common/map.js';
 -import { FileAccess } from '../../../../base/common/network.js';
 -import { formatTokenCount } from '../../../../base/common/numbers.js';
@@ -788,7 +939,7 @@ index 7099c3c4..00000000
 -import { createAgentModelByokMeta } from '../../common/agentModelByokMeta.js';
 -import { AgentHostConfigKey, agentHostCustomizationConfigSchema, DEFAULT_SESSION_CUSTOMIZATION_DISCOVERY_MODE, toContainerCustomization } from '../../common/agentHostCustomizationConfig.js';
 -import { CopilotCliConfigKey, CopilotCliVSCodeAssignmentContextKey, copilotCliConfigSchema, DEFAULT_COPILOT_RUBBER_DUCK_ENABLED, type CopilotSdkLogLevelSetting } from '../../common/copilotCliConfig.js';
--import { AgentHostAutoApprovePolicyRestrictedConfigKey, AgentHostMcpServersConfigKey, AgentHostCopilotMultiRootEnabledConfigKey, AgentHostSessionSyncEnabledConfigKey, AgentHostSystemProxyEnabledConfigKey, AgentHostMigrateLegacyCopilotCliEnabledConfigKey, AutoApproveLevel, SessionMode, migrateLegacyAutopilotConfig, platformRootSchema, platformSessionSchema, type AgentHostMcpServers } from '../../common/agentHostSchema.js';
+-import { AgentHostAutoApprovePolicyRestrictedConfigKey, AgentHostByokModelsEnabledConfigKey, AgentHostMcpServersConfigKey, AgentHostCopilotMultiRootEnabledConfigKey, AgentHostSessionSyncEnabledConfigKey, AgentHostSystemProxyEnabledConfigKey, AgentHostMigrateLegacyCopilotCliEnabledConfigKey, AutoApproveLevel, SessionMode, migrateLegacyAutopilotConfig, platformRootSchema, platformSessionSchema, type AgentHostMcpServers } from '../../common/agentHostSchema.js';
 -import { IAgentPluginManager, ISyncedCustomization } from '../../common/agentPluginManager.js';
 -import { decodeProviderData, encodeProviderData, type IPersistedChat } from '../agentChatBackings.js';
 -import { prepareSideChatPrompt, sliceSideChatTurns } from '../agentPeerChats.js';
@@ -797,6 +948,7 @@ index 7099c3c4..00000000
 -import type { IAgentServerToolHost } from '../../common/agentServerTools.js';
 -import { IAgentHostOTelService } from '../../common/otel/agentHostOTelService.js';
 -import { SessionConfigKey } from '../../common/sessionConfigKeys.js';
+-import { AgentHostCopilotManagedSandboxEnabledConfigKey } from '../../common/sandboxConfigSchema.js';
 -import { ICopilotConfigSlashCommandState } from '../../common/copilotConfigSlashCommands.js';
 -import { getCopilotHomePath } from '../../common/copilotHome.js';
 -import { ISessionDataService, SESSION_DB_FILENAME } from '../../common/sessionDataService.js';
@@ -806,8 +958,8 @@ index 7099c3c4..00000000
 -import { ProtectedResourceMetadata, type AgentSelection, type ChildCustomizationType, type ConfigPropertySchema, type ConfigSchema, type CustomizationEnablement, type ModelSelection, type ToolDefinition } from '../../common/state/protocol/state.js';
 -import { ActionType, AuthRequiredReason, type AuthRequiredParams, type SessionAction } from '../../common/state/sessionActions.js';
 -import { areAdditionalWorkingDirectoriesEqual } from '../../common/state/sessionWorkingDirectories.js';
--import { AgentCustomization, CustomizationLoadStatus, CustomizationType, RuleCustomization, ChatInputResponseKind, SkillCustomization, customizationId, buildChatUri, buildDefaultChatUri, AH_META_WORKSPACELESS_DB_KEY, AH_META_IS_READ_DB_KEY, isDefaultChatUri, withSessionEhcliAdoptable, type ChildCustomization, type ClientPluginCustomization, type Customization, type DirectoryCustomization, type HookCustomization, type MessageAttachment, type PendingMessage, type PluginCustomization, type PolicyState, type ChatInputAnswer, type ToolCallResult, type Turn, type UsageInfo } from '../../common/state/sessionState.js';
--import { getByokLmAgentModelId } from '../../common/agentHostByokLm.js';
+-import { AgentCustomization, CustomizationLoadStatus, CustomizationType, RuleCustomization, ChatInputResponseKind, SkillCustomization, customizationId, buildChatUri, buildDefaultChatUri, AH_META_WORKSPACELESS_DB_KEY, AH_META_IS_READ_DB_KEY, isDefaultChatUri, withSessionEhcliAdoptable, type ChildCustomization, type ClientPluginCustomization, type Customization, type DirectoryCustomization, type HookCustomization, type ISessionFolderPickerDecision, type MessageAttachment, type PendingMessage, type PluginCustomization, type PolicyState, type ChatInputAnswer, type ToolCallResult, type Turn, type UsageInfo } from '../../common/state/sessionState.js';
+-import { getByokLmAgentModelId, resolveByokLmEnablement } from '../../common/agentHostByokLm.js';
 -import { isCustomizationEnabled } from '../../common/customizationEnablement.js';
 -import { ActiveClientToolSet, structuralToolsEqual } from '../activeClientState.js';
 -import { IAgentConfigurationService } from '../agentConfigurationService.js';
@@ -830,15 +982,19 @@ index 7099c3c4..00000000
 -import { CopilotGitHubTelemetryForwarder } from './copilotGitHubTelemetryForwarder.js';
 -import { CopilotSessionLauncher, ContextSizeConfigKey, ThinkingLevelConfigKey, getCopilotContextTier, isCopilotReasoningEffort, resolveCopilotReasoningEffort, type CopilotSessionLaunchPlan, type IActiveClientSnapshot } from './copilotSessionLauncher.js';
 -import { ShellManager } from './copilotShellTools.js';
+-import { getServerManagedSandboxEnabled } from './sandboxConfigForSdk.js';
 -import { isAgentHostTelemetryService } from '../agentHostTelemetryService.js';
 -import { ICopilotApiService, type IRestrictedTelemetryContext } from '../shared/copilotApiService.js';
 -import { AgentHostGitHubTelemetryRouter } from '../agentHostGitHubTelemetryRouter.js';
 -import { AgentHostClientType } from '../../common/agentHostClientInfo.js';
 -import { CopilotSlashCommandCompletionProvider, ICopilotRuntimeSlashCommandQueryOptions } from './copilotSlashCommandCompletionProvider.js';
--import { DiscoveredType, SessionCustomizationDiscovery, areDiscoveredDirectoriesEqual, type IDiscoveredDirectory } from './sessionCustomizationDiscovery.js';
+-import { DiscoveredType, SessionCustomizationDiscovery, areDiscoveredDirectoriesEqual, workspaceDirectoryHasHooks, type IDiscoveredDirectory } from './sessionCustomizationDiscovery.js';
+-import { computeFolderPickerDecisionForRoots } from '../shared/folderPickerDecision.js';
 -import { COPILOT_INTEGRATION_ID } from '../../../endpoint/common/licenseAgreement.js';
 -import { getAppNodeModulesPath } from '../appNodeModules.js';
 -import { CopilotSlashCommandProvider } from './copilotSlashCommandProvider.js';
+-import { SessionMcpDiscovery } from '../shared/sessionMcpDiscovery.js';
+-import { readClientPluginMcpDefaultCwd } from '../../common/meta/clientPluginCustomizationMeta.js';
 -import { classifyCopilotClientOperationFailure, CopilotClientStartupConfigChangedError, createCopilotFailureCorrelation, isRecognizedCopilotClientStartupFailure, reportCopilotClientOperationFailure, reportCopilotClientRecovery, reportCopilotClientRecoveryTurn, reportCopilotClientStartup, type CopilotClientOperation, type CopilotClientOperationFailureKind, type ICopilotFailureCorrelation } from './copilotFailureTelemetry.js';
 -
 -interface ICopilotRuntimeManagedSettingsInput {
@@ -1505,6 +1661,7 @@ index 7099c3c4..00000000
 -	 */
 -	private readonly _hostCustomizations = new ResourceMap<readonly Customization[]>();
 -	private readonly _slashCommandProvider: CopilotSlashCommandProvider;
+-	private _managedSandboxEnabled: boolean | undefined;
 -
 -	constructor(
 -		@ILogService private readonly _logService: ILogService,
@@ -1525,6 +1682,7 @@ index 7099c3c4..00000000
 -		@ITelemetryService private readonly _telemetryService: ITelemetryService,
 -		@ICopilotApiService private readonly _copilotApiService: ICopilotApiService,
 -		@IAgentHostProxyResolver private readonly _proxyResolver: IAgentHostProxyResolver,
+-		@IFileService private readonly _fileService: IFileService,
 -	) {
 -		super();
 -		this._lastManagedSettingsPermissions = this._managedSettingsService.permissions;
@@ -1584,15 +1742,20 @@ index 7099c3c4..00000000
 -				if (enabled) {
 -					// Only the adoptable legacy extension-host half of discovery is
 -					// gated on this setting, so a fresh pass is needed to surface it.
--					void this._emitCopilotChats();
+-					void this._runCopilotChatDiscovery();
+-				} else {
+-					for (const [chat, discovered] of this._discoveredChats) {
+-						if (!discovered.external) {
+-							this._discoveredChats.delete(chat);
+-						}
+-					}
 -				}
 -			}
+-			this._refreshByokModels();
 -		}));
 -
 -		// Surface renderer BYOK models in the picker: republish them whenever the
 -		// set of connected renderer bridges, or any renderer's models, change.
--		// The registry is only populated when `chat.agentHost.byokModels.enabled`
--		// is on, so this stays a no-op (empty list) while the feature is off.
 -		this._register(this._byokBridgeRegistry.onDidChangeModels(() => {
 -			this._logService.info('[Copilot] BYOK bridge changed; refreshing models');
 -			this._refreshByokModels();
@@ -1979,6 +2142,7 @@ index 7099c3c4..00000000
 -			throw new Error(`Copilot runtime diagnostics exceeded 4.5 seconds while ${stage}.`);
 -		}
 -		this._logService.debug('[Copilot] Runtime managed-settings diagnostics collected');
+-		this._updateManagedSandbox(result.resolved);
 -		return {
 -			...result.resolved,
 -			...(result.account ? { account: result.account } : {}),
@@ -2030,6 +2194,31 @@ index 7099c3c4..00000000
 -		);
 -		const customizations = [...fromPlugins, ...topLevelMcp];
 -		return applyMcpServerEnablement(customizations, this._retainedHostCustomizations(session));
+-	}
+-
+-	/**
+-	 * Copilot applies hooks from the primary working directory only (see
+-	 * `_hookWorkingDirectories` in sessionCustomizationDiscovery), so in a
+-	 * multi-root workspace the folder carrying hooks must be the primary. Since
+-	 * only the primary's hooks run, the picker is only needed to resolve
+-	 * ambiguity between folders that carry hooks:
+-	 * - several working directories have hooks under `.github/hooks/` → show the
+-	 *   Folder picker so the user chooses which folder's hooks lead;
+-	 * - exactly one does → pin it as the primary and hide the picker;
+-	 * - none do → hide the picker and leave the current selection as-is (any
+-	 *   folder is a valid primary when there are no hooks to run).
+-	 *
+-	 * The scan is intentionally scoped to `.github/hooks/*.json` only — it does
+-	 * NOT cover the `settings.json`-based hook sources discovery also recognizes
+-	 * (`.github/copilot/settings.json`, `.claude/settings.json`) — and never
+-	 * exposes what it finds as customizations, so what a session exposes is
+-	 * unchanged.
+-	 */
+-	async computeFolderPickerDecision(workingDirectories: readonly URI[], token: CancellationToken = CancellationToken.None): Promise<ISessionFolderPickerDecision | undefined> {
+-		if (!this._isMultiRootEnabled()) {
+-			return undefined;
+-		}
+-		return computeFolderPickerDecisionForRoots(workingDirectories, (directory, t) => workspaceDirectoryHasHooks(this._fileService, directory, t), token);
 -	}
 -
 -	async handleMcpRequest(chat: URI, serverName: string, method: string, params: Record<string, unknown> | undefined): Promise<unknown> {
@@ -2128,6 +2317,7 @@ index 7099c3c4..00000000
 -		this._updateRestrictedTelemetry(token);
 -		this._refreshProxy();
 -		if (!token) {
+-			this._updateManagedSandbox(undefined);
 -			await this._requestClientRestart('GitHub authentication cleared');
 -			void this._scheduleModelRefresh();
 -			return;
@@ -2158,7 +2348,30 @@ index 7099c3c4..00000000
 -			await this._requestClientRestart('GitHub credential update failed');
 -		}
 -		await this._resolveCopilotSku(token);
+-		void this._refreshManagedSandbox();
 -		void this._scheduleModelRefresh();
+-	}
+-
+-	private async _refreshManagedSandbox(): Promise<void> {
+-		try {
+-			await this.getManagedSettingsDiagnostics();
+-		} catch (error) {
+-			this._logService.warn(`[Copilot] Failed to refresh managed sandbox settings: ${getErrorMessage(error)}`);
+-		}
+-	}
+-
+-	private _updateManagedSandbox(data: ManagedSettingsResolvedData | undefined): void {
+-		const enabled = data ? getServerManagedSandboxEnabled(data) : undefined;
+-		if (this._managedSandboxEnabled === enabled) {
+-			return;
+-		}
+-		this._managedSandboxEnabled = enabled;
+-		for (const session of this._allLiveSessions()) {
+-			session.setManagedSandboxEnabled(enabled);
+-		}
+-		this._configurationService.publishRootTransientValues?.({
+-			[AgentHostCopilotManagedSandboxEnabledConfigKey]: enabled ?? null,
+-		});
 -	}
 -
 -	private _handleCopilotSessionAuthRequired(): void {
@@ -2416,6 +2629,14 @@ index 7099c3c4..00000000
 -	 */
 -	private _refreshByokModels(): void {
 -		if (this._shutdownPromise) {
+-			return;
+-		}
+-		const rootConfigValue = this._configurationService.getRootValue(platformRootSchema, AgentHostByokModelsEnabledConfigKey);
+-		const { enabled, trace } = resolveByokLmEnablement(rootConfigValue);
+-		this._logService.trace(`[Copilot] BYOK model publication ${trace}`);
+-		if (!enabled) {
+-			this._byokModels = [];
+-			this._publishModels();
 -			return;
 -		}
 -		this._byokModels = this._byokBridgeRegistry.getModels().map((m): IAgentModelInfo => {
@@ -2883,7 +3104,28 @@ index 7099c3c4..00000000
 -		return result;
 -	}
 -
+-	async collectDebugLogs(session: URI | undefined, outputDirectory: URI): Promise<boolean> {
+-		const sessionTarget = session ? this._findSessionChat(session) : undefined;
+-		if (sessionTarget) {
+-			await sessionTarget.collectDebugLogs(outputDirectory, true);
+-			return true;
+-		}
+-
+-		// A new/closed UI session can have a URI without a live SDK session. In
+-		// that case this is a host-wide export: use any live SDK session only as
+-		// the gateway to collect process logs, without attributing events or shell
+-		// logs from that unrelated session.
+-		const processLogsTarget = this._allLiveSessions()[0];
+-		if (!processLogsTarget) {
+-			return false;
+-		}
+-		await processLogsTarget.collectDebugLogs(outputDirectory, false);
+-		return true;
+-	}
+-
 -	private _copilotChatDiscovery: Promise<void> | undefined;
+-	private readonly _copilotChatDiscoverySequencer = new Sequencer();
+-	private readonly _discoveredChats = new Map<string, { readonly signature: string; readonly external: boolean }>();
 -
 -	private _knownSessionsFilter: IAgentKnownSessionsFilter | undefined;
 -
@@ -2900,7 +3142,14 @@ index 7099c3c4..00000000
 -	 */
 -	private _startCopilotChatDiscovery(): Promise<void> {
 -		if (!this._copilotChatDiscovery) {
--			this._copilotChatDiscovery = retry(async () => {
+-			this._copilotChatDiscovery = this._runCopilotChatDiscovery();
+-		}
+-		return this._copilotChatDiscovery;
+-	}
+-
+-	private _runCopilotChatDiscovery(): Promise<void> {
+-		return this._copilotChatDiscoverySequencer.queue(() =>
+-			retry(async () => {
 -				if (this._shutdownPromise || this._store.isDisposed) {
 -					// Teardown began between attempts. Return rather than throw so
 -					// the retry stops instead of sleeping on a dead client.
@@ -2910,9 +3159,8 @@ index 7099c3c4..00000000
 -					throw new Error('Copilot chat catalog is not available');
 -				}
 -			}, 5000, 3)
--				.catch(err => this._logService.warn('[Copilot] Chat discovery failed', err));
--		}
--		return this._copilotChatDiscovery;
+-				.catch(err => this._logService.warn('[Copilot] Chat discovery failed', err))
+-		);
 -	}
 -
 -	/**
@@ -2925,13 +3173,28 @@ index 7099c3c4..00000000
 -	 * what {@link _startCopilotChatDiscovery} retries on.
 -	 */
 -	private async _emitCopilotChats(): Promise<boolean> {
+-		const migrateLegacyAtStart = this._isMigrateLegacyCopilotCliEnabled();
 -		try {
 -			const chats = await this._discoverCopilotChats();
 -			if (!chats) {
 -				return false;
 -			}
--			const migrateLegacy = this._isMigrateLegacyCopilotCliEnabled();
--			const emitted = migrateLegacy ? chats : chats.filter(chat => chat.external);
+-			if (this._shutdownPromise || this._store.isDisposed) {
+-				return true;
+-			}
+-			const migrateLegacy = migrateLegacyAtStart && this._isMigrateLegacyCopilotCliEnabled();
+-			const emitted = chats.filter(chat => {
+-				if (!chat.external && !migrateLegacy) {
+-					return false;
+-				}
+-				const key = chat.chat.toString();
+-				const signature = JSON.stringify(chat);
+-				if (this._discoveredChats.get(key)?.signature === signature) {
+-					return false;
+-				}
+-				this._discoveredChats.set(key, { signature, external: chat.external });
+-				return true;
+-			});
 -			this._logService.info(`[Copilot] Chat discovery: emitting ${emitted.length} of ${chats.length} discovered chat(s) (adopt legacy extension-host chats: ${migrateLegacy})`);
 -			if (emitted.length > 0) {
 -				this._onDidDiscoverChats.fire(emitted);
@@ -3354,6 +3617,7 @@ index 7099c3c4..00000000
 -		abort: (chatUri: URI, context: URI | IAgentChatContext): Promise<void> => {
 -			return this._abortSession(chatUri, context);
 -		},
+-		getModel: (chatUri: URI): ModelSelection | undefined => this._chatBackings.get(chatUri.toString())?.model,
 -		changeModel: (chatUri: URI, model: ModelSelection, context: URI | IAgentChatContext): Promise<void> => {
 -			return this._changeModel(chatUri, model, context);
 -		},
@@ -3520,7 +3784,7 @@ index 7099c3c4..00000000
 -				project,
 -				workspaceless: isWorkspaceless,
 -			});
--			this._chatBackings.set(chat.toString(), { sdkSessionId });
+-			this._chatBackings.set(chat.toString(), { sdkSessionId, ...(options.model ? { model: options.model } : {}) });
 -		}
 -
 -		this._logService.info(`[Copilot] Chat created; its backing stays deferred until the first send: ${session.toString()}`);
@@ -3792,6 +4056,7 @@ index 7099c3c4..00000000
 -				activeClientToolSet: activeClient.toolSet,
 -				shellManager,
 -				githubToken: this._githubToken,
+-				managedSandboxEnabled: this._managedSandboxEnabled,
 -				model: provisional.model,
 -				longContextWindow: this._longContextWindowFor(provisional.model?.id),
 -				freeLongContext: this._isFreeLongContext(provisional.model?.id),
@@ -4007,8 +4272,13 @@ index 7099c3c4..00000000
 -			const hadCachedEntry = !!entry;
 -			this._logService.info(`[Copilot:${current.configurationId}] sendMessage: cachedEntry=${hadCachedEntry}, hasActiveClient=${!!activeClient}, activeClientId=${activeClient ? '(set)' : '(none)'}`);
 -			const rootsChanged = !!entry && workingDirectories !== undefined && !areAdditionalWorkingDirectoriesEqual(entry.appliedAdditionalDirectories, this._additionalCustomizationDirectories(workingDirectories));
--			const structuralConfigChanged = !!entry && !!activeClient && await activeClient.requiresRestart(entry.appliedSnapshot, current.chatKey);
--			if (entry && (rootsChanged || structuralConfigChanged)) {
+-			const currentSnapshot = entry && activeClient ? await activeClient.snapshot(current.chatKey) : undefined;
+-			const structuralConfigChanged = !!entry && !!activeClient && !!currentSnapshot && await activeClient.requiresRestart(entry.appliedSnapshot, current.chatKey, currentSnapshot);
+-			const disabledRootMcpServersChanged = !!entry && !!currentSnapshot && !equals(
+-				[...new Set(entry.appliedDisabledRootMcpServers)].sort(),
+-				[...new Set(this._disabledRootMcpServers(current.configurationResource, entry.sessionId, currentSnapshot))].sort(),
+-			);
+-			if (entry && (rootsChanged || structuralConfigChanged || disabledRootMcpServersChanged || entry.requiresMcpLaunchConfigurationRefresh)) {
 -				this._logService.info(`[Copilot:${current.configurationId}] Session configuration changed, refreshing session. clients=[${activeClient ? [...activeClient.toolSet.clientIds()].join(', ') || '(none)' : '(none)'}]`);
 -				// Finish disconnecting before resuming the SAME SDK session id with
 -				// the updated config. Routing is preserved so the session identity
@@ -4291,6 +4561,7 @@ index 7099c3c4..00000000
 -					activeClientToolSet: activeClient.toolSet,
 -					shellManager,
 -					githubToken: this._githubToken,
+-					managedSandboxEnabled: this._managedSandboxEnabled,
 -					fallback: { model, longContextWindow: this._longContextWindowFor(model?.id), freeLongContext: this._isFreeLongContext(model?.id) },
 -				};
 -			} else if (options.sideChat) {
@@ -4320,6 +4591,7 @@ index 7099c3c4..00000000
 -					activeClientToolSet: activeClient.toolSet,
 -					shellManager,
 -					githubToken: this._githubToken,
+-					managedSandboxEnabled: this._managedSandboxEnabled,
 -					fallback: { model, longContextWindow: this._longContextWindowFor(model?.id), freeLongContext: this._isFreeLongContext(model?.id) },
 -				};
 -			} else {
@@ -4335,6 +4607,7 @@ index 7099c3c4..00000000
 -					activeClientToolSet: activeClient.toolSet,
 -					shellManager,
 -					githubToken: this._githubToken,
+-					managedSandboxEnabled: this._managedSandboxEnabled,
 -					model,
 -					longContextWindow: this._longContextWindowFor(model?.id),
 -					freeLongContext: this._isFreeLongContext(model?.id),
@@ -4736,6 +5009,7 @@ index 7099c3c4..00000000
 -					activeClientToolSet: activeClient.toolSet,
 -					shellManager,
 -					githubToken: this._githubToken,
+-					managedSandboxEnabled: this._managedSandboxEnabled,
 -					fallback: { model: info.model, longContextWindow: this._longContextWindowFor(info.model?.id), freeLongContext: this._isFreeLongContext(info.model?.id) },
 -				};
 -				agentSession = this._createAgentSession(launchPlan, workingDirectory, activeClient, { sessionUri: configurationResource, chatChannelUri: chat, resource: context.resource });
@@ -5028,6 +5302,8 @@ index 7099c3c4..00000000
 -				sessionLauncher: this._sessionLauncher,
 -				launchPlan,
 -				shellManager: launchPlan.shellManager,
+-				managedSandboxEnabled: this._managedSandboxEnabled,
+-				onManagedSettingsResolved: data => this._updateManagedSandbox(data),
 -				workingDirectory: launchPlan.workingDirectory,
 -				customizationDirectory,
 -				clientSnapshot: launchPlan.snapshot,
@@ -5194,6 +5470,7 @@ index 7099c3c4..00000000
 -			activeClientToolSet: activeClient.toolSet,
 -			shellManager,
 -			githubToken: this._githubToken,
+-			managedSandboxEnabled: this._managedSandboxEnabled,
 -			workspaceless: storedMetadata.workspaceless,
 -			fallback: {
 -				model: storedMetadata.model,
@@ -6002,6 +6279,7 @@ index 7099c3c4..00000000
 -	private readonly _clients = new Map<string, IClientCustomizationState>();
 -
 -	private readonly _sessionDiscovered: MutableDisposable<SessionDiscoveredEntry> = this._register(new MutableDisposable());
+-	private readonly _sessionMcpDiscovery = this._register(new MutableDisposable<{ readonly discovery: SessionMcpDiscovery; dispose(): void }>());
 -
 -	/** Additional multi-root workspace folders (roots 1..N); the primary root is tracked separately. */
 -	private _additionalDirectories: readonly URI[] = [];
@@ -6014,6 +6292,7 @@ index 7099c3c4..00000000
 -		private readonly _hostCustomizations: () => readonly Customization[],
 -		@ILogService private readonly _logService: ILogService,
 -		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+-		@IFileService private readonly _fileService: IFileService,
 -		@IAgentHostCustomizationEnablementService private readonly _customizationEnablementService: IAgentHostCustomizationEnablementService,
 -	) {
 -		super();
@@ -6057,6 +6336,7 @@ index 7099c3c4..00000000
 -		}
 -		this._additionalDirectories = directories;
 -		this._sessionDiscovered.clear();
+-		this._sessionMcpDiscovery.clear();
 -	}
 -
 -	/**
@@ -6071,6 +6351,7 @@ index 7099c3c4..00000000
 -		const previous = this._directory;
 -		this._directory = directory;
 -		this._sessionDiscovered.clear();
+-		this._sessionMcpDiscovery.clear();
 -		if (previous && !this._previousDirectories.some(candidate => isEqual(candidate, previous))) {
 -			this._previousDirectories.push(previous);
 -		}
@@ -6093,6 +6374,9 @@ index 7099c3c4..00000000
 -		const discovered = entry?.currentCustomizations() ?? [];
 -		for (const customization of discovered) {
 -			result.push(this._projectForPublish(customization));
+-		}
+-		for (const definition of this._mcpDiscoveryEntry()?.definitions ?? []) {
+-			result.push(this._projectForPublish(definition.customization));
 -		}
 -		return resolveCustomizationEnablement(this._customizationEnablementService, this._session, result, this._clientChildEnablement(), this._clientPlugins());
 -	}
@@ -6133,6 +6417,7 @@ index 7099c3c4..00000000
 -			this._parent.hostSync().catch(err => this._logService.warn('[Copilot:SessionPluginController] Host customization update failed', err)),
 -			...[...this._clients.values()].map(client => client.sync.catch(err => this._logService.warn('[Copilot:SessionPluginController] Client customization sync failed', err))),
 -			entry?.whenSettled(),
+-			this._mcpDiscoveryEntry()?.refresh(),
 -		]);
 -		return this.getCustomizations();
 -	}
@@ -6141,6 +6426,7 @@ index 7099c3c4..00000000
 -	public async getAppliedPlugins(): Promise<readonly ICopilotPluginInfo[]> {
 -		await this._customizationEnablementService.initializeSession(this._session.toString());
 -		const entry = this._discoveredEntry();
+-		const mcpDiscovery = this._mcpDiscoveryEntry();
 -		const [host] = await Promise.all([
 -			this._parent.hostSync().catch(err => {
 -				this._logService.warn('[Copilot:SessionPluginController] Host customization update failed', err);
@@ -6151,13 +6437,15 @@ index 7099c3c4..00000000
 -				return client.customizations;
 -			})),
 -			entry?.whenSettled(),
+-			mcpDiscovery?.refresh(),
 -		]);
 -
 -		const resolved = this._resolveCustomizationEnablement();
 -		const desiredByUri = new Map(resolved.customizations.map(customization => [customization.uri, customization]));
+-		const desiredById = new Map(resolved.customizations.map(customization => [customization.id, customization]));
 -		const mcpEnablement = getSdkMcpServerEnablement(resolved);
 -		const isEnabledForSdk = (customization: Customization) => {
--			const desired = desiredByUri.get(customization.uri) ?? customization;
+-			const desired = desiredById.get(customization.id) ?? desiredByUri.get(customization.uri) ?? customization;
 -			return isCustomizationSdkEligible(resolved, desired) && (desired.type === CustomizationType.Directory ? desired.enabled : isCustomizationEnabled(desired));
 -		};
 -		const disabledChildren = (customization: Customization): readonly string[] | undefined => {
@@ -6171,11 +6459,37 @@ index 7099c3c4..00000000
 -		const sessionPlugin = discovered.some(isEnabledForSdk) ? mapToParsedPlugin(discovered) : undefined;
 -		const sessionPlugins: IParsedPlugin[] = sessionPlugin ? [sessionPlugin] : [];
 -
+-		const primaryCwd = this._directory;
+-		const withClientDefaults = (item: IResolvedCustomization): ICopilotPluginInfo => {
+-			const plugin = item.plugin!;
+-			return {
+-				...plugin,
+-				pluginDir: item.pluginDir,
+-				mcpServers: plugin.mcpServers.map(definition => ({
+-					...definition,
+-					defaultCwd: item.input
+-						? readClientPluginMcpDefaultCwd(item.input, definition.name, primaryCwd) ?? definition.defaultCwd
+-						: definition.defaultCwd,
+-				})),
+-			};
+-		};
+-		const allWorkspaceDefinitions = mcpDiscovery?.definitions ?? [];
+-		const workspaceDefinitions = allWorkspaceDefinitions.filter(definition => isEnabledForSdk(definition.customization));
+-		const workspaceMcp = allWorkspaceDefinitions.length ? [{
+-			format: PluginFormat.Copilot,
+-			hooks: [],
+-			mcpServers: workspaceDefinitions,
+-			disabledMcpServers: allWorkspaceDefinitions.filter(definition => !isEnabledForSdk(definition.customization)).map(definition => definition.name),
+-			skills: [],
+-			agents: [],
+-			instructions: [],
+-		} satisfies ICopilotPluginInfo] : [];
 -		return [
+-			...workspaceMcp,
 -			...host.filter(item => !!item.plugin && isEnabledForSdk(item.customization))
 -				.map(item => ({ ...item.plugin!, pluginDir: item.pluginDir, sourceUri: URI.parse(item.customization.uri), ...(disabledChildren(item.customization) ? { disabledMcpServers: disabledChildren(item.customization) } : {}) })),
 -			...this._flattenClientCustomizations().filter(item => !!item.plugin && isEnabledForSdk(item.customization))
--				.map(item => ({ ...item.plugin!, pluginDir: item.pluginDir, sourceUri: URI.parse(item.customization.uri), ...(disabledChildren(item.customization) ? { disabledMcpServers: disabledChildren(item.customization) } : {}) })),
+-				.map(item => ({ ...withClientDefaults(item), sourceUri: URI.parse(item.customization.uri), ...(disabledChildren(item.customization) ? { disabledMcpServers: disabledChildren(item.customization) } : {}) })),
 -			...sessionPlugins,
 -		];
 -	}
@@ -6347,6 +6661,22 @@ index 7099c3c4..00000000
 -			);
 -		}
 -		return this._sessionDiscovered.value;
+-	}
+-
+-	private _mcpDiscoveryEntry(): SessionMcpDiscovery | undefined {
+-		if (!this._directory) {
+-			return undefined;
+-		}
+-		if (!this._sessionMcpDiscovery.value) {
+-			const store = new DisposableStore();
+-			const discovery = store.add(new SessionMcpDiscovery([this._directory, ...this._additionalDirectories], this._fileService));
+-			store.add(discovery.onDidChange(() => this._publish(() => ({
+-				type: ActionType.SessionCustomizationsChanged,
+-				customizations: [...this.getCustomizations()],
+-			}))));
+-			this._sessionMcpDiscovery.value = { discovery, dispose: () => store.dispose() };
+-		}
+-		return this._sessionMcpDiscovery.value.discovery;
 -	}
 -
 -	private _publish(action: () => SessionAction): void {
@@ -6730,31 +7060,30 @@ index 7099c3c4..00000000
 -	}
 -
 -	/** Returns whether plugins or the chat-scoped structural tool set changed enough to require resume. */
--	async requiresRestart(snap: IActiveClientSnapshot, chatKey?: string): Promise<boolean> {
--		const plugins = await this.pluginController.getAppliedPlugins();
--		if (!parsedPluginsEqual(snap.plugins, plugins)) {
+-	async requiresRestart(snap: IActiveClientSnapshot, chatKey?: string, current?: IActiveClientSnapshot): Promise<boolean> {
+-		current ??= await this.snapshot(chatKey);
+-		if (!parsedPluginsEqual(snap.plugins, current.plugins)) {
 -			return true;
 -		}
--		if (!equals(snap.mcpServers, this._getMcpServers())) {
+-		if (!equals(snap.mcpServers, current.mcpServers)) {
 -			return true;
 -		}
--		return chatKey === undefined
--			? !this.toolSet.structuralEquals(snap.tools)
--			: !structuralToolsEqual(this.toolsForChat(chatKey), snap.tools);
+-		return !structuralToolsEqual(current.tools, snap.tools);
 -	}
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts b/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts
 deleted file mode 100644
-index 2b18bec0..00000000
+index 4f86023d139..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts
 +++ /dev/null
-@@ -1,5544 +0,0 @@
+@@ -1,5785 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
 - *--------------------------------------------------------------------------------------------*/
 -
--import type { CopilotSession, CurrentToolMetadata, ElicitationContext, ElicitationFieldValue, ElicitationResult, ElicitationSchema, ElicitationSchemaField, ExitPlanModeCompletedData, ExitPlanModeRequest, ExitPlanModeResult, JsonValue, McpServersLoadedServer, MessageOptions, PermissionAllowAllMode, PermissionAutoApproval, PermissionRequest, PermissionRequestResult, PermissionResult, SessionConfig, SessionHooks, SessionMode as CopilotSdkMode, Tool, ToolResultObject, McpServerStatus as SdkMcpServerStatus } from '@github/copilot-sdk';
+-import type { CopilotSession, CurrentToolMetadata, ElicitationContext, ElicitationFieldValue, ElicitationResult, ElicitationSchema, ElicitationSchemaField, ExitPlanModeCompletedData, ExitPlanModeRequest, ExitPlanModeResult, ManagedSettingsResolvedData, JsonValue, McpServersLoadedServer, MessageOptions, PermissionAllowAllMode, PermissionAutoApproval, PermissionRequest, PermissionRequestResult, PermissionResult, SessionConfig, SessionHooks, SessionMode as CopilotSdkMode, Tool, ToolResultObject, McpServerStatus as SdkMcpServerStatus } from '@github/copilot-sdk';
+-import { cp, rm } from 'fs/promises';
 -import { raceCancellation, RunOnceScheduler, Sequencer, SequencerByKey, Throttler } from '../../../../base/common/async.js';
 -import { encodeBase64, VSBuffer } from '../../../../base/common/buffer.js';
 -import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
@@ -6801,7 +7130,7 @@ index 2b18bec0..00000000
 -import { MessageKind, ResponsePartKind, ChatInputAnswerState, ChatInputAnswerValueKind, ChatInputQuestionKind, ChatInputRequestPurpose, ChatInputResponseKind, ToolCallConfirmationReason, ToolCallRiskAssessmentKind, ToolCallRiskAssessmentStatus, ToolCallStatus, ToolResultContentType, buildSubagentSessionUri, isSubagentSession, type Customization, type Message, type PendingMessage, type ChatInputAnswer, type ChatInputOption, type ChatInputQuestion, type ChatInputRequest, type ToolCallResult, type ToolResultContent, type ToolResultTerminalContent, type Turn, type ITurnTokenTotal, type UsageInfo, type UsageInfoMeta, type IContextAttributionData, type ISessionPromptCacheState } from '../../common/state/sessionState.js';
 -import { IAgentConfigurationService } from '../agentConfigurationService.js';
 -import { CopilotSessionWrapper } from './copilotSessionWrapper.js';
--import { clientToolNamesFromSnapshot, type CopilotSessionLaunchPlan, type IActiveClientSnapshot, type ICopilotSessionLauncher, type ICopilotSessionRuntime } from './copilotSessionLauncher.js';
+-import { clientToolNamesFromSnapshot, isMcpServerExplicitlyProjected, type CopilotSessionLaunchPlan, type IActiveClientSnapshot, type ICopilotSessionLauncher, type ICopilotSessionRuntime } from './copilotSessionLauncher.js';
 -import { CLIENT_TOOL_SEARCH_REFERENCE_NAME, NON_DEFERRED_CLIENT_TOOL_NAMES, RUNTIME_TOOL_SEARCH_TOOL_NAME } from './toolSearchDeferral.js';
 -import { ActiveClientToolSet } from '../activeClientState.js';
 -import { AgentHostTelemetryReporter, toInitiatorTelemetry, type IAgentHostInitiatorClassification, type IAgentHostInitiatorTelemetry } from '../agentHostTelemetryReporter.js';
@@ -6826,7 +7155,7 @@ index 2b18bec0..00000000
 -import { IAgentHostCustomizationEnablementService } from '../agentHostCustomizationEnablementService.js';
 -import { IAgentHostPromptCache } from '../agentHostPromptCache.js';
 -import { AgentHostClientType } from '../../common/agentHostClientInfo.js';
--import { McpAuthRequiredReason, McpServerStatus, type McpAuthRequirement, type McpServerState } from '../../common/state/protocol/channels-session/state.js';
+-import { CustomizationType, McpAuthRequiredReason, McpServerStatus, type McpAuthRequirement, type McpServerCustomization, type McpServerState } from '../../common/state/protocol/channels-session/state.js';
 -import type { ErrorInfo, ProtectedResourceMetadata } from '../../common/state/protocol/common/state.js';
 -import { CopilotSlashCommandProvider } from './copilotSlashCommandProvider.js';
 -import { createCopilotFailureCorrelation, reportCopilotModelCallFailure, reportCopilotSdkSessionError } from './copilotFailureTelemetry.js';
@@ -7131,6 +7460,8 @@ index 2b18bec0..00000000
 -	readonly sessionLauncher: ICopilotSessionLauncher;
 -	readonly launchPlan: CopilotSessionLaunchPlan;
 -	readonly shellManager: ShellManager | undefined;
+-	readonly managedSandboxEnabled?: boolean;
+-	readonly onManagedSettingsResolved?: (data: ManagedSettingsResolvedData) => void;
 -	/** Working directory associated with the session, used to strip redundant `cd` prefixes from shell commands. */
 -	readonly workingDirectory?: URI;
 -	/** Directory used to resolve workspace-scoped customizations for this session. */
@@ -7328,6 +7659,7 @@ index 2b18bec0..00000000
 -	 * agent only), for the restricted `toolCallDetails` telemetry. `toolCounts` is keyed by tool name.
 -	 */
 -	readonly toolCounts = new Map<string, number>();
+-	readonly mainModelCallIds = new Set<string>();
 -	toolCallRounds = 0;
 -	totalToolCalls = 0;
 -	parallelToolCallRounds = 0;
@@ -7491,6 +7823,26 @@ index 2b18bec0..00000000
 -	get currentTurnId(): string | undefined { return this._currentTurn?.id; }
 -	get currentTurnClientType(): AgentHostClientType { return this._currentTurn?.clientType ?? AgentHostClientType.Unknown; }
 -	get currentTurnClientContext(): IAgentHostClientTelemetryContext | undefined { return this._currentTurn?.clientContext; }
+-
+-	async collectDebugLogs(outputDirectory: URI, includeSessionLogs: boolean): Promise<void> {
+-		const result = await this._wrapper.session.rpc.debug.collectLogs({
+-			destination: { kind: 'directory', outputDirectory: outputDirectory.fsPath },
+-			include: {
+-				events: includeSessionLogs,
+-				processLogs: true,
+-				shellLogs: includeSessionLogs,
+-			},
+-		});
+-		if (result.kind !== 'directory' || result.path === outputDirectory.fsPath) {
+-			return;
+-		}
+-		try {
+-			await cp(result.path, outputDirectory.fsPath, { recursive: true });
+-		} finally {
+-			await rm(result.path, { recursive: true, force: true });
+-		}
+-	}
+-
 -	/**
 -	 * Last model id seen on the SDK's per-LLM-call `Usage` event (or a
 -	 * direct {@link setModel} call). We rely on the
@@ -7554,6 +7906,9 @@ index 2b18bec0..00000000
 -
 -	/** Snapshot captured at session creation for refresh detection. */
 -	private readonly _appliedSnapshot: IActiveClientSnapshot;
+-	private readonly _appliedPluginSources: ReadonlySet<string>;
+-	private readonly _projectedMcpServerLaunchEnablement: ReadonlyMap<string, boolean>;
+-	private _mcpLaunchConfigurationDirty = false;
 -	/** Secondary filesystem roots successfully applied by the launch transaction. */
 -	private readonly _appliedAdditionalDirectories: readonly URI[];
 -	/**
@@ -7626,6 +7981,8 @@ index 2b18bec0..00000000
 -
 -	/** Platform used to compute the SDK sandbox policy (injectable for tests). */
 -	private readonly _platform: NodeJS.Platform;
+-	private _managedSandboxEnabled: boolean | undefined;
+-	private readonly _onManagedSettingsResolved: (data: ManagedSettingsResolvedData) => void;
 -
 -	get mcpServerStates() {
 -		return this._mcpCustomizations.runtimeStates;
@@ -7668,6 +8025,9 @@ index 2b18bec0..00000000
 -		this._isLaunchTokenStillCurrent = options.isLaunchTokenCurrent ?? (() => true);
 -		this._onTurnEnded = options.onTurnEnded ?? (() => { });
 -		this._shellManager = options.shellManager;
+-		this._managedSandboxEnabled = options.managedSandboxEnabled;
+-		this._shellManager?.setManagedSandboxEnabled(this._managedSandboxEnabled);
+-		this._onManagedSettingsResolved = options.onManagedSettingsResolved ?? (() => { });
 -		this._nonPtyShellTerminals = this._register(this._instantiationService.createInstance(NonPtyShellTerminalStreams, options.sessionUri));
 -		this._workingDirectory = options.workingDirectory;
 -		this._customizationDirectory = options.customizationDirectory;
@@ -7678,6 +8038,16 @@ index 2b18bec0..00000000
 -		this._repoInfoTelemetry = this._register(this._instantiationService.createInstance(AgentHostRepoInfoTelemetry, this._telemetryReporter));
 -
 -		this._appliedSnapshot = options.clientSnapshot ?? { tools: [], plugins: [], mcpServers: {} };
+-		this._appliedPluginSources = new Set(this._appliedSnapshot.plugins.flatMap(plugin => plugin.sourceUri ? [plugin.sourceUri.toString()] : []));
+-		const disabledMcpServers = new Set([
+-			...this._appliedSnapshot.plugins.flatMap(plugin => plugin.disabledMcpServers ?? []),
+-			...(this._launchPlan.disabledRootMcpServers ?? []),
+-		]);
+-		this._projectedMcpServerLaunchEnablement = new Map(this._appliedSnapshot.plugins.flatMap(plugin =>
+-			plugin.mcpServers
+-				.filter(server => isMcpServerExplicitlyProjected(plugin, server))
+-				.map(server => [server.name, !disabledMcpServers.has(server.name)] as const)
+-		));
 -		this._appliedAdditionalDirectories = [...(this._launchPlan.additionalDirectories ?? [])];
 -		// Routing keeps the unfiltered set — the runtime is the enforcement point.
 -		this._clientToolNames = clientToolNamesFromSnapshot(this._appliedSnapshot);
@@ -7749,6 +8119,16 @@ index 2b18bec0..00000000
 -			kind: 'action',
 -			resource: isChatAction(action) ? this._chatChannelUri : this._ownerSessionUri,
 -			action,
+-			parentToolCallId,
+-		});
+-	}
+-
+-	private _emitModelCallCompleted(turnId: string, modelCallId: string, parentToolCallId?: string): void {
+-		this._onDidSessionProgress.fire({
+-			kind: 'model_call_completed',
+-			resource: this._chatChannelUri,
+-			turnId,
+-			modelCallId,
 -			parentToolCallId,
 -		});
 -	}
@@ -8283,6 +8663,15 @@ index 2b18bec0..00000000
 -		return this._appliedSnapshot;
 -	}
 -
+-	get requiresMcpLaunchConfigurationRefresh(): boolean {
+-		this._markMcpLaunchConfigurationDirty();
+-		return this._mcpLaunchConfigurationDirty;
+-	}
+-
+-	get appliedDisabledRootMcpServers(): readonly string[] {
+-		return this._launchPlan.disabledRootMcpServers ?? [];
+-	}
+-
 -	/**
 -	 * Secondary roots granted when this live SDK session was created or resumed.
 -	 * The primary process root is immutable and therefore excluded.
@@ -8573,6 +8962,7 @@ index 2b18bec0..00000000
 -			if (!event.sessions.includes(this._ownerSessionUri.toString())) {
 -				return;
 -			}
+-			this._markMcpLaunchConfigurationDirty();
 -			this._reconcileMcpServerEnablement().catch(error => this._logService.error(error, `[Copilot:${this.sessionId}] Failed to reconcile MCP enablement after customizations changed`));
 -		}));
 -		this._subscribeToEvents();
@@ -8841,6 +9231,14 @@ index 2b18bec0..00000000
 -	private async _send(prompt: string, attachments: readonly MessageAttachment[] | undefined, mode: CopilotSdkMode | undefined): Promise<void> {
 -		this._logService.info(`[Copilot:${this.sessionId}] sendMessage called: "${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}" (${attachments?.length ?? 0} attachments)`);
 -
+-		// Capture the turn's abort token before any dispatch await. Resolving a slash
+-		// command awaits `rpc.commands.list`; an abort during that await drives a terminal
+-		// `session.idle` that resets the live token (and leaves a `pending` turn open).
+-		// Reading `this._abortToken` afterwards — e.g. inside `_startFleet` — would then
+-		// observe a fresh, uncancelled token and miss the abort, starting an autonomous
+-		// fleet loop after cancellation. The captured reference reliably reflects it.
+-		const abortToken = this._abortToken;
+-
 -		const slashCommand = parseLeadingSlashCommand(prompt);
 -		if (slashCommand?.command === 'compact') {
 -			try {
@@ -8906,8 +9304,17 @@ index 2b18bec0..00000000
 -			prompt = configAction.strippedPrompt;
 -		} else if (slashCommand) {
 -			const runtimeSlashCommand = await this._slashCommandProvider.resolveSlashCommand(slashCommand.command);
+-			// TEMPORARY WORKAROUND (#8837): route built-in /fleet via fleet.start to keep the AHP turn open; this bypasses commands.invoke telemetry/gating and should be removed once invoke returns agent-prompt.
+-			if (runtimeSlashCommand && runtimeSlashCommand.kind === 'builtin' && runtimeSlashCommand.name === 'fleet') {
+-				await this._startFleet(slashCommand.rest, attachments, mode, abortToken);
+-				return;
+-			}
 -			// Skills can be passed as is to the runtime.
 -			if (runtimeSlashCommand && runtimeSlashCommand.kind !== 'skill') {
+-				// Apply the effective mode before invoking the runtime command so it runs
+-				// under the correct SDK mode (issue #8837). An `agent-prompt` result may
+-				// override the mode; that override is applied again before `session.send`.
+-				await this.applyMode(mode);
 -				let result: CopilotCommandInvocationResult;
 -				try {
 -					result = await this._wrapper.session.rpc.commands.invoke({
@@ -8962,13 +9369,98 @@ index 2b18bec0..00000000
 -
 -		const sdkAttachments = await this._toSdkAttachments(attachments);
 -
+-		await this._prepareSdkTurn(mode);
+-		const traceContext = this._otelService.getSessionTraceContext(this.sessionId, this.resourceUri.toString());
+-		await this._otelService.withTraceContext(traceContext, () => this._wrapper.session.send({ prompt, attachments: sdkAttachments?.length ? sdkAttachments : undefined }));
+-		this._logService.info(`[Copilot:${this.sessionId}] session.send() returned`);
+-	}
+-
+-	/**
+-	 * Applies the per-turn SDK configuration shared by every operation that starts
+-	 * an agent loop (normal `session.send` and the `/fleet` start path): agent mode,
+-	 * permission mode, sandbox, and MCP enablement. Mode and sandbox keep their
+-	 * existing best-effort semantics.
+-	 */
+-	private async _prepareSdkTurn(mode: CopilotSdkMode | undefined): Promise<void> {
 -		await this.applyMode(mode);
 -		await this.syncPermissionMode('turn-start');
 -		await this._applyEffectiveSandboxConfig();
 -		await this._reconcileMcpServerEnablement();
+-	}
+-
+-	/**
+-	 * Temporary `/fleet` compatibility path (issue #8837): starts the SDK's fleet
+-	 * agent loop via the dedicated `rpc.fleet.start` RPC and keeps the AHP turn open
+-	 * until the SDK's terminal `session.idle`, rather than completing it as `commands.invoke`
+-	 * would. Remove once the runtime returns an `agent-prompt` result for `/fleet`.
+-	 */
+-	private async _startFleet(rest: string, attachments: readonly MessageAttachment[] | undefined, mode: CopilotSdkMode | undefined, abortToken: CancellationToken): Promise<void> {
+-		if (attachments?.length) {
+-			// `rpc.fleet.start` accepts only a prompt; fail loudly rather than silently dropping attachments.
+-			throw new Error(localize('copilotAgent.fleet.attachmentsUnsupported', "Attachments are not supported with the /fleet command."));
+-		}
+-		const startingTurn = this._currentTurn;
+-		// `abortToken` is captured by the caller before the dispatch await (slash-command
+-		// resolution), so it reliably reflects an abort that raced that await: an aborted
+-		// `session.idle` resets the live token, so reading `this._abortToken` here could
+-		// observe a fresh post-abort token and miss the cancellation.
+-		await this._prepareSdkTurn(mode);
+-		// Preflight awaits several RPCs; if an abort or terminal idle raced it, do not
+-		// start the fleet loop at all — starting it would orphan an autonomous run.
+-		if (!startingTurn || this._currentTurn !== startingTurn) {
+-			this._logService.warn(`[Copilot:${this.sessionId}] fleet turn ended during preflight; not starting fleet`);
+-			return;
+-		}
+-		if (abortToken.isCancellationRequested) {
+-			this._logService.warn(`[Copilot:${this.sessionId}] aborted during fleet preflight; not starting fleet`);
+-			this.discardActiveTurn();
+-			return;
+-		}
 -		const traceContext = this._otelService.getSessionTraceContext(this.sessionId, this.resourceUri.toString());
--		await this._otelService.withTraceContext(traceContext, () => this._wrapper.session.send({ prompt, attachments: sdkAttachments?.length ? sdkAttachments : undefined }));
--		this._logService.info(`[Copilot:${this.sessionId}] session.send() returned`);
+-		let result: { started: boolean };
+-		try {
+-			result = await this._otelService.withTraceContext(traceContext, () => this._wrapper.session.rpc.fleet.start(rest ? { prompt: rest } : {}));
+-		} catch (err) {
+-			// A terminal `session.idle` already ended this turn while the RPC was in
+-			// flight — idle is authoritative, so never emit a second terminal action.
+-			if (!startingTurn || this._currentTurn !== startingTurn) {
+-				this._logService.warn(`[Copilot:${this.sessionId}] rpc.fleet.start rejected after its turn already ended`, err);
+-				return;
+-			}
+-			// An abort raced the RPC; the client already finalized the protocol turn via
+-			// cancellation, so drop our handle rather than surfacing another error.
+-			if (abortToken.isCancellationRequested) {
+-				this._logService.warn(`[Copilot:${this.sessionId}] rpc.fleet.start rejected after abort; discarding turn`, err);
+-				this.discardActiveTurn();
+-				return;
+-			}
+-			throw err;
+-		}
+-		if (!startingTurn || this._currentTurn !== startingTurn) {
+-			// A terminal `session.idle` already ended this turn while the RPC was in flight.
+-			if (!result.started) {
+-				this._logService.warn(`[Copilot:${this.sessionId}] rpc.fleet.start returned started=false after its turn already ended`);
+-			}
+-			return;
+-		}
+-		if (abortToken.isCancellationRequested) {
+-			// An abort raced the RPC and left this turn `pending` (the idle handler keeps
+-			// pending turns open), so it will never receive a completing idle. Drop the
+-			// handle instead of promoting it to `running`, which would strand the chat.
+-			this._logService.warn(`[Copilot:${this.sessionId}] rpc.fleet.start settled after abort; discarding turn`);
+-			this.discardActiveTurn();
+-			return;
+-		}
+-		if (result.started) {
+-			// `fleet.start` only acknowledges activation; the SDK agent loop keeps
+-			// running and the existing `session.idle` handler completes this turn.
+-			// Promote the turn to `running` now so an abort before the first SDK event
+-			// tears it down instead of stranding a `pending` turn.
+-			startingTurn.markRunning();
+-			this._logService.info(`[Copilot:${this.sessionId}] rpc.fleet.start succeeded; retaining turn until session idle`);
+-			return;
+-		}
+-		throw new Error(localize('copilotAgent.fleet.notStarted', "Fleet could not be started."));
 -	}
 -
 -	private async _toSdkAttachments(attachments: readonly MessageAttachment[] | undefined): Promise<CopilotSdkAttachment[] | undefined> {
@@ -9323,27 +9815,23 @@ index 2b18bec0..00000000
 -	}
 -
 -	private async _doReconcileMcpServerEnablement(): Promise<void> {
--		const desiredCustomizations = this._hostCustomizations();
--		const desiredEnablement = getSdkMcpServerEnablement(resolveCustomizationEnablement(
--			this._customizationEnablementService,
--			this._ownerSessionUri,
--			desiredCustomizations,
--			undefined,
--			undefined,
--			this._mcpCustomizations.pluginMcpServerSources,
--		));
+-		this._markMcpLaunchConfigurationDirty();
+-		const desiredEnablement = this._getDesiredMcpServerEnablementByName();
 -		if (desiredEnablement.size === 0) {
 -			return;
 -		}
 -		await this._refreshMcpServersFromRpc();
 -		let changed = false;
 -		for (const server of this._mcpCustomizations.serverEnablement()) {
--			const desired = desiredEnablement.get(server.customizationId);
+-			const desired = desiredEnablement.get(server.serverName);
 -			if (desired === undefined || desired === server.enabled) {
 -				continue;
 -			}
 -			try {
 -				if (desired) {
+-					if (this._mcpLaunchConfigurationDirty && this._projectedMcpServerLaunchEnablement.has(server.serverName)) {
+-						continue;
+-					}
 -					// Re-enabling restarts the server. The SDK reports the
 -					// connect live (`pending` -> `connected`/`failed`), so no
 -					// optimistic state is written here. Mark `changed` now
@@ -9361,6 +9849,63 @@ index 2b18bec0..00000000
 -		}
 -		if (changed) {
 -			await this._refreshMcpServersFromRpc();
+-		}
+-	}
+-
+-	private _getDesiredMcpServerEnablementByName(): ReadonlyMap<string, boolean> {
+-		const resolved = resolveCustomizationEnablement(
+-			this._customizationEnablementService,
+-			this._ownerSessionUri,
+-			this._hostCustomizations(),
+-			undefined,
+-			undefined,
+-			this._mcpCustomizations.pluginMcpServerSources,
+-		);
+-		const enabledById = getSdkMcpServerEnablement(resolved);
+-		const candidates = new Map<string, Array<{ readonly server: McpServerCustomization; readonly applied: boolean }>>();
+-		const result = new Map<string, boolean>();
+-		for (const customization of resolved.customizations) {
+-			const servers = customization.type === CustomizationType.McpServer
+-				? [customization]
+-				: (customization.children ?? []).filter((child): child is McpServerCustomization => child.type === CustomizationType.McpServer);
+-			for (const server of servers) {
+-				const owningPluginSource = this._mcpCustomizations.pluginMcpServerSources?.get(server.name);
+-				const source = customization.type === CustomizationType.Plugin ? customization.uri : owningPluginSource;
+-				const applied = source === undefined || this._appliedPluginSources.has(URI.parse(source).toString());
+-				let namedCandidates = candidates.get(server.name);
+-				if (!namedCandidates) {
+-					namedCandidates = [];
+-					candidates.set(server.name, namedCandidates);
+-				}
+-				namedCandidates.push({ server, applied });
+-			}
+-		}
+-		for (const [name, namedCandidates] of candidates) {
+-			const applicable = namedCandidates.some(candidate => candidate.applied)
+-				? namedCandidates.filter(candidate => candidate.applied)
+-				: namedCandidates;
+-			for (const candidate of applicable) {
+-				const enabled = enabledById.get(candidate.server.id) ?? false;
+-				result.set(name, (result.get(name) ?? true) && enabled);
+-			}
+-		}
+-		for (const name of this._launchPlan.disabledRootMcpServers ?? []) {
+-			result.set(name, false);
+-		}
+-		return result;
+-	}
+-
+-	private _markMcpLaunchConfigurationDirty(): void {
+-		if (this._mcpLaunchConfigurationDirty || this._projectedMcpServerLaunchEnablement.size === 0) {
+-			return;
+-		}
+-		const desiredEnablement = this._getDesiredMcpServerEnablementByName();
+-		for (const [serverName, launchEnabled] of this._projectedMcpServerLaunchEnablement) {
+-			const desired = desiredEnablement.get(serverName);
+-			if (launchEnabled !== undefined && desired !== undefined && desired !== launchEnabled) {
+-				this._mcpLaunchConfigurationDirty = true;
+-				return;
+-			}
 -		}
 -	}
 -
@@ -9727,6 +10272,9 @@ index 2b18bec0..00000000
 -			}
 -			return this._shellManager.getOrCreateSandboxEngine().isEnabled();
 -		}
+-		if (this._managedSandboxEnabled !== undefined) {
+-			return this._managedSandboxEnabled;
+-		}
 -		// SDK-managed shell path: gate on the same host config that
 -		// `CopilotSessionLauncher` reads when forwarding `sandboxConfig` to
 -		// the SDK, so the two stay in lock-step.
@@ -9754,7 +10302,16 @@ index 2b18bec0..00000000
 -			return undefined;
 -		}
 -		const sandbox = this._configurationService.getRootValue(sandboxConfigSchema, AgentHostSandboxConfigKey.Sandbox);
--		return buildSandboxConfigForSdk(this._platform, sandbox);
+-		return buildSandboxConfigForSdk(this._platform, sandbox, this._managedSandboxEnabled);
+-	}
+-
+-	setManagedSandboxEnabled(enabled: boolean | undefined): void {
+-		if (this._managedSandboxEnabled === enabled) {
+-			return;
+-		}
+-		this._managedSandboxEnabled = enabled;
+-		this._shellManager?.setManagedSandboxEnabled(enabled);
+-		void this._applyEffectiveSandboxConfig();
 -	}
 -
 -	/**
@@ -9858,18 +10415,17 @@ index 2b18bec0..00000000
 -	 * Skips the SDK sandbox entirely when the custom terminal tool is enabled
 -	 * (the host's own terminal sandbox engine handles containment and the SDK's
 -	 * built-in shell is unused). Otherwise it always pushes the effective state
--	 * so the SDK never retains a stale or auto-discovered sandbox: the
--	 * configured policy unless the request runs with bypass approvals, or an
--	 * explicitly disabled sandbox when no sandbox is configured (setting off,
--	 * or Windows).
+-	 * when sandboxing is locally controlled. When managed enablement is defined,
+-	 * the runtime owns the effective configuration and the host sends no local
+-	 * sandbox update.
 -	 */
 -	private async _applyEffectiveSandboxConfig(failOnError = false): Promise<void> {
--		if (this._isCustomTerminalToolEnabled()) {
+-		if (this._isCustomTerminalToolEnabled() || this._managedSandboxEnabled !== undefined) {
 -			return;
 -		}
 -		const sandbox = this._configurationService.getRootValue(sandboxConfigSchema, AgentHostSandboxConfigKey.Sandbox);
--		const base = buildSandboxConfigForSdk(this._platform, sandbox);
--		const sandboxConfig: CopilotSandboxConfig | { enabled: false } = (base && !this._isBypassApprovals()) ? base : { enabled: false };
+-		const base = buildSandboxConfigForSdk(this._platform, sandbox, this._managedSandboxEnabled);
+-		const sandboxConfig: CopilotSandboxConfig | { enabled: false } = base ?? { enabled: false };
 -		try {
 -			const result = await this._wrapper.session.rpc.options.update({ sandboxConfig });
 -			if (!result.success) {
@@ -10492,6 +11048,16 @@ index 2b18bec0..00000000
 -		this._register(wrapper.onMessage(e => {
 -			this._logService.info(`[Copilot:${sessionId}] Full message received: ${e.data.content.length} chars`);
 -			this._resumeSubagentForEvent(e);
+-			const stableModelCallId = e.data.apiCallId ?? e.data.clientRequestId;
+-			const isCompleteModelCall = stableModelCallId !== undefined
+-				|| e.data.chunkCount === undefined
+-				|| e.data.chunkCount <= 1
+-				|| e.data.chunkIndex === e.data.chunkCount - 1;
+-			const modelCallId = stableModelCallId ?? e.data.messageId;
+-			const parentToolCallId = this._parentToolCallIdForSubagentEvent(e);
+-			if (isCompleteModelCall && (!e.agentId || parentToolCallId)) {
+-				this._emitModelCallCompleted(this._turnId, modelCallId, parentToolCallId);
+-			}
 -			// Report the enhanced GH `request.options.tools` event for this model call — parity with
 -			// the Copilot extension, which emits it per LLM request. `assistant.message` is the
 -			// agent-host's per-model-call boundary; we correlate on its client-minted `x-request-id`.
@@ -10508,7 +11074,10 @@ index 2b18bec0..00000000
 -				// too); the tool-count stats only apply to rounds that carried tool requests.
 -				const turn = this._currentTurn;
 -				if (turn) {
--					turn.toolCallRounds++;
+-					if (isCompleteModelCall && !turn.mainModelCallIds.has(modelCallId)) {
+-						turn.mainModelCallIds.add(modelCallId);
+-						turn.toolCallRounds++;
+-					}
 -					if (e.data.model) {
 -						turn.lastModel = e.data.model;
 -					}
@@ -10537,7 +11106,6 @@ index 2b18bec0..00000000
 -			if (this._shouldDropUnmappedSubagentEvent(e, 'assistant.message')) {
 -				return;
 -			}
--			const parentToolCallId = this._parentToolCallIdForSubagentEvent(e);
 -			const markdownScope = parentToolCallId ?? '';
 -			if (e.data.content && !this._currentTurn?.markdownPartIds.has(markdownScope)) {
 -				const partId = generateUuid();
@@ -11904,6 +12472,7 @@ index 2b18bec0..00000000
 -
 -		this._register(wrapper.onManagedSettingsResolved(e => {
 -			this._logService.info(`[Copilot:${sessionId}] Managed settings resolved: source=${e.data.source}, managedKeys=${e.data.managedKeys.join(',') || '(none)'}, bypassPermissionsDisabled=${e.data.bypassPermissionsDisabled}, failClosed=${e.data.failClosed}`);
+-			this._onManagedSettingsResolved(e.data);
 -		}));
 -
 -		this._register(wrapper.onManagedSettingsEnforced(e => {
@@ -12294,10 +12863,12 @@ index 2b18bec0..00000000
 -	return hasAny ? result : undefined;
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotFailureTelemetry.ts b/src/vs/platform/agentHost/node/copilot/copilotFailureTelemetry.ts
-index 3595bf3b..7c8b9952 100644
+index 3595bf3b2d5..7c8b995209a 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotFailureTelemetry.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotFailureTelemetry.ts
-@@ -5,3 +5,6 @@
+@@ -3,7 +3,10 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { SessionEventPayload } from '@github/copilot-sdk';
 +// `SessionEventPayload` originally came from '@github/copilot-sdk' (removed in
@@ -12305,11 +12876,15 @@ index 3595bf3b..7c8b9952 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type SessionEventPayload<T extends string = string> = any;
  import { getErrorCode } from '../../../../base/common/errors.js';
+ import type { URI } from '../../../../base/common/uri.js';
+ import { packErrorForTelemetry } from '../../../telemetry/common/errorTelemetry.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotGitHubTelemetryForwarder.ts b/src/vs/platform/agentHost/node/copilot/copilotGitHubTelemetryForwarder.ts
-index ffca3b1c..b0764d47 100644
+index ffca3b1c527..b0764d47c4d 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotGitHubTelemetryForwarder.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotGitHubTelemetryForwarder.ts
-@@ -5,3 +5,6 @@
+@@ -3,7 +3,10 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { GitHubTelemetryNotification } from '@github/copilot-sdk';
 +// `GitHubTelemetryNotification` originally came from '@github/copilot-sdk'
@@ -12317,12 +12892,14 @@ index ffca3b1c..b0764d47 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type GitHubTelemetryNotification = any;
  import { ITelemetryData, ITelemetryService } from '../../../telemetry/common/telemetry.js';
+ 
+ /* __GDPR__FRAGMENT__
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotPluginConverters.ts b/src/vs/platform/agentHost/node/copilot/copilotPluginConverters.ts
 deleted file mode 100644
-index 26aa9b03..00000000
+index 6473bf9169a..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotPluginConverters.ts
 +++ /dev/null
-@@ -1,518 +0,0 @@
+@@ -1,520 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -12331,6 +12908,7 @@ index 26aa9b03..00000000
 -import { spawn } from 'child_process';
 -import type { CustomAgentConfig, MCPServerConfig, SessionHooks } from '@github/copilot-sdk';
 -import { Schemas } from '../../../../base/common/network.js';
+-import { dirname } from '../../../../base/common/path.js';
 -import { OperatingSystem, OS } from '../../../../base/common/platform.js';
 -import { URI } from '../../../../base/common/uri.js';
 -import { parseFrontMatter } from '../../../../base/common/yaml.js';
@@ -12338,7 +12916,7 @@ index 26aa9b03..00000000
 -import { McpServerType, type IMcpServerConfiguration } from '../../../mcp/common/mcpPlatformTypes.js';
 -import type { IMcpServerDefinition, INamedPluginResource, IParsedAgent, IParsedHookCommand, IParsedHookGroup, IParsedPlugin } from '../../../agentPlugins/common/pluginParsers.js';
 -import { type AgentCustomization, type ChildCustomization } from '../../common/state/protocol/state.js';
--import { dirname } from '../../../../base/common/path.js';
+-import { resolveMcpServerWorkingDirectory } from '../shared/mcpServerWorkingDirectory.js';
 -
 -type PreToolUseHookInput = Parameters<NonNullable<SessionHooks['onPreToolUse']>>[0];
 -type PostToolUseHookInput = Parameters<NonNullable<SessionHooks['onPostToolUse']>>[0];
@@ -12357,7 +12935,7 @@ index 26aa9b03..00000000
 -export function toSdkMcpServers(defs: readonly IMcpServerDefinition[]): Record<string, MCPServerConfig> {
 -	const result: Record<string, MCPServerConfig> = {};
 -	for (const def of defs) {
--		result[def.name] = toSdkMcpServer(def.name, def.configuration);
+-		result[def.name] = toSdkMcpServer(def.name, def.configuration, def.defaultCwd);
 -	}
 -	return result;
 -}
@@ -12401,19 +12979,20 @@ index 26aa9b03..00000000
 -	return false;
 -}
 -
--function toSdkMcpServer(_name: string, config: IMcpServerConfiguration): MCPServerConfig {
+-function toSdkMcpServer(_name: string, config: IMcpServerConfiguration, defaultCwd?: URI): MCPServerConfig {
 -	if (config.type === McpServerType.LOCAL) {
+-		const effectiveCwd = resolveMcpServerWorkingDirectory(config.cwd, defaultCwd);
 -		return {
 -			type: 'local',
 -			command: config.command,
 -			args: config.args ? [...config.args] : [],
 -			tools: ['*'],
 -			...(config.env && { env: toStringEnv(config.env) }),
--			...(config.cwd && { cwd: config.cwd }),
+-			...(effectiveCwd ? { cwd: effectiveCwd } : {}),
 -		};
 -	}
 -	return {
--		type: 'http',
+-		type: config.transport === 'sse' ? 'sse' : 'http',
 -		url: config.url,
 -		tools: ['*'],
 -		...(config.headers && { headers: { ...config.headers } }),
@@ -12833,7 +13412,7 @@ index 26aa9b03..00000000
 -		return JSON.stringify(plugins.map(p => ({
 -			format: p.format,
 -			hooks: p.hooks.map(h => ({ type: h.type, commands: h.commands.map(c => ({ command: c.command, windows: c.windows, linux: c.linux, osx: c.osx, cwd: c.cwd?.toString(), env: c.env, timeout: c.timeout })) })),
--			mcpServers: p.mcpServers.map(m => ({ name: m.name, configuration: m.configuration })),
+-			mcpServers: p.mcpServers.map(m => ({ name: m.name, configuration: m.configuration, defaultCwd: m.defaultCwd?.toString() })),
 -			skills: p.skills.map(s => ({ uri: s.uri.toString(), name: s.name })),
 -			agents: p.agents.map(a => ({ uri: a.uri.toString(), name: a.name })),
 -			instructions: p.instructions.map(i => ({ uri: i.uri.toString(), name: i.name })),
@@ -12843,10 +13422,10 @@ index 26aa9b03..00000000
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotSessionLauncher.ts b/src/vs/platform/agentHost/node/copilot/copilotSessionLauncher.ts
 deleted file mode 100644
-index 83970897..00000000
+index 8bf3c2c62c8..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotSessionLauncher.ts
 +++ /dev/null
-@@ -1,860 +0,0 @@
+@@ -1,878 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -12855,14 +13434,15 @@ index 83970897..00000000
 -import type { ContextTier, CopilotClient, ElicitationContext, ElicitationResult, ExitPlanModeRequest, ExitPlanModeResult, ModelCapabilitiesOverride, NamedProviderConfig, PermissionRequest, PermissionRequestResult, ProviderModelConfig, ReasoningSummary, ResumeSessionConfig, SessionConfig, SessionHooks, Tool, Verbosity } from '@github/copilot-sdk';
 -import { coalesce } from '../../../../base/common/arrays.js';
 -import { Schemas } from '../../../../base/common/network.js';
+-import { isEqual } from '../../../../base/common/resources.js';
 -import { isObject, isStringArray } from '../../../../base/common/types.js';
 -import { StopWatch } from '../../../../base/common/stopwatch.js';
 -import { URI } from '../../../../base/common/uri.js';
 -import { IFileService } from '../../../files/common/files.js';
 -import { ILogService, LogLevel } from '../../../log/common/log.js';
 -import { AgentSession } from '../../common/agent.js';
--import { getByokLmSelectionModelId, type IByokLmModelInfo } from '../../common/agentHostByokLm.js';
--import { AgentHostSessionSyncEnabledConfigKey, platformRootSchema, type AgentHostMcpServers } from '../../common/agentHostSchema.js';
+-import { getByokLmSelectionModelId, resolveByokLmEnablement, type IByokLmModelInfo } from '../../common/agentHostByokLm.js';
+-import { AgentHostByokModelsEnabledConfigKey, AgentHostSessionSyncEnabledConfigKey, platformRootSchema, type AgentHostMcpServers } from '../../common/agentHostSchema.js';
 -import { CopilotCliConfigKey, copilotCliConfigSchema, normalizeModelFamilyAlias, normalizeToolSearchDeferThreshold, resolveModelCapabilityOverrideField } from '../../common/copilotCliConfig.js';
 -import { IAgentHostOTelService } from '../../common/otel/agentHostOTelService.js';
 -import { reasoningEffortLevels, type ReasoningEffortLevel } from '../../common/reasoningEffort.js';
@@ -12875,6 +13455,7 @@ index 83970897..00000000
 -import { IAgentHostTerminalManager } from '../agentHostTerminalManager.js';
 -import { IByokLmBridgeRegistry } from '../byokLmBridgeRegistry.js';
 -import { IByokLmProxyService, type IByokLmProxyHandle } from './byokLmProxyService.js';
+-import type { IMcpServerDefinition } from '../../../agentPlugins/common/pluginParsers.js';
 -import type { ICopilotPluginInfo } from './copilotAgent.js';
 -import { toSdkHooks, toSdkInstructionDirectories, toSdkMcpServers, toSdkMcpServersFromConfigMap, toSdkSessionCustomAgents, toSdkSkillDirectories } from './copilotPluginConverters.js';
 -import { CopilotSessionWrapper } from './copilotSessionWrapper.js';
@@ -12918,6 +13499,12 @@ index 83970897..00000000
 -		...(disabledRootMcpServers ?? []),
 -	])];
 -	return disabledMcpServers.length > 0 ? { disabledMcpServers } : {};
+-}
+-
+-export function isMcpServerExplicitlyProjected(plugin: ICopilotPluginInfo, server: IMcpServerDefinition): boolean {
+-	return !plugin.pluginDir
+-		|| plugin.pluginDir.scheme !== Schemas.file
+-		|| server.defaultCwd !== undefined && !isEqual(server.defaultCwd, plugin.pluginDir);
 -}
 -
 -/**
@@ -13073,6 +13660,7 @@ index 83970897..00000000
 -	readonly activeClientToolSet: ActiveClientToolSet;
 -	readonly shellManager: ShellManager | undefined;
 -	readonly githubToken: string | undefined;
+-	readonly managedSandboxEnabled?: boolean;
 -
 -	/**
 -	 * Whether this is a workspace-less session. Threaded into the
@@ -13375,7 +13963,7 @@ index 83970897..00000000
 -
 -	async launch(plan: CopilotSessionLaunchPlan, runtime: ICopilotSessionRuntime): Promise<CopilotSessionWrapper> {
 -		const config = await this._buildSessionConfig(plan, runtime);
--		const sandboxConfig = this._computeSandboxConfig();
+-		const sandboxConfig = this._computeSandboxConfig(plan.managedSandboxEnabled);
 -		if (plan.kind === 'create') {
 -			return this._createSession(plan, config, sandboxConfig);
 -		}
@@ -13496,12 +14084,12 @@ index 83970897..00000000
 -	 * `chat.agent.sandbox.*` settings), mirroring what
 -	 * `buildSandboxConfigForCLI` does for the Copilot extension's CLI path.
 -	 */
--	private _computeSandboxConfig(): CopilotSandboxConfig | undefined {
+-	private _computeSandboxConfig(managedSandboxEnabled: boolean | undefined): CopilotSandboxConfig | undefined {
 -		const enableCustomTerminalTool = this._configurationService.getRootValue(copilotCliConfigSchema, CopilotCliConfigKey.EnableCustomTerminalTool) === true;
 -		if (enableCustomTerminalTool) {
 -			return undefined;
 -		}
--		return buildSandboxConfigForSdk(process.platform, this._configurationService.getRootValue(sandboxConfigSchema, AgentHostSandboxConfigKey.Sandbox));
+-		return buildSandboxConfigForSdk(process.platform, this._configurationService.getRootValue(sandboxConfigSchema, AgentHostSandboxConfigKey.Sandbox), managedSandboxEnabled);
 -	}
 -
 -	/**
@@ -13530,6 +14118,12 @@ index 83970897..00000000
 -	 * shared proxy handle for this launcher (started lazily on first use).
 -	 */
 -	private _resolveByokSessionConfig(sessionId: string): Promise<{ providers?: NamedProviderConfig[]; models?: ProviderModelConfig[] }> {
+-		const rootConfigValue = this._configurationService.getRootValue(platformRootSchema, AgentHostByokModelsEnabledConfigKey);
+-		const { enabled, trace } = resolveByokLmEnablement(rootConfigValue);
+-		this._logService.trace(`[Copilot:${sessionId}] BYOK session configuration ${trace}`);
+-		if (!enabled) {
+-			return Promise.resolve({});
+-		}
 -		return resolveByokSessionConfig(sessionId, this._byokLmBridgeRegistry, () => {
 -			if (!this._byokProxyHandle) {
 -				this._byokProxyHandle = this._byokLmProxyService.start();
@@ -13581,7 +14175,10 @@ index 83970897..00000000
 -		// exception: the SDK validates the session-start `agent:` against `customAgents`
 -		// by name, so the selected agent is force-included (see `toSdkSessionCustomAgents`).
 -		const pluginsWithoutDirs = plugins.filter(p => !p.pluginDir || p.pluginDir.scheme !== Schemas.file);
--		const mcpServers = pluginsWithoutDirs.flatMap(plugin => plugin.mcpServers.filter(server => !plugin.disabledMcpServers?.includes(server.name)));
+-		const explicitMcpServers = plugins.flatMap(plugin => plugin.mcpServers.filter(server =>
+-			!plugin.disabledMcpServers?.includes(server.name)
+-			&& isMcpServerExplicitlyProjected(plugin, server)
+-		));
 -		const customAgents = await toSdkSessionCustomAgents(plugins, plan.resolvedAgentName, this._fileService);
 -		const skillDirectories = toSdkSkillDirectories(pluginsWithoutDirs.flatMap(p => p.skills));
 -		const instructionDirectories = toSdkInstructionDirectories(plugins.flatMap(p => p.instructions));
@@ -13663,7 +14260,7 @@ index 83970897..00000000
 -				onPostToolUse: input => runtime.handlePostToolUse(input),
 -				onUserPromptSubmitted: () => runtime.handleUserPromptSubmitted(),
 -			}),
--			mcpServers: { ...toSdkMcpServersFromConfigMap(plan.snapshot.mcpServers), ...toSdkMcpServers(mcpServers) },
+-			mcpServers: { ...toSdkMcpServersFromConfigMap(plan.snapshot.mcpServers), ...toSdkMcpServers(explicitMcpServers) },
 -			onExitPlanModeRequest: (request, invocation) => runtime.handleExitPlanModeRequest(request, invocation),
 -			workingDirectory: plan.workingDirectory?.fsPath,
 -			customAgents,
@@ -13709,7 +14306,7 @@ index 83970897..00000000
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotSessionWrapper.ts b/src/vs/platform/agentHost/node/copilot/copilotSessionWrapper.ts
 deleted file mode 100644
-index 777fcb0e..00000000
+index 777fcb0edee..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotSessionWrapper.ts
 +++ /dev/null
 @@ -1,319 +0,0 @@
@@ -14034,10 +14631,10 @@ index 777fcb0e..00000000
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotShellTools.ts b/src/vs/platform/agentHost/node/copilot/copilotShellTools.ts
 deleted file mode 100644
-index 9b409c4a..00000000
+index 044b07e2c0f..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotShellTools.ts
 +++ /dev/null
-@@ -1,811 +0,0 @@
+@@ -1,817 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -14097,6 +14694,7 @@ index 9b409c4a..00000000
 - * the session ends.
 - */
 -export class ShellManager extends Disposable {
+-	private _managedSandboxEnabled: boolean | undefined;
 -
 -	private readonly _shells = new Map<string, IManagedShell>();
 -	private readonly _toolCallShells = new Map<string, string>();
@@ -14151,6 +14749,10 @@ index 9b409c4a..00000000
 -		return this._resolvedExecutable;
 -	}
 -
+-	setManagedSandboxEnabled(enabled: boolean | undefined): void {
+-		this._managedSandboxEnabled = enabled;
+-	}
+-
 -	/**
 -	 * Lazily constructs the per-session {@link TerminalSandboxEngine}. The engine
 -	 * is registered for disposal alongside the {@link ShellManager}; its temp dir
@@ -14167,6 +14769,7 @@ index 9b409c4a..00000000
 -				this._sandboxHelper,
 -				sessionId,
 -				this.workingDirectory,
+-				() => this._managedSandboxEnabled,
 -			);
 -			this._register(engine);
 -			this._register(toDisposable(() => {
@@ -14851,7 +15454,7 @@ index 9b409c4a..00000000
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotSlashCommandCompletionProvider.ts b/src/vs/platform/agentHost/node/copilot/copilotSlashCommandCompletionProvider.ts
 deleted file mode 100644
-index 6e7fa13f..00000000
+index 6e7fa13f724..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotSlashCommandCompletionProvider.ts
 +++ /dev/null
 @@ -1,270 +0,0 @@
@@ -15126,10 +15729,12 @@ index 6e7fa13f..00000000
 -	return container.uri.startsWith(SYNCED_CUSTOMIZATION_SCHEME + ':');
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotSlashCommandProvider.ts b/src/vs/platform/agentHost/node/copilot/copilotSlashCommandProvider.ts
-index 34a750af..cab1676d 100644
+index 34a750af9f7..cab1676d156 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotSlashCommandProvider.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotSlashCommandProvider.ts
-@@ -5,3 +5,10 @@
+@@ -3,7 +3,14 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { CopilotClient } from '@github/copilot-sdk';
 +// `CopilotClient` came from '@github/copilot-sdk' (removed in !!APP_NAME!!).
@@ -15141,11 +15746,15 @@ index 34a750af..cab1676d 100644
 +	};
 +};
  import { ILogService } from '../../../log/common/log.js';
+ import { raceTimeout } from '../../../../base/common/async.js';
+ 
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts b/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts
-index 4561c84d..8bf7a87a 100644
+index 4561c84d348..8bf7a87a31b 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotSystemNotification.ts
-@@ -5,3 +5,9 @@
+@@ -3,7 +3,13 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { SessionEventPayload, SystemNotification } from '@github/copilot-sdk';
 +// `SessionEventPayload`/`SystemNotification` originally came from
@@ -15156,18 +15765,26 @@ index 4561c84d..8bf7a87a 100644
 +type SystemNotification = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { softAssertNever } from '../../../../base/common/assert.js';
-@@ -76,3 +82,5 @@ export function buildCopilotSystemNotification(event: SessionEventPayload<'syste
+ import { localize } from '../../../../nls.js';
+ 
+@@ -74,7 +80,9 @@ export function buildCopilotSystemNotification(event: SessionEventPayload<'syste
+ 				startsTurn: true,
+ 			};
  		default:
 -			softAssertNever(kind);
 +			// `kind` is locally aliased to `any` (SDK types removed); cast for the
 +			// exhaustiveness helper.
 +			softAssertNever(kind as never);
  			return undefined;
+ 	}
+ }
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
-index 46339317..b9fe6bbc 100644
+index 463393179d6..b9fe6bbc728 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
-@@ -5,3 +5,17 @@
+@@ -3,7 +3,21 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { PermissionRequest, SkillInvokedData } from '@github/copilot-sdk';
 +// `PermissionRequest`/`SkillInvokedData` originally came from
@@ -15186,11 +15803,15 @@ index 46339317..b9fe6bbc 100644
 +type SkillInvokedData = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { hasKey, isObject } from '../../../../base/common/types.js';
+ import { URI } from '../../../../base/common/uri.js';
+ import { appendEscapedMarkdownInlineCode, escapeMarkdownLinkLabel, MarkdownString } from '../../../../base/common/htmlContent.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/mapSessionEvents.ts b/src/vs/platform/agentHost/node/copilot/mapSessionEvents.ts
-index 282e3d80..09793133 100644
+index 282e3d80a51..09793133588 100644
 --- a/src/vs/platform/agentHost/node/copilot/mapSessionEvents.ts
 +++ b/src/vs/platform/agentHost/node/copilot/mapSessionEvents.ts
-@@ -5,3 +5,15 @@
+@@ -3,7 +3,19 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { AssistantMessageToolRequest, Attachment, SessionEvent, ToolExecutionCompleteContent, ToolExecutionCompleteContentShellExit, ToolExecutionCompleteData } from '@github/copilot-sdk';
 +// These types originally came from '@github/copilot-sdk' (removed in
@@ -15207,9 +15828,11 @@ index 282e3d80..09793133 100644
 +type ToolExecutionCompleteData = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { decodeBase64 } from '../../../../base/common/buffer.js';
+ import { Schemas } from '../../../../base/common/network.js';
+ import { basename, isAbsolute, join } from '../../../../base/common/path.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/prompts/allPrompts.ts b/src/vs/platform/agentHost/node/copilot/prompts/allPrompts.ts
 deleted file mode 100644
-index 6c69ad78..00000000
+index 6c69ad789c1..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/prompts/allPrompts.ts
 +++ /dev/null
 @@ -1,16 +0,0 @@
@@ -15231,7 +15854,7 @@ index 6c69ad78..00000000
 -import './anthropicPrompt.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/prompts/anthropicPrompt.ts b/src/vs/platform/agentHost/node/copilot/prompts/anthropicPrompt.ts
 deleted file mode 100644
-index e6893a5c..00000000
+index e6893a5ce89..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/prompts/anthropicPrompt.ts
 +++ /dev/null
 @@ -1,66 +0,0 @@
@@ -15303,7 +15926,7 @@ index e6893a5c..00000000
 -agentHostPromptRegistry.registerPrompt(Claude48OpusPromptResolver);
 diff --git a/src/vs/platform/agentHost/node/copilot/prompts/promptRegistry.ts b/src/vs/platform/agentHost/node/copilot/prompts/promptRegistry.ts
 deleted file mode 100644
-index 9a0dbe67..00000000
+index 9a0dbe67d8c..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/prompts/promptRegistry.ts
 +++ /dev/null
 @@ -1,229 +0,0 @@
@@ -15538,7 +16161,7 @@ index 9a0dbe67..00000000
 -export const agentHostPromptRegistry = new AgentHostPromptRegistry();
 diff --git a/src/vs/platform/agentHost/node/copilot/prompts/systemMessage.ts b/src/vs/platform/agentHost/node/copilot/prompts/systemMessage.ts
 deleted file mode 100644
-index 03c26232..00000000
+index 03c262324ef..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/prompts/systemMessage.ts
 +++ /dev/null
 @@ -1,126 +0,0 @@
@@ -15669,10 +16292,12 @@ index 03c26232..00000000
 -	return `mode=append (content length ${config.content?.length ?? 0})`;
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/prompts/toolInstructions.ts b/src/vs/platform/agentHost/node/copilot/prompts/toolInstructions.ts
-index 9ede4409..27f846d5 100644
+index 9ede4409f9a..27f846d58d3 100644
 --- a/src/vs/platform/agentHost/node/copilot/prompts/toolInstructions.ts
 +++ b/src/vs/platform/agentHost/node/copilot/prompts/toolInstructions.ts
-@@ -5,3 +5,6 @@
+@@ -3,7 +3,10 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { SectionOverride } from '@github/copilot-sdk';
 +// `SectionOverride` originally came from '@github/copilot-sdk' (removed in
@@ -15680,12 +16305,14 @@ index 9ede4409..27f846d5 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type SectionOverride = any;
  import { coalesce } from '../../../../../base/common/arrays.js';
+ import { BrowserChatToolReferenceName, browserChatToolReferenceNames } from '../../../../browserView/common/browserChatToolReferenceNames.js';
+ import { CLIENT_TOOL_SEARCH_REFERENCE_NAME } from '../../../common/toolSearchConstants.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/sandboxConfigForSdk.ts b/src/vs/platform/agentHost/node/copilot/sandboxConfigForSdk.ts
 deleted file mode 100644
-index 00c523ef..00000000
+index bae8d0f5df4..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/sandboxConfigForSdk.ts
 +++ /dev/null
-@@ -1,117 +0,0 @@
+@@ -1,142 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -15714,6 +16341,27 @@ index 00c523ef..00000000
 -	readonly allowBypass?: boolean;
 -};
 -
+-export interface IManagedSandboxSettingsSnapshot {
+-	readonly serverManaged?: boolean;
+-	readonly settings?: unknown;
+-}
+-
+-function isRecord(value: unknown): value is Record<string, unknown> {
+-	return typeof value === 'object' && value !== null;
+-}
+-
+-export function getServerManagedSandboxEnabled(snapshot: IManagedSandboxSettingsSnapshot): boolean | undefined {
+-	if (snapshot.serverManaged !== true || !isRecord(snapshot.settings)) {
+-		return undefined;
+-	}
+-	const sandbox = snapshot.settings['sandbox'];
+-	if (!isRecord(sandbox)) {
+-		return undefined;
+-	}
+-	const enabled = sandbox['enabled'];
+-	return typeof enabled === 'boolean' ? enabled : undefined;
+-}
+-
 -/**
 - * Translate the AgentHost's host-side sandbox configuration into the
 - * opaque `sandboxConfig` shape the Copilot SDK forwards to the runtime
@@ -15724,6 +16372,9 @@ index 00c523ef..00000000
 - * sandbox policy down into the SDK itself. When the custom terminal tool is
 - * ON, the AgentHost's own {@link TerminalSandboxEngine} wraps commands and
 - * this function is not consulted.
+- *
+- * When managed sandbox enablement is defined, the runtime owns the effective
+- * sandbox configuration and the host must not apply local sandbox settings.
 - *
 - * Mirrors `buildSandboxConfigForCLI` in
 - * `extensions/copilot/src/extension/chatSessions/copilotcli/node/copilotcliSessionService.ts`
@@ -15742,23 +16393,24 @@ index 00c523ef..00000000
 -export function buildSandboxConfigForSdk(
 -	platform: NodeJS.Platform,
 -	sandbox: ISandboxConfigValue | undefined,
+-	managedEnabled?: boolean,
 -): CopilotSandboxConfig | undefined {
--	if (!sandbox) {
+-	if (managedEnabled !== undefined) {
 -		return undefined;
 -	}
 -
 -	const enabledRaw = platform === 'win32'
--		? sandbox[AgentHostSandboxKey.WindowsEnabled]
--		: sandbox[AgentHostSandboxKey.Enabled];
+-		? sandbox?.[AgentHostSandboxKey.WindowsEnabled]
+-		: sandbox?.[AgentHostSandboxKey.Enabled];
 -	if (enabledRaw !== AgentSandboxEnabledValue.On) {
 -		return undefined;
 -	}
 -
 -	const fsRaw = platform === 'win32'
--		? sandbox[AgentHostSandboxKey.WindowsFileSystem]
+-		? sandbox?.[AgentHostSandboxKey.WindowsFileSystem]
 -		: platform === 'darwin'
--			? sandbox[AgentHostSandboxKey.MacFileSystem]
--			: sandbox[AgentHostSandboxKey.LinuxFileSystem];
+-			? sandbox?.[AgentHostSandboxKey.MacFileSystem]
+-			: sandbox?.[AgentHostSandboxKey.LinuxFileSystem];
 -	const hasFileSystemPolicy = fsRaw !== undefined && typeof fsRaw === 'object';
 -	const fs = hasFileSystemPolicy ? fsRaw as IAgentSandboxFileSystemSetting : {};
 -
@@ -15781,8 +16433,8 @@ index 00c523ef..00000000
 -		}
 -	}
 -
--	const allowNetwork = sandbox[AgentHostSandboxKey.AllowNetwork];
--	const allowBypass = sandbox[AgentHostSandboxKey.AllowUnsandboxedCommands];
+-	const allowNetwork = sandbox?.[AgentHostSandboxKey.AllowNetwork];
+-	const allowBypass = sandbox?.[AgentHostSandboxKey.AllowUnsandboxedCommands];
 -	const filesystem = hasFileSystemPolicy
 -		? {
 -			...(denied.size ? { deniedPaths: [...denied] } : {}),
@@ -15804,10 +16456,12 @@ index 00c523ef..00000000
 -	};
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts b/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
-index 8a9d5123..b8b8ca45 100644
+index d60fc30d7a0..3ff3bb951ac 100644
 --- a/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
 +++ b/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
-@@ -5,3 +5,24 @@
+@@ -3,7 +3,28 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { CopilotClient } from '@github/copilot-sdk';
 +// `CopilotClient` came from '@github/copilot-sdk' (removed in !!APP_NAME!!).
@@ -15833,24 +16487,36 @@ index 8a9d5123..b8b8ca45 100644
 +};
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { appendFile, mkdir } from 'fs/promises';
+ import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
+ import { CancellationError } from '../../../../base/common/errors.js';
 diff --git a/src/vs/platform/agentHost/node/otel/agentHostOTelService.ts b/src/vs/platform/agentHost/node/otel/agentHostOTelService.ts
-index cdb73772..b599cf08 100644
+index cdb7377248e..b599cf0861f 100644
 --- a/src/vs/platform/agentHost/node/otel/agentHostOTelService.ts
 +++ b/src/vs/platform/agentHost/node/otel/agentHostOTelService.ts
-@@ -8,3 +8,2 @@ import { RunOnceScheduler } from '../../../../base/common/async.js';
+@@ -6,7 +6,6 @@
+ import { mkdir } from 'fs/promises';
+ import { RunOnceScheduler } from '../../../../base/common/async.js';
  import { dirname, join } from '../../../../base/common/path.js';
 -import type { TelemetryConfig } from '@github/copilot-sdk';
  import { Disposable, toDisposable } from '../../../../base/common/lifecycle.js';
-@@ -26,3 +25,3 @@ import { OTelSqliteStore } from '../../../otel/node/sqlite/otelSqliteStore.js';
+ import { URI } from '../../../../base/common/uri.js';
+ import { generateUuid } from '../../../../base/common/uuid.js';
+@@ -24,7 +23,7 @@ import { GenAiAttr } from '../../../otel/common/genAiAttributes.js';
+ import { ICompletedSpanData, SpanStatusCode } from '../../../otel/common/spanData.js';
+ import { OTelSqliteStore } from '../../../otel/node/sqlite/otelSqliteStore.js';
  import { AgentHostOTelSpansDbSubPath } from '../../common/agentService.js';
 -import { AgentHostOTelServiceName, AgentHostOTelServiceNamespace, AgentHostSessionSpanName, AgentHostSessionTitleAttribute, AgentHostSessionTitleSpanName, AgentHostSessionUriAttribute, IAgentHostNativeOTelConfig, IAgentHostOTelService, IAgentHostTraceContext } from '../../common/otel/agentHostOTelService.js';
 +import { AgentHostOTelServiceName, AgentHostOTelServiceNamespace, AgentHostSessionSpanName, AgentHostSessionTitleAttribute, AgentHostSessionTitleSpanName, AgentHostSessionUriAttribute, IAgentHostNativeOTelConfig, IAgentHostOTelService, IAgentHostTraceContext, type TelemetryConfig } from '../../common/otel/agentHostOTelService.js';
  
+ /** Sub-path under the user data directory where the span DB lives. */
+ const SPANS_DB_SUBPATH = AgentHostOTelSpansDbSubPath;
 diff --git a/src/vs/platform/agentHost/test/node/agentHostGitHubTelemetryRouter.test.ts b/src/vs/platform/agentHost/test/node/agentHostGitHubTelemetryRouter.test.ts
-index 91aeed2d..0a91216f 100644
+index 91aeed2dae0..0a91216fa41 100644
 --- a/src/vs/platform/agentHost/test/node/agentHostGitHubTelemetryRouter.test.ts
 +++ b/src/vs/platform/agentHost/test/node/agentHostGitHubTelemetryRouter.test.ts
-@@ -5,3 +5,6 @@
+@@ -3,7 +3,10 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { GitHubTelemetryNotification } from '@github/copilot-sdk';
 +// `GitHubTelemetryNotification` originally came from '@github/copilot-sdk'
@@ -15858,9 +16524,11 @@ index 91aeed2d..0a91216f 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type GitHubTelemetryNotification = any;
  import assert from 'assert';
+ import * as zlib from 'zlib';
+ import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
 diff --git a/src/vs/platform/agentHost/test/node/agentHostPromptRegistry.test.ts b/src/vs/platform/agentHost/test/node/agentHostPromptRegistry.test.ts
 deleted file mode 100644
-index be45c928..00000000
+index be45c9284da..00000000000
 --- a/src/vs/platform/agentHost/test/node/agentHostPromptRegistry.test.ts
 +++ /dev/null
 @@ -1,412 +0,0 @@
@@ -16277,10 +16945,12 @@ index be45c928..00000000
 -	});
 -});
 diff --git a/src/vs/platform/agentHost/test/node/buildSessionEvents.test.ts b/src/vs/platform/agentHost/test/node/buildSessionEvents.test.ts
-index 889001cd..54abd081 100644
+index 889001cde90..54abd081839 100644
 --- a/src/vs/platform/agentHost/test/node/buildSessionEvents.test.ts
 +++ b/src/vs/platform/agentHost/test/node/buildSessionEvents.test.ts
-@@ -13,3 +13,6 @@ import { buildSessionEventLogFromTurns, buildSessionEventsFromTurns, serializeSe
+@@ -11,7 +11,10 @@ import { AgentSession } from '../../common/agent.js';
+ import { MessageKind, ResponsePartKind, ToolCallConfirmationReason, ToolCallStatus, ToolResultContentType, TurnState, buildChatUri, type ResponsePart, type ToolCallCompletedState, type Turn } from '../../common/state/sessionState.js';
+ import { buildSessionEventLogFromTurns, buildSessionEventsFromTurns, serializeSessionEventsToJsonl } from '../../node/copilot/buildSessionEvents.js';
  import { mapSessionEvents as mapSessionEventsWithRouting } from '../../node/copilot/mapSessionEvents.js';
 -import type { SessionEvent } from '@github/copilot-sdk';
 +// `SessionEvent` originally came from '@github/copilot-sdk' (removed in
@@ -16288,12 +16958,14 @@ index 889001cd..54abd081 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type SessionEvent = any;
  
+ suite('buildSessionEventsFromTurns — reverse of mapSessionEvents', () => {
+ 
 diff --git a/src/vs/platform/agentHost/test/node/copilotAgent.test.ts b/src/vs/platform/agentHost/test/node/copilotAgent.test.ts
 deleted file mode 100644
-index 0d74fb65..00000000
+index 3701fe3f97f..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotAgent.test.ts
 +++ /dev/null
-@@ -1,10913 +0,0 @@
+@@ -1,11020 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -16332,7 +17004,7 @@ index 0d74fb65..00000000
 -import { AgentHostTelemetryService } from '../../node/agentHostTelemetryService.js';
 -import { CopilotCliConfigKey, CopilotCliVSCodeAssignmentContextKey } from '../../common/copilotCliConfig.js';
 -import { AgentHostConfigKey } from '../../common/agentHostCustomizationConfig.js';
--import { AgentHostAutoApprovePolicyRestrictedConfigKey, AgentHostCopilotMultiRootEnabledConfigKey, AgentHostMigrateLegacyCopilotCliEnabledConfigKey, AgentHostSystemProxyEnabledConfigKey } from '../../common/agentHostSchema.js';
+-import { AgentHostAutoApprovePolicyRestrictedConfigKey, AgentHostByokModelsEnabledConfigKey, AgentHostCopilotMultiRootEnabledConfigKey, AgentHostMigrateLegacyCopilotCliEnabledConfigKey, AgentHostSystemProxyEnabledConfigKey } from '../../common/agentHostSchema.js';
 -import { IAgentPluginManager, ISyncedCustomization } from '../../common/agentPluginManager.js';
 -import { getTelemetryChatSessionId } from '../../common/agentTelemetryCorrelation.js';
 -import { AgentSession, GITHUB_COPILOT_PROTECTED_RESOURCE, type AgentSignal, type IAgentChatContext, type IAgentChatMetadata, type IAgentCreateChatForkSource, type IAgentCreateChatOptions, type IAgentCreateChatResult, type IAgentCreateSessionConfig, type IAgentDiscoveredChat, type IAgentMaterializeChatEvent, type IAgentSpawnChatEvent } from '../../common/agent.js';
@@ -17053,8 +17725,9 @@ index 0d74fb65..00000000
 -		@ITelemetryService telemetryService: ITelemetryService,
 -		@IAgentHostProxyResolver proxyResolver: IAgentHostProxyResolver,
 -		@ICopilotApiService copilotApiService: ICopilotApiService,
+-		@IFileService fileService: IFileService,
 -	) {
--		super(logService, instantiationService, sessionDataService, gitService, configurationService, sessionTitleSignal, managedSettingsService, gitHubEndpointService, otelService, completions, NULL_CHECKPOINT_SERVICE, NULL_REVIEW_SERVICE, customizationEnablementService, environmentService, byokBridgeRegistry, telemetryService, copilotApiService, proxyResolver);
+-		super(logService, instantiationService, sessionDataService, gitService, configurationService, sessionTitleSignal, managedSettingsService, gitHubEndpointService, otelService, completions, NULL_CHECKPOINT_SERVICE, NULL_REVIEW_SERVICE, customizationEnablementService, environmentService, byokBridgeRegistry, telemetryService, copilotApiService, proxyResolver, fileService);
 -	}
 -
 -	protected override _createCopilotClient(): CopilotClient {
@@ -17092,8 +17765,9 @@ index 0d74fb65..00000000
 -		@ITelemetryService telemetryService: ITelemetryService,
 -		@IAgentHostProxyResolver proxyResolver: IAgentHostProxyResolver,
 -		@ICopilotApiService copilotApiService: ICopilotApiService,
+-		@IFileService fileService: IFileService,
 -	) {
--		super(logService, instantiationService, sessionDataService, gitService, configurationService, sessionTitleSignal, managedSettingsService, gitHubEndpointService, otelService, completions, NULL_CHECKPOINT_SERVICE, NULL_REVIEW_SERVICE, customizationEnablementService, environmentService, byokBridgeRegistry, telemetryService, copilotApiService, proxyResolver);
+-		super(logService, instantiationService, sessionDataService, gitService, configurationService, sessionTitleSignal, managedSettingsService, gitHubEndpointService, otelService, completions, NULL_CHECKPOINT_SERVICE, NULL_REVIEW_SERVICE, customizationEnablementService, environmentService, byokBridgeRegistry, telemetryService, copilotApiService, proxyResolver, fileService);
 -		this._now = now;
 -	}
 -
@@ -17154,9 +17828,10 @@ index 0d74fb65..00000000
 -	const fileService = options?.fileService ?? disposables.add(new FileService(logService));
 -	const stateManager = disposables.add(new AgentHostStateManager(logService));
 -	const configService = disposables.add(new AgentConfigurationService(stateManager, logService));
--	if (options?.rootConfig) {
--		configService.updateRootConfig(options.rootConfig);
--	}
+-	configService.updateRootConfig({
+-		[AgentHostByokModelsEnabledConfigKey]: true,
+-		...options?.rootConfig,
+-	});
 -	const managedSettingsService = disposables.add(new AgentHostManagedSettingsService());
 -	services.set(ILogService, logService);
 -	services.set(IFileService, fileService);
@@ -17650,6 +18325,41 @@ index 0d74fb65..00000000
 -				disabledByDefault: undefined,
 -				whenEnabled: { immutablePrimary: true },
 -				afterDisabling: undefined,
+-			});
+-		} finally {
+-			await disposeAgent(agent);
+-		}
+-	});
+-
+-	test('computeFolderPickerDecision hides the picker unless multiple folders carry .github/hooks', async () => {
+-		const fileService = disposables.add(new FileService(new NullLogService()));
+-		disposables.add(fileService.registerProvider(Schemas.inMemory, disposables.add(new InMemoryFileSystemProvider())));
+-		const folder = (name: string) => URI.from({ scheme: Schemas.inMemory, path: `/${name}` });
+-		const seedHook = (name: string, file = 'hook.json') => fileService.writeFile(URI.joinPath(folder(name), '.github', 'hooks', file), VSBuffer.fromString('{}'));
+-		const [a, b, c] = [folder('wsA'), folder('wsB'), folder('wsC')];
+-
+-		const { agent, stateManager } = createTestAgentContext(disposables, { fileService });
+-		try {
+-			stateManager.dispatchServerAction(ROOT_STATE_URI, { type: ActionType.RootConfigChanged, config: { [AgentHostCopilotMultiRootEnabledConfigKey]: true } });
+-
+-			await seedHook('wsB');
+-			const soleHookFolder = await agent.computeFolderPickerDecision([a, b, c]);
+-
+-			await seedHook('wsA', 'nested/other.json');
+-			const multipleHookFolders = await agent.computeFolderPickerDecision([a, b, c]);
+-
+-			const noHookFolders = await agent.computeFolderPickerDecision([folder('wsX'), folder('wsY')]);
+-			const singleWorkingDirectory = await agent.computeFolderPickerDecision([b]);
+-
+-			stateManager.dispatchServerAction(ROOT_STATE_URI, { type: ActionType.RootConfigChanged, config: { [AgentHostCopilotMultiRootEnabledConfigKey]: false } });
+-			const multiRootDisabled = await agent.computeFolderPickerDecision([a, b, c]);
+-
+-			assert.deepStrictEqual({ soleHookFolder, multipleHookFolders, noHookFolders, singleWorkingDirectory, multiRootDisabled }, {
+-				soleHookFolder: { hidden: true, primary: b.toString() },
+-				multipleHookFolders: { hidden: false },
+-				noHookFolders: { hidden: true },
+-				singleWorkingDirectory: undefined,
+-				multiRootDisabled: undefined,
 -			});
 -		} finally {
 -			await disposeAgent(agent);
@@ -20459,6 +21169,40 @@ index 0d74fb65..00000000
 -		}
 -	});
 -
+-	test('BYOK models follow synchronized root configuration', async () => {
+-		const byokBridgeRegistry = new ByokLmBridgeRegistry();
+-		const { agent, configurationService } = createTestAgentContext(disposables, {
+-			byokBridgeRegistry,
+-			rootConfig: { [AgentHostByokModelsEnabledConfigKey]: false },
+-		});
+-		const modelSnapshots = disposables.add(new Emitter<IByokLmModelInfo[]>());
+-		disposables.add(byokBridgeRegistry.register('renderer', {
+-			chat: async () => ({ output: [] }),
+-			onDidChangeModels: modelSnapshots.event,
+-		}));
+-
+-		try {
+-			modelSnapshots.fire([{ vendor: 'acme', id: 'model', name: 'Model' }]);
+-			const disabledModels = agent.models.get();
+-			configurationService.updateRootConfig({ [AgentHostByokModelsEnabledConfigKey]: true });
+-			const enabledModels = await waitForState(agent.models, models => models.length === 1);
+-			configurationService.updateRootConfig({ [AgentHostByokModelsEnabledConfigKey]: false });
+-			const disabledAgainModels = await waitForState(agent.models, models => models.length === 0);
+-
+-			assert.deepStrictEqual({
+-				disabled: disabledModels.map(model => model.id),
+-				enabled: enabledModels.map(model => model.id),
+-				disabledAgain: disabledAgainModels.map(model => model.id),
+-			}, {
+-				disabled: [],
+-				enabled: ['acme/model'],
+-				disabledAgain: [],
+-			});
+-		} finally {
+-			await disposeAgent(agent);
+-		}
+-	});
+-
 -	test('BYOK models make Copilot authentication optional only while signed-out operation is enabled', async () => {
 -		const byokBridgeRegistry = new ByokLmBridgeRegistry();
 -		const { agent, configurationService } = createTestAgentContext(disposables, { byokBridgeRegistry });
@@ -21166,7 +21910,12 @@ index 0d74fb65..00000000
 -				for (let i = 0; i < 50 && discoveredChats.length === 0; i++) {
 -					await timeout(0);
 -				}
--				assert.deepStrictEqual(discoveredChats.map(chats => chats.map(chat => sessionIdOfChat(chat.chat))), [[sessionId]]);
+-				configurationService.updateRootConfig({ [AgentHostMigrateLegacyCopilotCliEnabledConfigKey]: false });
+-				configurationService.updateRootConfig({ [AgentHostMigrateLegacyCopilotCliEnabledConfigKey]: true });
+-				for (let i = 0; i < 50 && discoveredChats.length < 2; i++) {
+-					await timeout(0);
+-				}
+-				assert.deepStrictEqual(discoveredChats.map(chats => chats.map(chat => sessionIdOfChat(chat.chat))), [[sessionId], [sessionId]]);
 -			} finally {
 -				listener.dispose();
 -				await fs.rm(userHome.fsPath, { recursive: true, force: true });
@@ -23073,6 +23822,36 @@ index 0d74fb65..00000000
 -				// for its session-backed chat at create time, which is
 -				// independent of the host-minted AH session id.
 -				assert.strictEqual(capturedConfig?.sessionId, JSON.parse(result.providerData!).sdkSessionId);
+-			} finally {
+-				await disposeAgent(agent);
+-			}
+-		});
+-
+-		test('getModel reports the creation model while the backing is still deferred', async () => {
+-			const sessionDataService = disposables.add(new TestSessionDataService());
+-			const client = new TestCopilotClient([]);
+-			client.createSession = async () => new MockCopilotSession() as unknown as CopilotSession;
+-			const agent = createTestAgent(disposables, { sessionDataService, copilotClient: client });
+-			try {
+-				await agent.authenticate('https://api.github.com', 'token');
+-				const result = await provisionSession(agent, {
+-					session: AgentSession.uri('copilotcli', 'prov-default-model'),
+-					model: { id: 'gpt-x' },
+-					workingDirectories: [URI.file('/workspace')],
+-				});
+-				const chat = defaultChatUri(result.session);
+-				const context = exactChatContext(result.session, chat, result.session);
+-
+-				// The first turn's telemetry reads the bound model before the
+-				// send materializes the session, so the reserved backing must
+-				// already carry it.
+-				const beforeSend = agent.chats.getModel?.(chat, context);
+-				await agent.chats.sendMessage(chat, 'hello', undefined, undefined, undefined, undefined, context);
+-
+-				assert.deepStrictEqual({ beforeSend, afterMaterialize: agent.chats.getModel?.(chat, context) }, {
+-					beforeSend: { id: 'gpt-x' },
+-					afterMaterialize: { id: 'gpt-x' },
+-				});
 -			} finally {
 -				await disposeAgent(agent);
 -			}
@@ -27209,17 +27988,17 @@ index 0d74fb65..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts b/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts
 deleted file mode 100644
-index eb8fe5bc..00000000
+index 72efdeba256..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts
 +++ /dev/null
-@@ -1,10209 +0,0 @@
+@@ -1,10774 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
 - *--------------------------------------------------------------------------------------------*/
 -
 -import type Anthropic from '@anthropic-ai/sdk';
--import type { CopilotSession, CurrentToolMetadata, JsonValue, PermissionAllowAllMode, PermissionRequest, SessionEvent, SessionEventHandler, SessionEventPayload, SessionEventType, Tool, ToolResultObject, TypedSessionEventHandler } from '@github/copilot-sdk';
+-import type { CopilotSession, CurrentToolMetadata, PermissionAllowAllMode, PermissionRequest, SessionEvent, SessionEventHandler, SessionEventPayload, SessionEventType, Tool, ToolResultObject, TypedSessionEventHandler } from '@github/copilot-sdk';
 -import type { CCAModel } from '@vscode/copilot-api';
 -import assert from 'assert';
 -import { PluginFormat } from '../../../agentPlugins/common/pluginParsers.js';
@@ -27236,6 +28015,7 @@ index eb8fe5bc..00000000
 -import { InstantiationService } from '../../../instantiation/common/instantiationService.js';
 -import { ServiceCollection } from '../../../instantiation/common/serviceCollection.js';
 -import { ILogService, NullLogService } from '../../../log/common/log.js';
+-import { McpServerType } from '../../../mcp/common/mcpPlatformTypes.js';
 -import type { ClassifiedEvent, IGDPRProperty, OmitMetadata, StrictPropertyCheck } from '../../../telemetry/common/gdprTypings.js';
 -import { ITelemetryService, TelemetryLevel } from '../../../telemetry/common/telemetry.js';
 -import { NullTelemetryServiceShape } from '../../../telemetry/common/telemetryUtils.js';
@@ -27253,7 +28033,7 @@ index eb8fe5bc..00000000
 -import { MessageAttachmentKind, MessageKind, ResponsePartKind, ChatInputAnswerState, ChatInputAnswerValueKind, ChatInputQuestionKind, ChatInputRequestPurpose, ChatInputResponseKind, ToolCallConfirmationReason, ToolCallRiskAssessmentKind, ToolCallRiskAssessmentStatus, ToolCallContributorKind, ToolCallStatus, ToolResultContentType, buildChatUri, buildDefaultChatUri, createSessionState, getInlineToolInput, mergeSessionWithDefaultChat, readSessionPromptCacheState, readUsageInfoMeta, SessionStatus, withSessionPromptCacheState, type ToolDefinition, type ToolResultContent, type ToolResultFileEditContent, type ToolResultTerminalContent, type UsageInfoMeta } from '../../common/state/sessionState.js';
 -import { TerminalClaimKind } from '../../common/state/protocol/state.js';
 -import { STREAMING_TOOL_DISPLAY_INTERVAL_MS } from '../../common/streamingToolCallDisplay.js';
--import { CustomizationEnablementKind, CustomizationType, McpAuthRequiredReason, McpServerStatus, type Customization } from '../../common/state/protocol/channels-session/state.js';
+-import { CustomizationEnablementKind, CustomizationType, McpAuthRequiredReason, McpServerStatus, type Customization, type McpServerCustomization } from '../../common/state/protocol/channels-session/state.js';
 -import { CopilotAgentSession } from '../../node/copilot/copilotAgentSession.js';
 -import { buildNonPtyShellTerminalUri } from '../../node/copilot/copilotNonPtyShellTerminals.js';
 -import { buildMcpChannel } from '../../node/shared/mcpCustomizationController.js';
@@ -27307,6 +28087,19 @@ index eb8fe5bc..00000000
 -	readonly compactCalls: unknown[] = [];
 -	readonly commandListCalls: unknown[] = [];
 -	readonly commandInvokeCalls: Array<{ name: string; input?: string }> = [];
+-	readonly fleetStartCalls: Array<{ prompt?: string }> = [];
+-	fleetStartResult: { started: boolean } = { started: true };
+-	fleetStartError: unknown = undefined;
+-	/** Awaited inside `rpc.fleet.start` so a test can hold the RPC in flight. */
+-	fleetStartGate: Promise<void> | undefined;
+-	/** Invoked inside `rpc.fleet.start` before it settles, so a test can emit SDK events (e.g. a racing `session.idle`). */
+-	onFleetStart: (() => void) | undefined = undefined;
+-	/** Invoked inside `rpc.mode.set`, so a test can race an abort against turn preflight. */
+-	onModeSet: (() => void) | undefined = undefined;
+-	/** Invoked inside `rpc.commands.list`, so a test can race an abort against slash-command resolution (before the fleet turn captures its token). */
+-	onCommandList: (() => void) | undefined = undefined;
+-	/** Ordered log of the SDK RPCs/sends relevant to turn preflight, so tests can assert cross-RPC ordering. */
+-	readonly operationLog: string[] = [];
 -	readonly mcpEnableCalls: Array<{ serverName: string }> = [];
 -	readonly mcpDisableCalls: Array<{ serverName: string }> = [];
 -	readonly mcpStartServerCalls: Array<{ serverName: string }> = [];
@@ -27436,6 +28229,7 @@ index eb8fe5bc..00000000
 -
 -	// Stubs for methods the wrapper / session class calls
 -	async send(request: unknown) {
+-		this.operationLog.push('send');
 -		this.sendRequests.push(request);
 -		return `message-${this.sendRequests.length}`;
 -	}
@@ -27455,12 +28249,15 @@ index eb8fe5bc..00000000
 -		mode: {
 -			get: async () => ({ mode: 'interactive' as const }),
 -			set: async (params: { mode: 'interactive' | 'plan' | 'autopilot' }) => {
+-				this.operationLog.push('mode.set');
 -				this.modeSetCalls.push({ mode: params.mode });
+-				this.onModeSet?.();
 -			},
 -		},
 -		permissions: {
 -			setAllowAll: async (params: { mode?: PermissionAllowAllMode }) => {
 -				const mode = params.mode ?? 'off';
+-				this.operationLog.push('permissions.setAllowAll');
 -				this.permissionModeSetCalls.push(mode);
 -				return { success: this.permissionModeSetSuccess, enabled: mode === 'on', mode };
 -			},
@@ -27492,11 +28289,25 @@ index eb8fe5bc..00000000
 -		commands: {
 -			list: async (params?: unknown) => {
 -				this.commandListCalls.push(params ?? null);
+-				this.onCommandList?.();
 -				return this.commandListResult;
 -			},
 -			invoke: async (params: { name: string; input?: string }) => {
+-				this.operationLog.push('commands.invoke');
 -				this.commandInvokeCalls.push(params);
 -				return this.commandInvokeResult;
+-			},
+-		},
+-		fleet: {
+-			start: async (params: { prompt?: string }) => {
+-				this.operationLog.push('fleet.start');
+-				this.fleetStartCalls.push(params);
+-				this.onFleetStart?.();
+-				await this.fleetStartGate;
+-				if (this.fleetStartError !== undefined) {
+-					throw this.fleetStartError;
+-				}
+-				return this.fleetStartResult;
 -			},
 -		},
 -		tasks: {
@@ -27563,6 +28374,7 @@ index eb8fe5bc..00000000
 -		options: {
 -			update: async (params: { sandboxConfig?: unknown; isExperimentalMode?: boolean }) => {
 -				if (params.sandboxConfig !== undefined) {
+-					this.operationLog.push('options.update:sandbox');
 -					this.sandboxConfigUpdates.push(params.sandboxConfig);
 -				}
 -				if (params.isExperimentalMode !== undefined) {
@@ -27786,7 +28598,7 @@ index eb8fe5bc..00000000
 -} | {
 -	readonly kind: 'custom-tool';
 -	readonly toolName?: string;
--	readonly args?: JsonValue;
+-	readonly args?: Extract<PermissionRequest, { kind: 'custom-tool' }>['args'];
 -});
 -
 -function toPermissionRequest(request: TestPermissionRequest): PermissionRequest {
@@ -29438,6 +30250,394 @@ index eb8fe5bc..00000000
 -		});
 -	});
 -
+-	suite('/fleet lifecycle (issue #8837)', () => {
+-		const fleetCommand = (aliases?: string[]) => ({
+-			name: 'fleet',
+-			kind: 'builtin' as const,
+-			description: 'Fan the plan out across parallel subagents',
+-			allowDuringAgentExecution: false,
+-			...(aliases ? { aliases } : {}),
+-		});
+-
+-		test('canonical built-in /fleet starts via rpc.fleet.start, keeps the turn open, and completes once on idle', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-
+-			await session.send('/fleet the full analysis', undefined, 'turn-fleet', 'interactive');
+-
+-			assert.deepStrictEqual({
+-				fleetStartCalls: mockSession.fleetStartCalls,
+-				commandInvokeCalls: mockSession.commandInvokeCalls,
+-				sendRequests: mockSession.sendRequests,
+-				turnCompleteBeforeIdle: getActions(signals).filter(a => a.type === ActionType.ChatTurnComplete).length,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				fleetStartCalls: [{ prompt: 'the full analysis' }],
+-				commandInvokeCalls: [],
+-				sendRequests: [],
+-				turnCompleteBeforeIdle: 0,
+-				hasActiveTurn: true,
+-			});
+-
+-			mockSession.fire('assistant.message_delta', { deltaContent: 'Deploying fleet' } as SessionEventPayload<'assistant.message_delta'>['data']);
+-			mockSession.fire('session.idle', {} as SessionEventPayload<'session.idle'>['data']);
+-
+-			const actions = getActions(signals);
+-			const responseParts = actions.filter(a => a.type === ActionType.ChatResponsePart) as ChatResponsePartAction[];
+-			const turnComplete = actions.filter(a => a.type === ActionType.ChatTurnComplete) as ChatTurnCompleteAction[];
+-			assert.deepStrictEqual({
+-				responsePartTurnIds: responseParts.map(a => a.turnId),
+-				turnCompleteTurnIds: turnComplete.map(a => a.turnId),
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				responsePartTurnIds: ['turn-fleet'],
+-				turnCompleteTurnIds: ['turn-fleet'],
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('fleet preflight applies mode, permission, and sandbox before fleet.start and skips commands.invoke and the outer send', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			const log = mockSession.operationLog;
+-			const modeIdx = log.indexOf('mode.set');
+-			const permIdx = log.indexOf('permissions.setAllowAll');
+-			const sandboxIdx = log.indexOf('options.update:sandbox');
+-			const startIdx = log.indexOf('fleet.start');
+-			assert.deepStrictEqual({
+-				strictPreflightOrder: modeIdx >= 0 && permIdx > modeIdx && sandboxIdx > permIdx && startIdx > sandboxIdx,
+-				fleetStartCount: log.filter(op => op === 'fleet.start').length,
+-				invokedGenericCommand: log.includes('commands.invoke'),
+-				sentThroughNormalSend: log.includes('send'),
+-			}, {
+-				strictPreflightOrder: true,
+-				fleetStartCount: 1,
+-				invokedGenericCommand: false,
+-				sentThroughNormalSend: false,
+-			});
+-		});
+-
+-		test('a client command named `fleet` still routes through commands.invoke', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.commandListResult = {
+-				commands: [{ name: 'fleet', kind: 'client', description: 'A client command', allowDuringAgentExecution: true }],
+-			};
+-			mockSession.commandInvokeResult = { kind: 'completed', message: 'client fleet done' };
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			assert.deepStrictEqual({
+-				fleetStartCalls: mockSession.fleetStartCalls,
+-				commandInvokeCalls: mockSession.commandInvokeCalls,
+-			}, {
+-				fleetStartCalls: [],
+-				commandInvokeCalls: [{ name: 'fleet', input: 'go' }],
+-			});
+-		});
+-
+-		test('resolves fleet via alias and case-insensitively, and omits an empty prompt', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand(['fl'])] };
+-
+-			await session.send('/FLEET the full analysis', undefined, 'turn-fleet-1', 'interactive');
+-			await session.send('/fl', undefined, 'turn-fleet-2', 'interactive');
+-
+-			assert.deepStrictEqual(mockSession.fleetStartCalls, [
+-				{ prompt: 'the full analysis' },
+-				{},
+-			]);
+-		});
+-
+-		test('rejects /fleet attachments before any SDK side effect', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-
+-			await assert.rejects(session.send(
+-				'/fleet go',
+-				[{ type: MessageAttachmentKind.Resource, uri: 'file:///workspace/file.ts', label: 'file.ts', displayKind: 'document' }],
+-				'turn-fleet',
+-				'interactive',
+-			));
+-
+-			assert.deepStrictEqual({
+-				operationLog: mockSession.operationLog,
+-				fleetStartCalls: mockSession.fleetStartCalls,
+-				commandInvokeCalls: mockSession.commandInvokeCalls,
+-				sendRequests: mockSession.sendRequests,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				operationLog: [],
+-				fleetStartCalls: [],
+-				commandInvokeCalls: [],
+-				sendRequests: [],
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('started:false surfaces an error and clears the turn without an SDK send', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			mockSession.fleetStartResult = { started: false };
+-
+-			await assert.rejects(session.send('/fleet go', undefined, 'turn-fleet', 'interactive'));
+-
+-			assert.deepStrictEqual({
+-				fleetStartCalls: mockSession.fleetStartCalls,
+-				sendRequests: mockSession.sendRequests,
+-				commandInvokeCalls: mockSession.commandInvokeCalls,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				fleetStartCalls: [{ prompt: 'go' }],
+-				sendRequests: [],
+-				commandInvokeCalls: [],
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('a fleet.start rejection propagates and clears the turn', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			mockSession.fleetStartError = new Error('fleet boom');
+-
+-			await assert.rejects(session.send('/fleet go', undefined, 'turn-fleet', 'interactive'), /fleet boom/);
+-			assert.strictEqual(session.hasActiveTurn, false);
+-		});
+-
+-		test('a session.idle racing fleet.start settlement completes the turn exactly once', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			// Emit the terminal idle while `fleet.start` is still in flight.
+-			mockSession.onFleetStart = () => mockSession.fire('session.idle', {} as SessionEventPayload<'session.idle'>['data']);
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			const turnComplete = getActions(signals).filter(a => a.type === ActionType.ChatTurnComplete) as ChatTurnCompleteAction[];
+-			assert.deepStrictEqual({
+-				turnCompleteTurnIds: turnComplete.map(a => a.turnId),
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				turnCompleteTurnIds: ['turn-fleet'],
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('a fleet.start rejection after idle already completed the turn does not emit a second terminal action', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			mockSession.fleetStartError = new Error('late boom');
+-			mockSession.onFleetStart = () => mockSession.fire('session.idle', {} as SessionEventPayload<'session.idle'>['data']);
+-
+-			// Must not reject: idle is authoritative once it has completed the turn.
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			const actions = getActions(signals);
+-			assert.deepStrictEqual({
+-				turnCompleteCount: actions.filter(a => a.type === ActionType.ChatTurnComplete).length,
+-				chatErrorCount: actions.filter(a => a.type === ActionType.ChatError).length,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				turnCompleteCount: 1,
+-				chatErrorCount: 0,
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('an aborted idle after a successful fleet start tears the turn down without a success completion', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-
+-			// Marking the turn running ensures an abort before the first SDK event tears it down.
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-			mockSession.fire('session.idle', { aborted: true } as SessionEventPayload<'session.idle'>['data']);
+-
+-			assert.deepStrictEqual({
+-				turnCompleteCount: getActions(signals).filter(a => a.type === ActionType.ChatTurnComplete).length,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				turnCompleteCount: 0,
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('an abort racing fleet.start settlement discards the turn without a success completion', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			// Abort while `fleet.start` is in flight, then deliver the aborted terminal
+-			// idle (which resets the live abort token and leaves the pending turn open).
+-			mockSession.onFleetStart = () => {
+-				void session.abort();
+-				mockSession.fire('session.idle', { aborted: true } as SessionEventPayload<'session.idle'>['data']);
+-			};
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			assert.deepStrictEqual({
+-				turnCompleteCount: getActions(signals).filter(a => a.type === ActionType.ChatTurnComplete).length,
+-				chatErrorCount: getActions(signals).filter(a => a.type === ActionType.ChatError).length,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				turnCompleteCount: 0,
+-				chatErrorCount: 0,
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('an abort during fleet preflight does not start the fleet loop', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			// Abort while the shared preflight (mode/permission/sandbox/MCP) is running,
+-			// before `fleet.start` would be invoked.
+-			mockSession.onModeSet = () => {
+-				void session.abort();
+-				mockSession.fire('session.idle', { aborted: true } as SessionEventPayload<'session.idle'>['data']);
+-			};
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			assert.deepStrictEqual({
+-				fleetStartCalls: mockSession.fleetStartCalls,
+-				sentThroughNormalSend: mockSession.operationLog.includes('send'),
+-				turnCompleteCount: getActions(signals).filter(a => a.type === ActionType.ChatTurnComplete).length,
+-				chatErrorCount: getActions(signals).filter(a => a.type === ActionType.ChatError).length,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				fleetStartCalls: [],
+-				sentThroughNormalSend: false,
+-				turnCompleteCount: 0,
+-				chatErrorCount: 0,
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('an abort during slash-command resolution does not start the fleet loop', async () => {
+-			const { session, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			// Abort while `rpc.commands.list` (slash-command resolution) is in flight —
+-			// before `_startFleet` runs. The aborted `session.idle` resets the live token
+-			// and leaves the pending turn open, so only a token captured before this await
+-			// reflects the cancellation. Reading a fresh token would start the fleet loop
+-			// after the user cancelled.
+-			mockSession.onCommandList = () => {
+-				void session.abort();
+-				mockSession.fire('session.idle', { aborted: true } as SessionEventPayload<'session.idle'>['data']);
+-			};
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			assert.deepStrictEqual({
+-				fleetStartCalls: mockSession.fleetStartCalls,
+-				sentThroughNormalSend: mockSession.operationLog.includes('send'),
+-				turnCompleteCount: getActions(signals).filter(a => a.type === ActionType.ChatTurnComplete).length,
+-				chatErrorCount: getActions(signals).filter(a => a.type === ActionType.ChatError).length,
+-				hasActiveTurn: session.hasActiveTurn,
+-			}, {
+-				fleetStartCalls: [],
+-				sentThroughNormalSend: false,
+-				turnCompleteCount: 0,
+-				chatErrorCount: 0,
+-				hasActiveTurn: false,
+-			});
+-		});
+-
+-		test('binds the fleet user.message event id to the original turn (message after RPC resolves)', async () => {
+-			const sessionDatabase = new TestSessionDatabase();
+-			const { session, mockSession } = await createAgentSession(disposables, { sessionDatabase });
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-			mockSession.fire('user.message', { content: 'Fleet deployed: go' } as SessionEventPayload<'user.message'>['data'], { id: 'evt-fleet' });
+-
+-			assert.deepStrictEqual(sessionDatabase.setTurnEventIdCalls, [{ turnId: 'turn-fleet', eventId: 'evt-fleet' }]);
+-		});
+-
+-		test('binds the fleet user.message event id to the original turn (message before RPC resolves)', async () => {
+-			const sessionDatabase = new TestSessionDatabase();
+-			const { session, mockSession } = await createAgentSession(disposables, { sessionDatabase });
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			mockSession.onFleetStart = () => mockSession.fire('user.message', { content: 'Fleet deployed: go' } as SessionEventPayload<'user.message'>['data'], { id: 'evt-fleet' });
+-
+-			await session.send('/fleet go', undefined, 'turn-fleet', 'interactive');
+-
+-			assert.deepStrictEqual(sessionDatabase.setTurnEventIdCalls, [{ turnId: 'turn-fleet', eventId: 'evt-fleet' }]);
+-		});
+-
+-		test('plan review and ask_user during an active fleet turn do not hit the no-active-turn fallback', async () => {
+-			const { session, runtime, mockSession, signals } = await createAgentSession(disposables);
+-			mockSession.commandListResult = { commands: [fleetCommand()] };
+-			mockSession.planReadResult = { exists: true, content: '## Plan', path: '/sessions/abc/plan.md' };
+-
+-			await session.send('/fleet the full analysis', undefined, 'turn-fleet', 'interactive');
+-
+-			const planReviewPromise = runtime.handleExitPlanModeRequest(
+-				{ summary: '## Plan summary', actions: ['interactive'], recommendedAction: 'interactive' },
+-				{ sessionId: 'test-session-1' },
+-			);
+-			const askUserPromise = runtime.handleUserInputRequest({ question: 'Proceed?' }, { sessionId: 'test-session-1' });
+-
+-			// Plan review awaits `rpc.plan.read()` before raising its request, so let the microtask settle.
+-			await timeout(0);
+-			const inputRequests = getActions(signals).filter(a => a.type === ActionType.ChatInputRequested);
+-			assert.strictEqual(inputRequests.length, 2, 'plan review and ask_user should each raise an input request while fleet is active');
+-
+-			session.dispose();
+-			assert.deepStrictEqual({
+-				planReview: await planReviewPromise,
+-				askUser: await askUserPromise,
+-			}, {
+-				planReview: { approved: false },
+-				askUser: { answer: '', wasFreeform: true },
+-			});
+-		});
+-	});
+-
+-	test('applies the effective mode before invoking a non-fleet runtime command', async () => {
+-		const { session, mockSession } = await createAgentSession(disposables);
+-		// Establish a stale prior SDK mode, then clear setup noise from the trace.
+-		await session.applyMode('plan');
+-		mockSession.operationLog.length = 0;
+-		mockSession.commandListResult = {
+-			commands: [{ name: 'env', kind: 'builtin', description: 'Show environment', allowDuringAgentExecution: true }],
+-		};
+-		mockSession.commandInvokeResult = { kind: 'completed', message: 'done' };
+-
+-		await session.send('/env', undefined, 'turn-env', 'interactive');
+-
+-		const log = mockSession.operationLog;
+-		assert.deepStrictEqual({
+-			modeBeforeInvoke: log.indexOf('mode.set') >= 0 && log.indexOf('mode.set') < log.indexOf('commands.invoke'),
+-			lastModeApplied: mockSession.modeSetCalls.at(-1),
+-		}, {
+-			modeBeforeInvoke: true,
+-			lastModeApplied: { mode: 'interactive' },
+-		});
+-	});
+-
+-	test('reapplies an agent-prompt mode override before the SDK send', async () => {
+-		const { session, mockSession } = await createAgentSession(disposables);
+-		mockSession.commandListResult = {
+-			commands: [{ name: 'refine', kind: 'builtin', description: 'Refine', allowDuringAgentExecution: true }],
+-		};
+-		mockSession.commandInvokeResult = { kind: 'agent-prompt', prompt: 'do it', displayPrompt: 'do it', mode: 'autopilot' };
+-
+-		await session.send('/refine now', undefined, 'turn-refine', 'interactive');
+-
+-		const log = mockSession.operationLog;
+-		assert.deepStrictEqual({
+-			modeSetCalls: mockSession.modeSetCalls,
+-			sendRequests: mockSession.sendRequests,
+-			firstModeBeforeInvoke: log.indexOf('mode.set') < log.indexOf('commands.invoke'),
+-			overrideModeAfterInvokeBeforeSend: log.lastIndexOf('mode.set') > log.indexOf('commands.invoke') && log.lastIndexOf('mode.set') < log.indexOf('send'),
+-		}, {
+-			modeSetCalls: [{ mode: 'interactive' }, { mode: 'autopilot' }],
+-			sendRequests: [{ prompt: 'do it', attachments: undefined }],
+-			firstModeBeforeInvoke: true,
+-			overrideModeAfterInvokeBeforeSend: true,
+-		});
+-	});
+-
 -	test('emits accumulated Copilot usage metadata', async () => {
 -		const { session, mockSession, signals } = await createAgentSession(disposables);
 -
@@ -30464,15 +31664,16 @@ index eb8fe5bc..00000000
 -			assert.deepStrictEqual(mockSession.permissionModeSetCalls, ['off']);
 -		});
 -
--		test('per-request sandbox: disabled under session bypass approvals', async () => {
+-		test('per-request sandbox: applies the configured policy under session bypass approvals', async () => {
+-			const sandbox = { [AgentHostSandboxKey.Enabled]: AgentSandboxEnabledValue.On };
 -			const { session, mockSession } = await createAgentSession(disposables, {
--				rootValues: { [AgentHostSandboxConfigKey.Sandbox]: { [AgentHostSandboxKey.Enabled]: AgentSandboxEnabledValue.On } },
+-				rootValues: { [AgentHostSandboxConfigKey.Sandbox]: sandbox },
 -				configValues: { [SessionConfigKey.AutoApprove]: 'autoApprove' },
 -			});
 -
 -			await session.send('hello', undefined, 'turn-1');
 -
--			assert.deepStrictEqual(mockSession.sandboxConfigUpdates.at(-1), { enabled: false });
+-			assert.deepStrictEqual(mockSession.sandboxConfigUpdates.at(-1), buildSandboxConfigForSdk('linux', sandbox));
 -			assert.deepStrictEqual(mockSession.permissionModeSetCalls, ['on']);
 -		});
 -
@@ -30846,7 +32047,7 @@ index eb8fe5bc..00000000
 -			assert.deepStrictEqual(mockSession.permissionModeSetCalls, ['auto', 'off']);
 -		});
 -
--		test('syncs sandbox when the session approval level changes', async () => {
+-		test('keeps sandbox enabled when the session approval level changes', async () => {
 -			const sandbox = { [AgentHostSandboxKey.Enabled]: AgentSandboxEnabledValue.On };
 -			const { session, mockSession, setConfigValue, fireSessionConfigChange } = await createAgentSession(disposables, {
 -				rootValues: { [AgentHostSandboxConfigKey.Sandbox]: sandbox },
@@ -30869,7 +32070,7 @@ index eb8fe5bc..00000000
 -				permissionModes: ['off', 'on', 'off'],
 -				sandboxConfigs: [
 -					buildSandboxConfigForSdk('linux', sandbox),
--					{ enabled: false },
+-					buildSandboxConfigForSdk('linux', sandbox),
 -					buildSandboxConfigForSdk('linux', sandbox),
 -				],
 -			});
@@ -30952,17 +32153,18 @@ index eb8fe5bc..00000000
 -			});
 -		});
 -
--		test('per-request sandbox: disabled under global auto-approve', async () => {
+-		test('per-request sandbox: applies the configured policy under global auto-approve', async () => {
+-			const sandbox = { [AgentHostSandboxKey.Enabled]: AgentSandboxEnabledValue.On };
 -			const { session, mockSession } = await createAgentSession(disposables, {
 -				rootValues: {
--					[AgentHostSandboxConfigKey.Sandbox]: { [AgentHostSandboxKey.Enabled]: AgentSandboxEnabledValue.On },
+-					[AgentHostSandboxConfigKey.Sandbox]: sandbox,
 -					[AgentHostGlobalAutoApproveEnabledConfigKey]: true,
 -				},
 -			});
 -
 -			await session.send('hello', undefined, 'turn-1');
 -
--			assert.deepStrictEqual(mockSession.sandboxConfigUpdates.at(-1), { enabled: false });
+-			assert.deepStrictEqual(mockSession.sandboxConfigUpdates.at(-1), buildSandboxConfigForSdk('linux', sandbox));
 -		});
 -
 -		test('per-request sandbox: applies the configured policy on Windows', async () => {
@@ -30983,6 +32185,32 @@ index eb8fe5bc..00000000
 -			await session.send('hello', undefined, 'turn-1');
 -
 -			assert.deepStrictEqual(mockSession.sandboxConfigUpdates.at(-1), { enabled: false });
+-		});
+-
+-		test('server-managed sandbox enablement skips host updates and removal restores the local setting', async () => {
+-			const { session, mockSession } = await createAgentSession(disposables);
+-
+-			session.setManagedSandboxEnabled(true);
+-			await timeout(0);
+-			const managedEnabled = mockSession.sandboxConfigUpdates.at(-1);
+-
+-			session.setManagedSandboxEnabled(false);
+-			await timeout(0);
+-			const managedDisabled = mockSession.sandboxConfigUpdates.at(-1);
+-
+-			session.setManagedSandboxEnabled(undefined);
+-			await timeout(0);
+-			const localRestored = mockSession.sandboxConfigUpdates.at(-1);
+-
+-			assert.deepStrictEqual({
+-				managedEnabled,
+-				managedDisabled,
+-				localRestored,
+-			}, {
+-				managedEnabled: buildSandboxConfigForSdk('linux', undefined, true),
+-				managedDisabled: undefined,
+-				localRestored: { enabled: false },
+-			});
 -		});
 -
 -		test('per-request sandbox: left untouched when the custom terminal tool is enabled', async () => {
@@ -33098,7 +34326,7 @@ index eb8fe5bc..00000000
 -
 -		test('tool-call aggregate emits once with cancelled result across abort and idle', async () => {
 -			const telemetryService = new CapturingTelemetryService();
--			const { session, mockSession } = await createAgentSession(disposables, {
+-			const { session, mockSession, signals } = await createAgentSession(disposables, {
 -				telemetryService,
 -				clientSnapshot: { tools: [{ name: 'grep' }, { name: 'edit' }], plugins: [], mcpServers: {} },
 -			});
@@ -33109,51 +34337,99 @@ index eb8fe5bc..00000000
 -				messageId: 'msg-tools',
 -				content: '',
 -				model: 'gpt-x',
+-				apiCallId: 'api-tools',
 -				toolRequests: [
 -					{ toolCallId: 'tc-1', name: 'grep', arguments: {} },
 -					{ toolCallId: 'tc-2', name: 'edit', arguments: {} },
 -				],
--			} as SessionEventPayload<'assistant.message'>['data']);
+-			} as SessionEventPayload<'assistant.message'>['data'], { id: 'evt-tools' });
 -			mockSession.fire('assistant.message', {
 -				messageId: 'msg-final',
 -				content: 'done',
 -				model: 'gpt-x',
--			} as SessionEventPayload<'assistant.message'>['data']);
+-				apiCallId: 'api-final',
+-			} as SessionEventPayload<'assistant.message'>['data'], { id: 'evt-final' });
 -			mockSession.fire('abort', { reason: 'user_abort' } as SessionEventPayload<'abort'>['data']);
 -			mockSession.fire('session.idle', { aborted: true } as SessionEventPayload<'session.idle'>['data']);
 -
--			assert.deepStrictEqual(telemetryService.events.map(event => {
--				const data = event.data as Record<string, unknown>;
--				return {
--					eventName: event.eventName,
--					provider: data.provider,
--					requestId: data.requestId,
--					responseType: data.responseType,
--					toolCounts: data.toolCounts,
--					model: data.model,
--					numRequests: data.numRequests,
--					turnIndex: data.turnIndex,
--					messageCharLen: data.messageCharLen,
--					availableToolCount: data.availableToolCount,
--					totalToolCalls: data.totalToolCalls,
--					parallelToolCallRounds: data.parallelToolCallRounds,
--					parallelToolCallsTotal: data.parallelToolCallsTotal,
--				};
--			}), [{
--				eventName: 'toolCallDetails',
--				provider: 'copilot',
--				requestId: 'turn-tool-details',
--				responseType: 'cancelled',
--				toolCounts: JSON.stringify({ grep: 1, edit: 1 }),
+-			assert.deepStrictEqual({
+-				telemetry: telemetryService.events.map(event => {
+-					const data = event.data as Record<string, unknown>;
+-					return {
+-						eventName: event.eventName,
+-						provider: data.provider,
+-						requestId: data.requestId,
+-						responseType: data.responseType,
+-						toolCounts: data.toolCounts,
+-						model: data.model,
+-						numRequests: data.numRequests,
+-						turnIndex: data.turnIndex,
+-						messageCharLen: data.messageCharLen,
+-						availableToolCount: data.availableToolCount,
+-						totalToolCalls: data.totalToolCalls,
+-						parallelToolCallRounds: data.parallelToolCallRounds,
+-						parallelToolCallsTotal: data.parallelToolCallsTotal,
+-					};
+-				}),
+-				modelCalls: signals.filter(signal => signal.kind === 'model_call_completed').map(signal => ({
+-					turnId: signal.kind === 'model_call_completed' ? signal.turnId : undefined,
+-					modelCallId: signal.kind === 'model_call_completed' ? signal.modelCallId : undefined,
+-				})),
+-			}, {
+-				telemetry: [{
+-					eventName: 'toolCallDetails',
+-					provider: 'copilot',
+-					requestId: 'turn-tool-details',
+-					responseType: 'cancelled',
+-					toolCounts: JSON.stringify({ grep: 1, edit: 1 }),
+-					model: 'gpt-x',
+-					numRequests: 2,
+-					turnIndex: 0,
+-					messageCharLen: 11,
+-					availableToolCount: 2,
+-					totalToolCalls: 2,
+-					parallelToolCallRounds: 1,
+-					parallelToolCallsTotal: 2,
+-				}],
+-				modelCalls: [
+-					{ turnId: 'turn-tool-details', modelCallId: 'api-tools' },
+-					{ turnId: 'turn-tool-details', modelCallId: 'api-final' },
+-				],
+-			});
+-		});
+-
+-		test('split assistant messages count as one model call', async () => {
+-			const telemetryService = new CapturingTelemetryService();
+-			const { session, mockSession, signals } = await createAgentSession(disposables, {
+-				telemetryService,
+-				clientSnapshot: { tools: [{ name: 'grep' }], plugins: [], mcpServers: {} },
+-			});
+-			session.resetTurnState('turn-split-message');
+-			await session.send('hello agent', undefined, 'turn-split-message');
+-			mockSession.fire('user.message', { content: 'hello agent' } as SessionEventPayload<'user.message'>['data']);
+-			mockSession.fire('assistant.message', {
+-				messageId: 'msg-part-1',
+-				content: 'reasoning',
 -				model: 'gpt-x',
--				numRequests: 2,
--				turnIndex: 0,
--				messageCharLen: 11,
--				availableToolCount: 2,
--				totalToolCalls: 2,
--				parallelToolCallRounds: 1,
--				parallelToolCallsTotal: 2,
--			}]);
+-				chunkIndex: 0,
+-				chunkCount: 2,
+-			} as SessionEventPayload<'assistant.message'>['data']);
+-			mockSession.fire('assistant.message', {
+-				messageId: 'msg-part-2',
+-				content: 'answer',
+-				model: 'gpt-x',
+-				chunkIndex: 1,
+-				chunkCount: 2,
+-			} as SessionEventPayload<'assistant.message'>['data']);
+-			mockSession.fire('session.idle', { aborted: false } as SessionEventPayload<'session.idle'>['data']);
+-
+-			assert.deepStrictEqual({
+-				numRequests: (telemetryService.events.find(event => event.eventName === 'toolCallDetails')?.data as Record<string, unknown> | undefined)?.numRequests,
+-				modelCallIds: signals.filter(signal => signal.kind === 'model_call_completed').map(signal => signal.kind === 'model_call_completed' ? signal.modelCallId : undefined),
+-			}, {
+-				numRequests: 1,
+-				modelCallIds: ['msg-part-2'],
+-			});
 -		});
 -
 -		test('tool approval waits for permission outcome and falls back only at completion', async () => {
@@ -36204,6 +37480,74 @@ index eb8fe5bc..00000000
 -			assert.deepStrictEqual(mockSession.mcpEnableCalls, [{ serverName }]);
 -		});
 -
+-		test('re-enabling a plugin server with an explicit cwd defers to a session refresh', async () => {
+-			const serverName = 'vscode_probe';
+-			const pluginUri = 'https://bundle';
+-			const pluginDir = URI.file('/bundle');
+-			const child: McpServerCustomization = {
+-				type: CustomizationType.McpServer,
+-				id: 'vscode-probe',
+-				uri: URI.joinPath(pluginDir, '.mcp.json').toString(),
+-				name: serverName,
+-				state: { kind: McpServerStatus.Stopped },
+-			};
+-			let enabled = false;
+-			const customizations = (): readonly Customization[] => [{
+-				type: CustomizationType.Plugin,
+-				id: 'bundle',
+-				uri: pluginUri,
+-				name: 'Bundle',
+-				children: [child],
+-			}];
+-			const { session, mockSession, dispatchSessionAction } = await createAgentSession(disposables, {
+-				clientSnapshot: {
+-					tools: [],
+-					plugins: [{
+-						format: PluginFormat.Copilot,
+-						hooks: [],
+-						mcpServers: [{
+-							name: serverName,
+-							configuration: { type: McpServerType.LOCAL, command: 'node', args: ['server.js'] },
+-							defaultCwd: URI.file('/workspace'),
+-							uri: URI.joinPath(pluginDir, '.mcp.json'),
+-							customization: child,
+-						}],
+-						disabledMcpServers: [serverName],
+-						agents: [],
+-						skills: [],
+-						instructions: [],
+-						pluginDir,
+-						sourceUri: URI.parse(pluginUri),
+-					}],
+-					mcpServers: {},
+-				},
+-				sessionCustomizations: customizations,
+-				resolveCustomizationEnablement: target => ({
+-					kind: 'resolved',
+-					enablement: target.id === child.id && !enabled
+-						? [{ kind: CustomizationEnablementKind.Workspace, uri: 'file:///workspace', enabled: false }]
+-						: [],
+-					enabled: target.id === child.id ? enabled : true,
+-					workingDirectory: { kind: 'workspaceless' },
+-				}),
+-				configureMockSession: mock => {
+-					mock.mcpListResult = { servers: [{ name: serverName, status: 'disabled' }] };
+-				},
+-			});
+-
+-			enabled = true;
+-			dispatchSessionAction({ type: ActionType.SessionCustomizationsChanged, customizations: [...customizations()] });
+-			await timeout(0);
+-
+-			assert.deepStrictEqual({
+-				requiresRefresh: session.requiresMcpLaunchConfigurationRefresh,
+-				enableCalls: mockSession.mcpEnableCalls,
+-			}, {
+-				requiresRefresh: true,
+-				enableCalls: [],
+-			});
+-		});
+-
 -		test('session MCP desired enablement reconciles runtime drift', async () => {
 -			const serverName = 'slack';
 -			const id = 'mcp-top-level:copilot:test-session-1:slack';
@@ -37423,10 +38767,12 @@ index eb8fe5bc..00000000
 -	});
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotFailureTelemetry.test.ts b/src/vs/platform/agentHost/test/node/copilotFailureTelemetry.test.ts
-index cd872428..69f74708 100644
+index cd87242804a..69f7470897d 100644
 --- a/src/vs/platform/agentHost/test/node/copilotFailureTelemetry.test.ts
 +++ b/src/vs/platform/agentHost/test/node/copilotFailureTelemetry.test.ts
-@@ -5,3 +5,7 @@
+@@ -3,7 +3,11 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { SessionEventPayload } from '@github/copilot-sdk';
 +// `SessionEventPayload` originally came from '@github/copilot-sdk' (removed in
@@ -37435,11 +38781,15 @@ index cd872428..69f74708 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type SessionEventPayload<T extends string = string> = any;
  import assert from 'assert';
+ import { URI } from '../../../../base/common/uri.js';
+ import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
 diff --git a/src/vs/platform/agentHost/test/node/copilotGitHubTelemetryForwarder.test.ts b/src/vs/platform/agentHost/test/node/copilotGitHubTelemetryForwarder.test.ts
-index 7954a1e1..f746a34e 100644
+index 7954a1e19c8..f746a34eeb0 100644
 --- a/src/vs/platform/agentHost/test/node/copilotGitHubTelemetryForwarder.test.ts
 +++ b/src/vs/platform/agentHost/test/node/copilotGitHubTelemetryForwarder.test.ts
-@@ -5,3 +5,6 @@
+@@ -3,7 +3,10 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { GitHubTelemetryNotification } from '@github/copilot-sdk';
 +// `GitHubTelemetryNotification` originally came from '@github/copilot-sdk'
@@ -37447,12 +38797,14 @@ index 7954a1e1..f746a34e 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type GitHubTelemetryNotification = any;
  import assert from 'assert';
+ import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
+ import { ITelemetryData, ITelemetryService, TelemetryLevel } from '../../../telemetry/common/telemetry.js';
 diff --git a/src/vs/platform/agentHost/test/node/copilotPluginConverters.test.ts b/src/vs/platform/agentHost/test/node/copilotPluginConverters.test.ts
 deleted file mode 100644
-index 56015e37..00000000
+index 0da62597604..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotPluginConverters.test.ts
 +++ /dev/null
-@@ -1,614 +0,0 @@
+@@ -1,676 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -37552,6 +38904,27 @@ index 56015e37..00000000
 -
 -		});
 -
+-		test('converts remote/SSE server definitions', () => {
+-			const defs: IMcpServerDefinition[] = [{
+-				name: 'sse-server',
+-				uri: URI.file('/plugin'),
+-				configuration: {
+-					type: McpServerType.REMOTE,
+-					transport: 'sse',
+-					url: 'https://example.com/sse',
+-				},
+-				customization: stubMcpCustomization('sse-server'),
+-			}];
+-
+-			assert.deepStrictEqual(toSdkMcpServers(defs), {
+-				'sse-server': {
+-					type: 'sse',
+-					url: 'https://example.com/sse',
+-					tools: ['*'],
+-				},
+-			});
+-		});
+-
 -		test('handles empty definitions', () => {
 -			const result = toSdkMcpServers([]);
 -			assert.deepStrictEqual(result, {});
@@ -37573,6 +38946,33 @@ index 56015e37..00000000
 -			assert.deepStrictEqual((result['minimal'] as { args?: string[] }).args, []);
 -			assert.strictEqual(Object.hasOwn(result['minimal'], 'env'), false);
 -			assert.strictEqual(Object.hasOwn(result['minimal'], 'cwd'), false);
+-		});
+-
+-		test('uses a URI default cwd without overriding explicit cwd', () => {
+-			const defs: IMcpServerDefinition[] = [{
+-				name: 'defaulted',
+-				uri: URI.file('/plugin/.mcp.json'),
+-				defaultCwd: URI.file('/workspace'),
+-				configuration: { type: McpServerType.LOCAL, command: 'defaulted' },
+-				customization: stubMcpCustomization('defaulted'),
+-			}, {
+-				name: 'explicit',
+-				uri: URI.file('/plugin/.mcp.json'),
+-				defaultCwd: URI.file('/workspace'),
+-				configuration: { type: McpServerType.LOCAL, command: 'explicit', cwd: '/explicit' },
+-				customization: stubMcpCustomization('explicit'),
+-			}, {
+-				name: 'relative',
+-				uri: URI.file('/plugin/.mcp.json'),
+-				defaultCwd: URI.file('/workspace'),
+-				configuration: { type: McpServerType.LOCAL, command: 'relative', cwd: './relative' },
+-				customization: stubMcpCustomization('relative'),
+-			}];
+-
+-			const result = toSdkMcpServers(defs);
+-			assert.strictEqual((result['defaulted'] as { cwd?: string }).cwd, URI.file('/workspace').fsPath);
+-			assert.strictEqual((result['explicit'] as { cwd?: string }).cwd, '/explicit');
+-			assert.strictEqual((result['relative'] as { cwd?: string }).cwd, URI.file('/workspace/relative').fsPath);
 -		});
 -
 -		test('filters null values from env', () => {
@@ -38051,6 +39451,20 @@ index 56015e37..00000000
 -			assert.strictEqual(parsedPluginsEqual([a], [b]), false);
 -		});
 -
+-		test('returns false for different MCP default cwd URIs', () => {
+-			const definition = (defaultCwd: URI): IMcpServerDefinition => ({
+-				name: 'server',
+-				uri: URI.file('/mcp'),
+-				defaultCwd,
+-				configuration: { type: McpServerType.LOCAL, command: 'node' },
+-				customization: stubMcpCustomization('server'),
+-			});
+-			assert.strictEqual(parsedPluginsEqual(
+-				[makePlugin({ mcpServers: [definition(URI.file('/a'))] })],
+-				[makePlugin({ mcpServers: [definition(URI.file('/b'))] })],
+-			), false);
+-		});
+-
 -		test('returns false for different plugin formats', () => {
 -			assert.strictEqual(parsedPluginsEqual(
 -				[makePlugin({ format: PluginFormat.AgentPlugin })],
@@ -38069,7 +39483,7 @@ index 56015e37..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotSdkImportSession.integrationTest.ts b/src/vs/platform/agentHost/test/node/copilotSdkImportSession.integrationTest.ts
 deleted file mode 100644
-index 78888516..00000000
+index 7888851692c..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotSdkImportSession.integrationTest.ts
 +++ /dev/null
 @@ -1,97 +0,0 @@
@@ -38172,10 +39586,10 @@ index 78888516..00000000
 -}
 diff --git a/src/vs/platform/agentHost/test/node/copilotSessionLauncher.test.ts b/src/vs/platform/agentHost/test/node/copilotSessionLauncher.test.ts
 deleted file mode 100644
-index 3d80ee88..00000000
+index e6305ac745c..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotSessionLauncher.test.ts
 +++ /dev/null
-@@ -1,1101 +0,0 @@
+@@ -1,1175 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -38192,13 +39606,14 @@ index 3d80ee88..00000000
 -import { InstantiationService } from '../../../instantiation/common/instantiationService.js';
 -import { ServiceCollection } from '../../../instantiation/common/serviceCollection.js';
 -import { ILogService, NullLogService } from '../../../log/common/log.js';
+-import { McpServerType } from '../../../mcp/common/mcpPlatformTypes.js';
 -import type { IByokLmBridgeConnection, IByokLmChatRequest, IByokLmChatResult, IByokLmModelInfo } from '../../common/agentHostByokLm.js';
--import type { SchemaValues } from '../../common/agentHostSchema.js';
+-import { AgentHostByokModelsEnabledConfigKey, type SchemaValues } from '../../common/agentHostSchema.js';
 -import type { IAgentHostManagedSettingsPermissions } from '../../common/agentHostManagedSettings.js';
 -import { CopilotCliConfigKey, copilotCliConfigSchema } from '../../common/copilotCliConfig.js';
 -import type { IAgentHostOTelService } from '../../common/otel/agentHostOTelService.js';
 -import { reasoningEffortLevels } from '../../common/reasoningEffort.js';
--import { CustomizationType, type ModelSelection } from '../../common/state/protocol/state.js';
+-import { CustomizationType, McpServerStatus, type ModelSelection } from '../../common/state/protocol/state.js';
 -import { CLIENT_TOOL_SEARCH_REFERENCE_NAME, RUNTIME_TOOL_SEARCH_TOOL_NAME } from '../../common/toolSearchConstants.js';
 -import { ActiveClientToolSet } from '../../node/activeClientState.js';
 -import { IAgentConfigurationService } from '../../node/agentConfigurationService.js';
@@ -38467,11 +39882,15 @@ index 3d80ee88..00000000
 -		return { service, get starts() { return starts; }, get disposes() { return disposes; } };
 -	}
 -
--	function createLauncher(store: DisposableStore, proxy: IByokLmProxyService, registry: IByokLmBridgeRegistry): CopilotSessionLauncher {
+-	function createLauncher(store: DisposableStore, proxy: IByokLmProxyService, registry: IByokLmBridgeRegistry, byokModelsEnabled = true): CopilotSessionLauncher {
 -		const services = new ServiceCollection();
 -		services.set(ILogService, new NullLogService());
 -		services.set(IByokLmProxyService, proxy);
 -		services.set(IByokLmBridgeRegistry, registry);
+-		services.set(IAgentConfigurationService, {
+-			_serviceBrand: undefined,
+-			getRootValue: (_schema: unknown, key: string) => key === AgentHostByokModelsEnabledConfigKey ? byokModelsEnabled : undefined,
+-		} as unknown as IAgentConfigurationService);
 -		// The launcher's other dependencies are unused by the BYOK path and
 -		// resolve to `undefined` under the non-strict InstantiationService.
 -		const instantiationService = store.add(new InstantiationService(services));
@@ -38500,6 +39919,21 @@ index 3d80ee88..00000000
 -		assert.notStrictEqual(third.providers![0].bearerToken, first.providers![0].bearerToken, 'the fresh bind carries a new nonce');
 -
 -		store.dispose();
+-	});
+-
+-	test('does not synthesize BYOK session config while root configuration disables it', async () => {
+-		const store = new DisposableStore();
+-		const proxy = fakeProxyService();
+-		const registry = new ByokLmBridgeRegistry();
+-		store.add(registry.register('client-1', connectionOf(store, [{ vendor: 'acme', id: 'claude' }])));
+-		const launcher = createLauncher(store, proxy.service, registry, false);
+-
+-		try {
+-			const config = await (launcher as unknown as { _resolveByokSessionConfig(id: string): Promise<{ providers?: { bearerToken: string }[] }> })._resolveByokSessionConfig(sessionId);
+-			assert.deepStrictEqual({ config, proxyStarts: proxy.starts }, { config: {}, proxyStarts: 0 });
+-		} finally {
+-			store.dispose();
+-		}
 -	});
 -});
 -
@@ -38531,13 +39965,26 @@ index 3d80ee88..00000000
 -		};
 -		const launcher = createTestLauncher(managedSettingsPermissions);
 -		const pluginDir = URI.file('/tmp/synced-customizations');
+-		const syntheticPluginDir = URI.file('/tmp/vscode-synced-customizations');
 -		const skillUri = URI.joinPath(pluginDir, 'skills', 'user-skill', 'SKILL.md');
 -		const instructionUri = URI.joinPath(pluginDir, 'rules', 'user.instructions.md');
 -		const plugin: ICopilotPluginInfo = {
 -			format: PluginFormat.Copilot,
 -			hooks: [],
--			mcpServers: [],
--			disabledMcpServers: ['azure', 'azure'],
+-			mcpServers: [{
+-				name: 'native-plugin-server',
+-				uri: URI.joinPath(pluginDir, '.mcp.json'),
+-				defaultCwd: pluginDir,
+-				configuration: { type: McpServerType.LOCAL, command: 'native-plugin-server' },
+-				customization: {
+-					type: CustomizationType.McpServer,
+-					id: 'native-plugin-server',
+-					uri: URI.joinPath(pluginDir, '.mcp.json').toString(),
+-					name: 'native-plugin-server',
+-					state: { kind: McpServerStatus.Stopped },
+-				},
+-			}],
+-			disabledMcpServers: ['azure', 'azure', 'disabled-workspace-server'],
 -			agents: [],
 -			skills: [{
 -				uri: skillUri,
@@ -38551,12 +39998,33 @@ index 3d80ee88..00000000
 -			}],
 -			pluginDir,
 -		};
+-		const syntheticPlugin: ICopilotPluginInfo = {
+-			format: PluginFormat.Copilot,
+-			hooks: [],
+-			mcpServers: [{
+-				name: 'synced-server',
+-				uri: URI.joinPath(syntheticPluginDir, '.mcp.json'),
+-				defaultCwd: testWorkingDirectory,
+-				configuration: { type: McpServerType.LOCAL, command: 'synced-server' },
+-				customization: {
+-					type: CustomizationType.McpServer,
+-					id: 'synced-server',
+-					uri: URI.joinPath(syntheticPluginDir, '.mcp.json').toString(),
+-					name: 'synced-server',
+-					state: { kind: McpServerStatus.Stopped },
+-				},
+-			}],
+-			agents: [],
+-			skills: [],
+-			instructions: [],
+-			pluginDir: syntheticPluginDir,
+-		};
 -		const basePlan = {
 -			client,
 -			sessionId: 'session-1',
 -			workingDirectory: testWorkingDirectory,
 -			resolvedAgentName: undefined,
--			snapshot: { tools: [], plugins: [plugin], mcpServers: {} },
+-			snapshot: { tools: [], plugins: [plugin, syntheticPlugin], mcpServers: {} },
 -			disabledRootMcpServers: ['github', 'azure'],
 -			activeClientToolSet: new ActiveClientToolSet(),
 -			shellManager: undefined,
@@ -38582,6 +40050,7 @@ index 3d80ee88..00000000
 -				createClientName: createConfigs[0].clientName,
 -				createGitHubMcpToolConfig: createConfigs[0].githubMcpToolConfig,
 -				createPluginDirectories: createConfigs[0].pluginDirectories,
+-				createMcpServers: createConfigs[0].mcpServers,
 -				createSkillDirectories: createConfigs[0].skillDirectories,
 -				createInstructionDirectories: createConfigs[0].instructionDirectories,
 -				createDisabledMcpServers: createConfigs[0].disabledMcpServers,
@@ -38591,6 +40060,7 @@ index 3d80ee88..00000000
 -				resumeClientName: resumeConfigs[0].clientName,
 -				resumeGitHubMcpToolConfig: resumeConfigs[0].githubMcpToolConfig,
 -				resumePluginDirectories: resumeConfigs[0].pluginDirectories,
+-				resumeMcpServers: resumeConfigs[0].mcpServers,
 -				resumeSkillDirectories: resumeConfigs[0].skillDirectories,
 -				resumeInstructionDirectories: resumeConfigs[0].instructionDirectories,
 -				resumeDisabledMcpServers: resumeConfigs[0].disabledMcpServers,
@@ -38600,19 +40070,37 @@ index 3d80ee88..00000000
 -			}, {
 -				createClientName: 'vscode-agent-host',
 -				createGitHubMcpToolConfig: { disableFormDeferral: true },
--				createPluginDirectories: [pluginDir.fsPath],
+-				createPluginDirectories: [pluginDir.fsPath, syntheticPluginDir.fsPath],
+-				createMcpServers: {
+-					'synced-server': {
+-						type: 'local',
+-						command: 'synced-server',
+-						args: [],
+-						tools: ['*'],
+-						cwd: testWorkingDirectory.fsPath,
+-					},
+-				},
 -				createSkillDirectories: [],
 -				createInstructionDirectories: [URI.joinPath(pluginDir, 'rules').fsPath],
--				createDisabledMcpServers: ['azure', 'github'],
+-				createDisabledMcpServers: ['azure', 'disabled-workspace-server', 'github'],
 -				createHasExitPlanHandler: true,
 -				createLargeOutput: { maxSizeBytes: 8192 },
 -				createManagedSettings: { permissions: managedSettingsPermissions },
 -				resumeClientName: 'vscode-agent-host',
 -				resumeGitHubMcpToolConfig: { disableFormDeferral: true },
--				resumePluginDirectories: [pluginDir.fsPath],
+-				resumePluginDirectories: [pluginDir.fsPath, syntheticPluginDir.fsPath],
+-				resumeMcpServers: {
+-					'synced-server': {
+-						type: 'local',
+-						command: 'synced-server',
+-						args: [],
+-						tools: ['*'],
+-						cwd: testWorkingDirectory.fsPath,
+-					},
+-				},
 -				resumeSkillDirectories: [],
 -				resumeInstructionDirectories: [URI.joinPath(pluginDir, 'rules').fsPath],
--				resumeDisabledMcpServers: ['azure', 'github'],
+-				resumeDisabledMcpServers: ['azure', 'disabled-workspace-server', 'github'],
 -				resumeHasExitPlanHandler: true,
 -				resumeLargeOutput: { maxSizeBytes: 8192 },
 -				resumeManagedSettings: { permissions: managedSettingsPermissions },
@@ -39279,7 +40767,7 @@ index 3d80ee88..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotShellTools.test.ts b/src/vs/platform/agentHost/test/node/copilotShellTools.test.ts
 deleted file mode 100644
-index 130ccbaf..00000000
+index 130ccbaf73f..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotShellTools.test.ts
 +++ /dev/null
 @@ -1,992 +0,0 @@
@@ -40277,7 +41765,7 @@ index 130ccbaf..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotSlashCommandCompletionProvider.test.ts b/src/vs/platform/agentHost/test/node/copilotSlashCommandCompletionProvider.test.ts
 deleted file mode 100644
-index 53364ca7..00000000
+index 53364ca722a..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotSlashCommandCompletionProvider.test.ts
 +++ /dev/null
 @@ -1,662 +0,0 @@
@@ -40944,10 +42432,12 @@ index 53364ca7..00000000
 -	});
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotTestEvents.ts b/src/vs/platform/agentHost/test/node/copilotTestEvents.ts
-index ab468f5e..d92d297e 100644
+index ab468f5e75d..d92d297e5a7 100644
 --- a/src/vs/platform/agentHost/test/node/copilotTestEvents.ts
 +++ b/src/vs/platform/agentHost/test/node/copilotTestEvents.ts
-@@ -5,3 +5,13 @@
+@@ -3,7 +3,17 @@
+  *  Licensed under the MIT License. See License.txt in the project root for license information.
+  *--------------------------------------------------------------------------------------------*/
  
 -import type { Attachment, SessionEvent, SessionEventPayload, SkillInvokedData, ToolExecutionCompleteContent } from '@github/copilot-sdk';
 +// `Attachment`/`SessionEvent`/`SessionEventPayload`/`SkillInvokedData`/
@@ -40962,9 +42452,11 @@ index ab468f5e..d92d297e 100644
 +type ToolExecutionCompleteContent = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  
+ // =============================================================================
+ // Minimal session-event shapes for tests
 diff --git a/src/vs/platform/agentHost/test/node/copilotTokenFields.test.ts b/src/vs/platform/agentHost/test/node/copilotTokenFields.test.ts
 deleted file mode 100644
-index a9d124e4..00000000
+index a9d124e425b..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotTokenFields.test.ts
 +++ /dev/null
 @@ -1,77 +0,0 @@
@@ -41046,14 +42538,16 @@ index a9d124e4..00000000
 -	});
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotToolDisplay.test.ts b/src/vs/platform/agentHost/test/node/copilotToolDisplay.test.ts
-index e23358d8..861634eb 100644
+index 42e4d7b5cd9..2b77f1ba411 100644
 --- a/src/vs/platform/agentHost/test/node/copilotToolDisplay.test.ts
 +++ b/src/vs/platform/agentHost/test/node/copilotToolDisplay.test.ts
-@@ -6,3 +6,13 @@
+@@ -4,7 +4,16 @@
+  *--------------------------------------------------------------------------------------------*/
+ 
  import assert from 'assert';
--import type { JsonValue, PermissionRequest } from '@github/copilot-sdk';
-+// `PermissionRequest`/`JsonValue` originally came from '@github/copilot-sdk'
-+// (removed in !!APP_NAME!!). This test narrows PermissionRequest with
+-import type { PermissionRequest } from '@github/copilot-sdk';
++// `PermissionRequest` originally came from '@github/copilot-sdk' (removed in
++// !!APP_NAME!!). This test narrows PermissionRequest with
 +// `Extract<..., { kind: '...' }>` and then builds literals carrying the SDK's
 +// other fields, so it must stay a `kind`-discriminated union whose members also
 +// admit arbitrary extra properties — a bare `{ kind: ... }` would trip
@@ -41061,14 +42555,17 @@ index e23358d8..861634eb 100644
 +/* eslint-disable @typescript-eslint/no-explicit-any */
 +type PermissionRequestKind = 'shell' | 'write' | 'mcp' | 'read' | 'url' | 'custom-tool' | 'hook' | 'memory' | 'extension-management' | 'extension-permission-access';
 +type PermissionRequest = { [K in PermissionRequestKind]: { kind: K } & Record<string, any> }[PermissionRequestKind];
-+type JsonValue = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { URI } from '../../../../base/common/uri.js';
+ import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
+ import { getEditFilePath, getEditFilePaths, getInvocationMessage, getPastTenseMessage, getPermissionDisplay, getShellIntention, getShellLanguage, getStreamingInvocationMessage, getToolDisplayName, getToolInputString, getToolKind, getToolMarkdownContent, isEditTool, isHiddenTool, isMarkdownRenderedTool, synthesizeSkillToolCall } from '../../node/copilot/copilotToolDisplay.js';
 diff --git a/src/vs/platform/agentHost/test/node/mapSessionEvents.perf.test.ts b/src/vs/platform/agentHost/test/node/mapSessionEvents.perf.test.ts
-index b5190129..004c7571 100644
+index b5190129134..004c7571129 100644
 --- a/src/vs/platform/agentHost/test/node/mapSessionEvents.perf.test.ts
 +++ b/src/vs/platform/agentHost/test/node/mapSessionEvents.perf.test.ts
-@@ -6,3 +6,7 @@
+@@ -4,7 +4,11 @@
+  *--------------------------------------------------------------------------------------------*/
+ 
  import assert from 'assert';
 -import type { SessionEvent } from '@github/copilot-sdk';
 +// `SessionEvent` originally came from '@github/copilot-sdk' (removed in
@@ -41077,9 +42574,11 @@ index b5190129..004c7571 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type SessionEvent = any;
  import { readFileSync } from 'fs';
+ import { StopWatch } from '../../../../base/common/stopwatch.js';
+ import { URI } from '../../../../base/common/uri.js';
 diff --git a/src/vs/platform/agentHost/test/node/providerIntegration/copilotByokResponses.integrationTest.ts b/src/vs/platform/agentHost/test/node/providerIntegration/copilotByokResponses.integrationTest.ts
 deleted file mode 100644
-index 7c6e8e96..00000000
+index 7c6e8e96244..00000000000
 --- a/src/vs/platform/agentHost/test/node/providerIntegration/copilotByokResponses.integrationTest.ts
 +++ /dev/null
 @@ -1,133 +0,0 @@
@@ -41218,10 +42717,10 @@ index 7c6e8e96..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/sandboxConfigForSdk.test.ts b/src/vs/platform/agentHost/test/node/sandboxConfigForSdk.test.ts
 deleted file mode 100644
-index 8b3f78dd..00000000
+index 2ca7dc5f288..00000000000
 --- a/src/vs/platform/agentHost/test/node/sandboxConfigForSdk.test.ts
 +++ /dev/null
-@@ -1,249 +0,0 @@
+@@ -1,284 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -41231,7 +42730,7 @@ index 8b3f78dd..00000000
 -import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
 -import { AgentHostSandboxKey, type ISandboxConfigValue } from '../../common/sandboxConfigSchema.js';
 -import { AgentSandboxEnabledValue } from '../../../sandbox/common/settings.js';
--import { buildSandboxConfigForSdk, type CopilotSandboxConfig, type IAgentSandboxFileSystemSetting } from '../../node/copilot/sandboxConfigForSdk.js';
+-import { buildSandboxConfigForSdk, getServerManagedSandboxEnabled, type CopilotSandboxConfig, type IAgentSandboxFileSystemSetting } from '../../node/copilot/sandboxConfigForSdk.js';
 -
 -/**
 - * Build the host-side `sandbox` root-config bag (the shape the workbench
@@ -41378,6 +42877,23 @@ index 8b3f78dd..00000000
 -				[AgentHostSandboxKey.Enabled]: AgentSandboxEnabledValue.On,
 -			}), undefined);
 -		});
+-
+-		test('server-managed enablement overrides the local setting', () => {
+-			assert.strictEqual(buildSandboxConfigForSdk('linux', undefined, true), undefined);
+-			assert.strictEqual(buildSandboxConfigForSdk('linux', sandbox('linux', AgentSandboxEnabledValue.On), false), undefined);
+-		});
+-
+-		test('does not apply local sandbox settings when enablement is server-managed', () => {
+-			const localSandbox: ISandboxConfigValue = {
+-				[AgentHostSandboxKey.Enabled]: AgentSandboxEnabledValue.On,
+-				[AgentHostSandboxKey.AllowNetwork]: true,
+-				[AgentHostSandboxKey.AllowUnsandboxedCommands]: true,
+-				[AgentHostSandboxKey.LinuxFileSystem]: { allowWrite: ['/workspace'] },
+-			};
+-
+-			assert.strictEqual(buildSandboxConfigForSdk('linux', localSandbox, true), undefined);
+-			assert.strictEqual(buildSandboxConfigForSdk('linux', localSandbox, false), undefined);
+-		});
 -	});
 -
 -	suite('filesystem policy', () => {
@@ -41392,6 +42908,24 @@ index 8b3f78dd..00000000
 -			assert.deepStrictEqual(buildSandboxConfigForSdk('linux', cfg)?.userPolicy?.filesystem, expectedSandboxConfig({ readwritePaths: ['/linux'] }).userPolicy?.filesystem);
 -			assert.deepStrictEqual(buildSandboxConfigForSdk('darwin', cfg)?.userPolicy?.filesystem, expectedSandboxConfig({ readwritePaths: ['/mac'] }).userPolicy?.filesystem);
 -			assert.deepStrictEqual(buildSandboxConfigForSdk('win32', cfg)?.userPolicy?.filesystem, expectedSandboxConfig({ readwritePaths: ['C:\\windows'] }).userPolicy?.filesystem);
+-		});
+-
+-		suite('getServerManagedSandboxEnabled', () => {
+-			test('returns explicit server-managed sandbox enablement', () => {
+-				assert.deepStrictEqual([
+-					getServerManagedSandboxEnabled({ serverManaged: true, settings: { sandbox: { enabled: true } } }),
+-					getServerManagedSandboxEnabled({ serverManaged: true, settings: { sandbox: { enabled: false } } }),
+-				], [true, false]);
+-			});
+-
+-			test('ignores non-server-managed, absent, and malformed sandbox values', () => {
+-				assert.deepStrictEqual([
+-					getServerManagedSandboxEnabled({ serverManaged: false, settings: { sandbox: { enabled: true } } }),
+-					getServerManagedSandboxEnabled({ serverManaged: true, settings: {} }),
+-					getServerManagedSandboxEnabled({ serverManaged: true, settings: { sandbox: { enabled: 'true' } } }),
+-					getServerManagedSandboxEnabled({ serverManaged: true, settings: undefined }),
+-				], [undefined, undefined, undefined, undefined]);
+-			});
 -		});
 -
 -		test('maps each setting to the corresponding SDK list', () => {
@@ -41473,7 +43007,7 @@ index 8b3f78dd..00000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/sessionCustomizationDiscovery.test.ts b/src/vs/platform/agentHost/test/node/sessionCustomizationDiscovery.test.ts
 deleted file mode 100644
-index 5fec5bc5..00000000
+index 5fec5bc556e..00000000000
 --- a/src/vs/platform/agentHost/test/node/sessionCustomizationDiscovery.test.ts
 +++ /dev/null
 @@ -1,1201 +0,0 @@
@@ -42679,10 +44213,12 @@ index 5fec5bc5..00000000
 -	});
 -});
 diff --git a/src/vs/platform/agentHost/test/node/toolInstructions.test.ts b/src/vs/platform/agentHost/test/node/toolInstructions.test.ts
-index ffc80d32..d7d6b3c5 100644
+index ffc80d320a7..d7d6b3c5419 100644
 --- a/src/vs/platform/agentHost/test/node/toolInstructions.test.ts
 +++ b/src/vs/platform/agentHost/test/node/toolInstructions.test.ts
-@@ -6,3 +6,6 @@
+@@ -4,7 +4,10 @@
+  *--------------------------------------------------------------------------------------------*/
+ 
  import assert from 'assert';
 -import type { SectionOverride } from '@github/copilot-sdk';
 +// `SectionOverride` originally came from '@github/copilot-sdk' (removed in
@@ -42690,3 +44226,5 @@ index ffc80d32..d7d6b3c5 100644
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +type SectionOverride = any;
  import { COPILOT_AGENT_HOST_LARGE_OUTPUT_TOOL_INSTRUCTION, resolveToolInstructionsOverride, toolSearchInstructionLines, universalToolInstructions } from '../../node/copilot/prompts/toolInstructions.js';
+ import { CLIENT_TOOL_SEARCH_REFERENCE_NAME } from '../../common/toolSearchConstants.js';
+ import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
