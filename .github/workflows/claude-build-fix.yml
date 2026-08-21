@@ -19,15 +19,25 @@ jobs:
     if: |
       (github.event_name == 'issues' && github.event.label.name == 'build-failure') ||
       github.event_name == 'repository_dispatch'
-    runs-on: ubuntu-latest
-    # 90 min budget. Was 45 with --max-turns 50, and 1.133.0 showed that is not
-    # enough: two of three attempts died on "Reached maximum number of turns
-    # (50)" without ever opening a PR. That release broke four patches at once,
-    # and one of them needed a full regenerate — enumerate the breaks, roll the
-    # tree, rebase each, re-verify, push. Hitting either ceiling still consumes
-    # an attempt, so an under-sized budget doesn't fail safe, it just burns the
-    # cap without producing a fix.
-    timeout-minutes: 90
+    # macos-15, not ubuntu: the product is a macOS arm64 app, and the fixer's
+    # job is to VERIFY fixes before pushing (dev/ci-verify.sh = prepare + npm
+    # ci + compile), which needs the build toolchain and the build platform.
+    # Free macos-15 (unlimited minutes on public repos), NOT macos-15-xlarge —
+    # xlarge is billed even here, and the compile tier fits the free runner's
+    # 7 GB RAM with ci-verify's default 6 GB Node heap. Full packaging
+    # (vscode-min-prepack's 8 GB heap) stays on the cron's xlarge builder.
+    runs-on: macos-15
+    # 120 min budget. Was 45 with --max-turns 50, and 1.133.0 showed that is
+    # not enough: two of three attempts died on "Reached maximum number of
+    # turns (50)" without ever opening a PR. That release broke four patches at
+    # once, and one of them needed a full regenerate — enumerate the breaks,
+    # roll the tree, rebase each, re-verify, push. Raised again 90 -> 120 when
+    # in-session verification landed: one ci-verify pass costs ~20-30 min
+    # (npm ci + compile), and starving the verify step just re-creates the
+    # push-and-pray loop. Hitting either ceiling still consumes an attempt, so
+    # an under-sized budget doesn't fail safe, it just burns the cap without
+    # producing a fix.
+    timeout-minutes: 120
     env:
       # Single source of truth for the attempt cap; every gate, message and the
       # prompt read it. Raised 3 -> 5 because attempts are marked BEFORE Claude
@@ -36,6 +46,13 @@ jobs:
       # organization has disabled Claude subscription access" having done no
       # work at all, leaving only two real attempts for a four-patch break.
       FIX_ATTEMPT_CAP: "5"
+      # Separate, smaller cap for VOIDED attempts — runs where Claude died
+      # before doing any work (auth outage, subscription refusal) and the
+      # attempt marker was rewritten to a void marker so it doesn't burn
+      # FIX_ATTEMPT_CAP. Three voids on one issue means the loop's own
+      # infrastructure is broken; escalate to a human instead of retrying
+      # daily forever.
+      INFRA_VOID_CAP: "3"
       # Who Claude's fix PRs get assigned to. Must be a repo collaborator;
       # check with `gh api /repos/<owner>/<repo>/assignees/<login>` (204 = ok).
       PR_ASSIGNEE: sbs44
@@ -155,15 +172,30 @@ jobs:
           # pipefail so a `gh` API failure doesn't silently leave $attempts blank
           # and let the workflow no-op forever on the next dispatch.
           set -eo pipefail
-          attempts=$(gh api "/repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --paginate \
+          # One paginated fetch, two counters. Real attempts start with the
+          # attempt marker; attempts that died before doing any work (auth
+          # outage, quota refusal — see "Void attempt marker" below) get
+          # PATCHed to start with the void marker instead, so they stop
+          # counting against FIX_ATTEMPT_CAP but stay countable on their own:
+          # a run of voids means the loop infra itself is broken and retrying
+          # daily forever would be its own failure mode.
+          comments=$(gh api "/repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --paginate \
                        --jq '[.[]
                               | select(.user.login == "github-actions[bot]")
-                              | select(.body | startswith("<!-- claude-build-fix-attempt -->"))]
-                              | length')
+                              | .body]')
+          attempts=$(echo "$comments" | jq '[.[] | select(startswith("<!-- claude-build-fix-attempt -->"))] | length')
+          voids=$(echo "$comments" | jq '[.[] | select(startswith("<!-- claude-build-fix-attempt-void -->"))] | length')
           attempt_num=$((attempts + 1))
+          if [ "$attempts" -lt "$FIX_ATTEMPT_CAP" ] && [ "$voids" -lt "$INFRA_VOID_CAP" ]; then
+            proceed=true
+          else
+            proceed=false
+          fi
           echo "attempts=$attempts" >> "$GITHUB_OUTPUT"
+          echo "voids=$voids" >> "$GITHUB_OUTPUT"
           echo "attempt_num=$attempt_num" >> "$GITHUB_OUTPUT"
-          echo "::notice::Prior attempts on issue #$ISSUE: $attempts (cap is ${FIX_ATTEMPT_CAP})"
+          echo "proceed=$proceed" >> "$GITHUB_OUTPUT"
+          echo "::notice::Prior attempts on issue #$ISSUE: $attempts (cap ${FIX_ATTEMPT_CAP}), voided infra failures: $voids (cap ${INFRA_VOID_CAP}), proceed=$proceed"
 
       # Cap-hit branch: post the summary comment FIRST (audit record), then
       # swap labels, then surface the terminal state on the Actions UI.
@@ -224,6 +256,39 @@ jobs:
           - Issue: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/issues/$ISSUE
           EOF
 
+      # Infra-failure branch: distinct from the cap above. Voided attempts did
+      # no work (Claude died at spawn — auth outage, subscription refusal), so
+      # they don't consume FIX_ATTEMPT_CAP; but INFRA_VOID_CAP of them on one
+      # issue means the problem is the loop, not the build. Same terminal
+      # state (needs-human) and the same idempotency guard, different message
+      # so the human fixes the right thing.
+      - name: Give up on persistent infra failure
+        if: |
+          fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP) &&
+          fromJSON(steps.count.outputs.voids) >= fromJSON(env.INFRA_VOID_CAP)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ steps.ctx.outputs.issue_number }}
+          RUN_URL: ${{ steps.ctx.outputs.run_url }}
+        run: |
+          set -eo pipefail
+          if gh issue view "$ISSUE" --json labels --jq '.labels[].name' | grep -qx needs-human; then
+            echo "::notice::Infra give-up already announced on issue #$ISSUE; skipping duplicate summary"
+            exit 0
+          fi
+          gh issue comment "$ISSUE" --body "$(cat <<EOF
+          Auto-fix loop stopped: ${INFRA_VOID_CAP} attempts in a row died before doing any work (see the voided attempt markers above — typically an auth or subscription outage on the Claude action, not a build problem).
+
+          Latest failing build run: ${RUN_URL:-(see workflow history)}
+
+          Swapping label \`build-failure\` -> \`needs-human\`. Fix the workflow/credentials, then remove \`needs-human\` and re-add \`build-failure\` to restart the loop with a fresh budget.
+          EOF
+          )"
+          gh label create needs-human --color FBCA04 --description "Auto-fix loop gave up; human needs to take it from here" 2>/dev/null || true
+          gh issue edit "$ISSUE" --remove-label build-failure 2>/dev/null || true
+          gh issue edit "$ISSUE" --add-label needs-human
+          echo "::warning::Infra void cap reached on issue #$ISSUE; label swapped to needs-human"
+
       # Below-cap branch: mark this attempt BEFORE invoking Claude, so a crash
       # mid-action still counts. Avoids infinite-retry-on-transient-error.
       # NOTE: the marker string `<!-- claude-build-fix-attempt -->` is also
@@ -235,7 +300,8 @@ jobs:
       # (where it would naturally land on a later line). Don't reorder the
       # heredoc body to put a header line ahead of the marker.
       - name: Mark this attempt
-        if: fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
+        id: mark
+        if: steps.count.outputs.proceed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ATTEMPT_NUM: ${{ steps.count.outputs.attempt_num }}
@@ -243,12 +309,17 @@ jobs:
           RUN_URL: ${{ steps.ctx.outputs.run_url }}
         run: |
           set -eo pipefail
-          gh issue comment "$ISSUE" --body "$(cat <<EOF
+          # gh api instead of `gh issue comment`: we need the comment id back,
+          # so the void step below can rewrite THIS marker if Claude dies
+          # before doing any work.
+          marker_id=$(gh api "/repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" \
+            -f body="$(cat <<EOF
           <!-- claude-build-fix-attempt -->
           Starting fix attempt ${ATTEMPT_NUM}/${FIX_ATTEMPT_CAP} in run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}.
           Triggering failure: ${RUN_URL:-(none, manual label add)}
           EOF
-          )"
+          )" --jq .id)
+          echo "marker_id=$marker_id" >> "$GITHUB_OUTPUT"
 
       # Pre-stage upstream vscode/ at the target commit (see ctx) so Claude
       # doesn't burn 3–5 min of its 45-min budget on the clone every iteration.
@@ -265,9 +336,29 @@ jobs:
       # cache was keyed to a commit the fix run didn't want and every attempt
       # both missed the cache and started from the wrong tree. GitHub LRU-evicts
       # old entries; the ~500MB-1GB vscode/ entries fit the 10GB repo budget.
+      # Node + npm cache mirror the cron build job: ci-verify.sh runs
+      # prepare_vscode.sh (npm ci) + the compile, and without the right Node
+      # the preinstall check fails before Claude learns anything.
+      - name: Setup Node
+        if: steps.count.outputs.proceed == 'true'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Cache npm packages
+        if: steps.count.outputs.proceed == 'true'
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.npm
+          # .nvmrc hash invalidates on a Node major bump (native-module ABI);
+          # keyed to the TARGET commit, same reasoning as the vscode/ cache.
+          key: npm-${{ hashFiles('.nvmrc') }}-${{ steps.ctx.outputs.target_commit }}
+          restore-keys: |
+            npm-${{ hashFiles('.nvmrc') }}-
+
       - name: Restore vscode/ cache
         id: vscode_cache
-        if: fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
+        if: steps.count.outputs.proceed == 'true'
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: vscode
@@ -281,7 +372,7 @@ jobs:
       # this base — still much faster than a full re-clone.
       - name: Pre-stage vscode/ at the target commit
         if: |
-          fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP) &&
+          steps.count.outputs.proceed == 'true' &&
           steps.vscode_cache.outputs.cache-hit != 'true'
         env:
           # Already shape-validated in the ctx step (semver tag, 40-hex commit),
@@ -307,7 +398,7 @@ jobs:
       # guard saves a 1–2s upload check).
       - name: Save clean vscode/ to cache
         if: |
-          fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP) &&
+          steps.count.outputs.proceed == 'true' &&
           steps.vscode_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -315,7 +406,8 @@ jobs:
           key: vscode-${{ steps.ctx.outputs.target_commit }}
 
       - name: Run Claude
-        if: fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
+        id: claude
+        if: steps.count.outputs.proceed == 'true'
         uses: anthropics/claude-code-action@593d7a5c4e0073569f74772c2b7b64c30ec14707 # v1
         with:
           allowed_bots: "*"
@@ -371,80 +463,64 @@ jobs:
             If the failing run URL above is empty, fall back to:
               gh run list --workflow cron-build-and-release.yml --status failure --limit 1 --json databaseId,url
 
-            Follow systematic-debugging Phase 1 (root cause via `gh run view --log-failed`)
-            BEFORE proposing any fix. Common failure classes from prior incidents:
-              - patch apply rejections after upstream rebase (00-brand-remove-branding,
-                51-ext-copilot-remove-it, etc.)
-              - compile-src TypeScript errors from dangling references after our patches
-              - `vscode-min-prepack` ASCII hygiene check on non-ASCII regex literals
-              - native module ABI mismatch (NODE_MODULE_VERSION) after Node version bumps
+            FIRST, before any diagnosis, read docs/build-fix.md — the playbook
+            for exactly this job (failure classes, patch/token mechanics, the
+            verification workflow, and every trap that has cost an attempt in
+            a past incident). Treat its checklists as mandatory.
 
-            `vscode/` is already staged at the upstream target above — the commit
-            the build actually failed on, not main's pin. No clone or checkout
-            needed; start diagnosing immediately.
+            Second, warm-start from prior work instead of rediscovering it:
+            read the attempt comments on issue #${{ steps.ctx.outputs.issue_number }},
+            and look for an existing fix PR:
+              gh pr list \
+                --search "Refs #${{ steps.ctx.outputs.issue_number }} in:body state:open" \
+                --json number,headRefName,author --jq '.[]'
+            If one exists AND its author is `claude[bot]`, read its commits and
+            comments, then push follow-up commits to ITS head ref
+            (git fetch origin && git switch <headRefName>). Never open a
+            duplicate PR — orphan PRs split the fix across branches that can
+            never merge.
 
-            START HERE for any patch-apply failure:
+            Then follow systematic-debugging Phase 1 (root cause via
+            `gh run view --log-failed`) BEFORE proposing any fix.
+
+            `vscode/` is already staged at the upstream target above — the
+            commit the build actually failed on, not main's pin — and Node
+            matching .nvmrc is installed. No clone or setup needed.
+
+            For any patch-apply failure, START with:
 
               ./dev/dry-apply-patches.sh
 
-            It applies every patch in CI order against the staged tree and, unlike
-            the build, CONTINUES past failures — so one run names every broken
-            patch instead of just the first. `--verbose` shows full rejections.
-            Rebase all of them in this session and commit them together.
+            It continues past failures, so one run names every broken patch
+            (the build log only ever names the first). Fix ALL of them in this
+            session.
 
-            Three anti-patterns from prior incidents to avoid:
+            VERIFICATION CONTRACT — unlike earlier iterations of this loop,
+            this runner can compile. Before you push:
 
-            1. Opening duplicate orphan PRs (1.124.0). Before opening a new PR,
-               look for an existing fix PR tracking this issue:
-                 gh pr list \
-                   --search "Refs #${{ steps.ctx.outputs.issue_number }} in:body state:open" \
-                   --json number,headRefName,author --jq '.[]'
-               If one exists AND its author is `claude[bot]`, push your
-               commit to ITS head ref instead of opening another PR:
-                 git fetch origin && git switch <headRefName> && git push
-               Each duplicate PR splits attempts across orphan branches that
-               can never be merged together — the cap is hit before either
-               branch carries all the fixes.
+              CI_BUILD=yes ./dev/ci-verify.sh --commit ${{ steps.ctx.outputs.target_commit }}
 
-            2. Fixing only the first broken patch (1.124.0 broke 2, 1.133.0
-               broke 4). `prepare_vscode.sh` halts at the first rejection, so
-               the log names one patch while others are equally broken. Running
-               dry-apply-patches.sh first makes this a non-issue — do it before
-               you start editing anything.
+            runs prepare_vscode.sh (overlay + patches + npm ci) plus the
+            TypeScript compile (~20-30 min; `--skip-prepare` re-compiles
+            incrementally in minutes while you iterate on a fix in vscode/).
+            Do not push until it passes. If you genuinely cannot get it to
+            pass within the time budget, push anyway and state exactly what
+            passed and what didn't in the PR body — never imply a verified
+            fix without a passing run.
 
-            3. Declaring victory when patches merely APPLY (1.133.0). Applying
-               is necessary, not sufficient. Before you push, also confirm:
-                 - Deletions really happened. `git apply --reject` cannot delete
-                   a file whose content drifted, and it emits NO .rej for that
-                   case — the deletion just silently vanishes from a regenerated
-                   patch. Check every `deleted file mode` the old patch had is
-                   still present in the new one.
-                 - No dangling imports of modules the patch deletes.
-                 - Upstream has not added NEW files importing something we
-                   remove. 1.133.0 added three files importing types from the
-                   removed @github/copilot-sdk; each needed a local alias.
-                   Sweep with a grep for the removed package across `src/`.
-                 - Any local type alias standing in for a removed SDK type still
-                   covers how upstream uses it NOW. These go stale silently:
-                   1.133.0's getPermissionDisplay grew from reading only
-                   `.kind` to reading nine fields, and the inherited
-                   `{ kind: ... }` alias (plus its "only `kind` is referenced"
-                   comment) applied fine and then failed the build with ten
-                   TS2339s. Grep every `request.<prop>`-style access against the
-                   alias before trusting it.
+            Two rules that have each cost an attempt before:
+              - Pin consistency: a PR build always builds the version pinned
+                in upstream/stable.json. If this fix targets a newer upstream
+                tag, the fix PR must ALSO bump upstream/stable.json (tag AND
+                commit) or its build clones the old tree and fails instantly.
+              - Regenerated patches must keep their `!!TOKEN!!` placeholders
+                (!!APP_NAME!! etc.) — apply patches RAW when regenerating so
+                `git diff` reproduces the tokens. Then run the playbook's
+                regenerated-patch checklist (silent deletions, dangling
+                imports, new upstream importers, stale type aliases).
 
-            Patches applying is NOT a green build. The compile runs after, and
-            a type-level mistake will not show up in any dry-apply. If you
-            cannot compile, say so explicitly in the PR body rather than
-            implying the fix is verified.
-
-            A patch file must keep its `!!TOKEN!!` placeholders (!!APP_NAME!!
-            etc.) — utils.sh substitutes them per build. If you regenerate a
-            patch, apply it RAW (no substitution) so `git diff` reproduces the
-            tokens; never commit a patch where a token became a literal value.
-
-            Open a PR (or push to the existing fix PR for this issue) that addresses
-            the root cause.
+            Open a PR (or push to the existing fix PR for this issue) that
+            addresses the root cause.
 
             Hard rules:
               - Never push to main.
@@ -457,6 +533,52 @@ jobs:
                 on its own line. The cron's `report-pr-failure` job parses this line
                 to dispatch the next iteration; without it, the loop breaks.
 
+      # Attempts are marked BEFORE Claude runs so a crash can't retry forever
+      # — but that means a run that died at spawn (auth outage, subscription
+      # refusal: issue #45 attempt 1 died in 22s at turn 1, $0 spent, and
+      # still consumed a third of the cap) burns budget having done nothing.
+      # This step rewrites the marker to a void marker when the Claude step
+      # failed AND its execution transcript shows ≤3 turns. The counter step
+      # excludes void markers from FIX_ATTEMPT_CAP and counts them against
+      # INFRA_VOID_CAP instead. Parse failures leave the marker in place —
+      # bounded-by-default, same philosophy as pre-marking.
+      - name: Void attempt marker on infra failure
+        if: |
+          always() &&
+          steps.count.outputs.proceed == 'true' &&
+          steps.claude.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MARKER_ID: ${{ steps.mark.outputs.marker_id }}
+          ATTEMPT_NUM: ${{ steps.count.outputs.attempt_num }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          set -eo pipefail
+          if [ -z "$MARKER_ID" ]; then
+            echo "::warning::No marker comment id recorded; cannot void"
+            exit 0
+          fi
+          num_turns=""
+          if [ -n "$EXECUTION_FILE" ] && [ -f "$EXECUTION_FILE" ]; then
+            num_turns=$(jq -r 'if type=="array" then (.[-1].num_turns // empty) else empty end' \
+                          "$EXECUTION_FILE" 2>/dev/null || true)
+          fi
+          if ! printf '%s' "$num_turns" | grep -Eq '^[0-9]+$'; then
+            echo "::notice::num_turns unparseable ('$num_turns'); leaving attempt marker in place"
+            exit 0
+          fi
+          if [ "$num_turns" -gt 3 ]; then
+            echo "::notice::Claude ran $num_turns turns before failing — real attempt, marker stands"
+            exit 0
+          fi
+          gh api --method PATCH "/repos/$GITHUB_REPOSITORY/issues/comments/$MARKER_ID" \
+            -f body="$(cat <<EOF
+          <!-- claude-build-fix-attempt-void -->
+          Attempt ${ATTEMPT_NUM} VOIDED: Claude died after ${num_turns} turn(s) without doing any work (auth/infra failure, not a fix failure) in run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Not counted against the attempt cap.
+          EOF
+          )"
+          echo "::warning::Attempt ${ATTEMPT_NUM} voided (infra death at ${num_turns} turns); not counted against FIX_ATTEMPT_CAP"
+
       # Claude opens the fix PR itself, so there is no `gh pr create` here to
       # hang an --assignee off; assign afterwards instead.
       #
@@ -465,7 +587,7 @@ jobs:
       # leave exactly the PRs a human must pick up unassigned. Never fatal, for
       # the same reason: the fix work is already pushed by this point.
       - name: Assign the fix PR
-        if: always() && fromJSON(steps.count.outputs.attempts) < fromJSON(env.FIX_ATTEMPT_CAP)
+        if: always() && steps.count.outputs.proceed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ steps.ctx.outputs.issue_number }}

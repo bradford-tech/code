@@ -375,23 +375,29 @@ jobs:
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.full_name == github.repository &&
         !contains(github.event.pull_request.labels.*.name, 'auto-release')))
-    # Larger runner (org-provisioned, 8 vCPU / 32 GB, x64). The standard runner
-    # ran out of memory during compile-src on 1.133.0: run 32077438671 sampled
-    # 4938 MB available as compilation started, 428 MB forty-seven seconds
-    # later, then swap climbing to ~3 GB and plateauing while available memory
-    # kept falling. Disk was flat at ~6 GB free throughout, so this was memory,
-    # not space. Thrashing is also why run 32072041321 spent 56 minutes in a
-    # phase that takes ~7 before the runner stopped answering the server.
-    #
-    # build.sh sets --max-old-space-size=8192, which V8 treats as licence to
-    # grow to 8 GB regardless of what the box can actually back — so the heap
-    # has to fit in RAM, and 32 GB gives it ~4x the observed peak. The 4-core
-    # larger runner would NOT have helped: it is also 16 GB, and only adds disk.
+    # Standard (free) runner: 2 vCPU / 7.8 GB. The 1.133.0 OOM-thrash that
+    # forced a detour through the org's `ubuntu-latest-8-core` larger runner
+    # (run 32077438671: 4938 MB available at compile start, 428 MB forty-seven
+    # seconds later, swap climbing to ~3 GB; run 32072041321 spent 56 minutes
+    # in a phase that takes ~7 before the runner stopped answering) was NOT a
+    # too-small-box problem — it was build.sh's hardcoded 8 GB Node heap on a
+    # 7.8 GB box. V8 treats max-old-space-size as licence to grow past
+    # physical RAM. Two changes let the standard runner carry this job again:
+    #   1. VSCODE_NODE_HEAP_MB=5120 below sizes the heap to fit (~2.5 GB left
+    #      for OS + sibling processes). 1.132.0 built here in 14 min.
+    #   2. The extra swapfile step turns a future peak into slowness instead
+    #      of an OOM-killed runner — and if the heap cap itself is hit, the
+    #      build dies with a crisp "JavaScript heap out of memory" naming the
+    #      real problem, not a 24-hour hang.
+    # The larger runner is deliberately gone: org-provisioned labels are a
+    # scheduling dependency — when the runner/group/billing drifts, jobs on
+    # that label queue silently for 24 h (Aug 20-21, runs 32341660868 and
+    # 32461286205), delaying failure detection by a full day.
     #
     # Must stay x64: VSCODE_ARCH is x64 and this publishes
     # bradfordcode-reh-linux-x64. The `Install build dependencies` apt names
     # assume Ubuntu 24.04, matching what ubuntu-latest resolves to.
-    runs-on: ubuntu-latest-8-core
+    runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
       APP_NAME: BradfordCode
@@ -406,6 +412,9 @@ jobs:
       SHOULD_BUILD_DMG: "no"
       CI_BUILD: "yes"
       DISABLE_UPDATE: "no"
+      # Node heap sized for this runner's 7.8 GB — see the runs-on comment.
+      # build.sh defaults to 8192 when unset (the macOS xlarge builder).
+      VSCODE_NODE_HEAP_MB: "5120"
       MS_TAG: ${{ needs.check.outputs.ms_tag }}
       MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
       RELEASE_VERSION: ${{ needs.check.outputs.release_version }}
@@ -417,6 +426,24 @@ jobs:
           # Never pushes; leaving the token in .git/config would expose it to
           # every npm postinstall script the build runs.
           persist-credentials: false
+
+      # Safety net for the right-sized heap above: total memory across the
+      # build's parallel node processes can still peak past 7.8 GB, and the
+      # runner's stock swap is small. 8 GB more on /mnt (~65 GB free) turns a
+      # peak into a slow patch instead of an OOM-killed runner. Best-effort:
+      # a fallocate/swapon failure should not fail a build that may never
+      # have needed the headroom.
+      - name: Add swap headroom
+        run: |
+          if sudo fallocate -l 8G /mnt/extra-swap \
+             && sudo chmod 600 /mnt/extra-swap \
+             && sudo mkswap /mnt/extra-swap \
+             && sudo swapon /mnt/extra-swap; then
+            echo "::notice::Added 8G swap on /mnt"
+          else
+            echo "::warning::Could not add swap headroom; continuing without it"
+          fi
+          free -h
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -498,11 +525,20 @@ jobs:
             echo "| disk available (/) | ${disk_avail} MB |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # Sized for the observed compile peak (~7.8 GB and still climbing when
-          # the 4-core runner died). Fail loudly rather than burning ~15 min to
-          # rediscover that the label silently resolved to a smaller machine.
-          if [ "${mem_total}" -lt 24000 ]; then
-            echo "::error::REH runner has ${mem_total}MB RAM; compile-src needs >=8GB and thrashed to death at 16GB. Expected the 32GB larger runner — check the ubuntu-latest-8-core label still resolves."
+          # The heap is sized to the box now (VSCODE_NODE_HEAP_MB, consumed by
+          # build.sh), so assert the invariant that actually matters: enough
+          # RAM to back the configured heap plus ~2 GB for the OS and sibling
+          # processes. This keeps the guard's original job — fail in seconds,
+          # not after 15 minutes of thrash, if the label silently resolves to
+          # a smaller machine than the heap was tuned for — without pinning
+          # the job to one runner size. (The 1.133.0 deaths were an 8 GB heap
+          # on a 7.8 GB box; the old guard then asserted the 32 GB larger
+          # runner, whose org-provisioned label later stopped scheduling and
+          # queued the job for 24 h. Both failure modes end here: heap fits or
+          # we say so immediately.)
+          need_mb=$(( ${VSCODE_NODE_HEAP_MB:-8192} + 2048 ))
+          if [ "${mem_total}" -lt "${need_mb}" ]; then
+            echo "::error::REH runner has ${mem_total}MB RAM but the configured Node heap (VSCODE_NODE_HEAP_MB=${VSCODE_NODE_HEAP_MB:-8192}MB) needs ~${need_mb}MB to run without thrashing. Lower VSCODE_NODE_HEAP_MB or use a bigger runner."
             exit 1
           fi
 
@@ -870,6 +906,37 @@ jobs:
           Check they are still a collaborator (gh api /repos/${GITHUB_REPOSITORY}/assignees/$PR_ASSIGNEE)."
           fi
 
+      # A successful build + release for a tag resolves any open failure issue
+      # for that same tag — including ones already escalated to needs-human.
+      # Without this every incident's issue outlives its fix until a human
+      # remembers (the 1.132.0-era backlog was 13 stale issues, bulk-closed by
+      # hand). Title-stem matching mirrors report-failure's de-dupe logic.
+      # Non-fatal on purpose: the release itself already succeeded, and a
+      # red-X here would invite a re-run that tries to recreate it.
+      - name: Close resolved build-failure issues
+        run: |
+          set -eo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          numbers=$(
+            for label in build-failure needs-human; do
+              gh issue list --state open --label "$label" --json number,title \
+                | jq -r --arg stem "Build failure: vscode ${MS_TAG}" \
+                    '.[] | select(.title | startswith($stem)) | .number'
+            done | sort -un
+          )
+          if [ -z "$numbers" ]; then
+            echo "::notice::No open failure issues for vscode ${MS_TAG}"
+            exit 0
+          fi
+          for n in $numbers; do
+            if gh issue close "$n" \
+                 --comment "Build + release succeeded for vscode ${MS_TAG} in ${run_url} (release ${RELEASE_VERSION}). Closing."; then
+              echo "::notice::Closed issue #$n (resolved by release ${RELEASE_VERSION})"
+            else
+              echo "::warning::Could not close issue #$n; close it manually"
+            fi
+          done
+
   report-failure:
     name: Open issue on failure
     needs: [check, build, build-reh, release]
@@ -1004,6 +1071,15 @@ jobs:
       contents: write
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          # The tag/commit this PR build actually ran against (for a fix PR
+          # that bumps upstream/stable.json, that's the PR's pin, not main's).
+          # Passed through the dispatch so claude-build-fix stages vscode/ at
+          # the right tree — report-failure has carried these since e33fa12,
+          # but this job didn't, so PR-failure iterations staged main's stale
+          # pin.
+          MS_TAG: ${{ needs.check.outputs.ms_tag }}
+          MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
         with:
           script: |
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
@@ -1049,6 +1125,8 @@ jobs:
                 client_payload: {
                   issue_number: issueNumber,
                   run_url: runUrl,
+                  ms_tag: process.env.MS_TAG,
+                  ms_commit: process.env.MS_COMMIT,
                 },
               });
             } catch (err) {
@@ -1058,3 +1136,67 @@ jobs:
                 `Check job permissions — repos.createDispatchEvent requires \`contents: write\`.`
               );
             }
+
+  # Mirror of report-pr-failure for the green case: when a loop fix PR's
+  # build succeeds, hand it to a human — assign, and say so on both the PR
+  # and the originating issue. Without this the loop's happy path ended in
+  # silence: a green, unassigned PR nobody was told about.
+  report-pr-success:
+    name: Hand off green fix PR
+    needs: [check, build]
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.build.result == 'success' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            // Same line-anchored parse as report-pr-failure: only a whole-line
+            // `Refs #<n>` marks a loop PR; prose mentions don't count.
+            const body = context.payload.pull_request.body || '';
+            const m = body.match(/^Refs #(\d+)$/m);
+            if (!m) {
+              core.notice(
+                `PR #${context.issue.number} is not part of the auto-fix loop ` +
+                `(no "Refs #<n>" line); nothing to hand off.`
+              );
+              return;
+            }
+            const issueNumber = parseInt(m[1], 10);
+            const prNumber = context.payload.pull_request.number;
+            const sha = context.payload.pull_request.head.sha;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const assignee = process.env.PR_ASSIGNEE;
+
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                assignees: [assignee],
+              });
+            } catch (err) {
+              core.warning(`Could not assign ${assignee} to PR #${prNumber}: ${err.message}`);
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `Build green at ${sha} ([run](${runUrl})). Ready for review — assigned to @${assignee}.`,
+            });
+
+            // Keep the originating issue's thread the single audit log the
+            // attempt counter already made it.
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `Fix PR #${prNumber} built green ([run](${runUrl})). Awaiting review/merge; this issue closes automatically when a release for the tag succeeds.`,
+            });
