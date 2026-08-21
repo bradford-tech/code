@@ -525,11 +525,20 @@ jobs:
             echo "| disk available (/) | ${disk_avail} MB |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # Sized for the observed compile peak (~7.8 GB and still climbing when
-          # the 4-core runner died). Fail loudly rather than burning ~15 min to
-          # rediscover that the label silently resolved to a smaller machine.
-          if [ "${mem_total}" -lt 24000 ]; then
-            echo "::error::REH runner has ${mem_total}MB RAM; compile-src needs >=8GB and thrashed to death at 16GB. Expected the 32GB larger runner — check the ubuntu-latest-8-core label still resolves."
+          # The heap is sized to the box now (VSCODE_NODE_HEAP_MB, consumed by
+          # build.sh), so assert the invariant that actually matters: enough
+          # RAM to back the configured heap plus ~2 GB for the OS and sibling
+          # processes. This keeps the guard's original job — fail in seconds,
+          # not after 15 minutes of thrash, if the label silently resolves to
+          # a smaller machine than the heap was tuned for — without pinning
+          # the job to one runner size. (The 1.133.0 deaths were an 8 GB heap
+          # on a 7.8 GB box; the old guard then asserted the 32 GB larger
+          # runner, whose org-provisioned label later stopped scheduling and
+          # queued the job for 24 h. Both failure modes end here: heap fits or
+          # we say so immediately.)
+          need_mb=$(( ${VSCODE_NODE_HEAP_MB:-8192} + 2048 ))
+          if [ "${mem_total}" -lt "${need_mb}" ]; then
+            echo "::error::REH runner has ${mem_total}MB RAM but the configured Node heap (VSCODE_NODE_HEAP_MB=${VSCODE_NODE_HEAP_MB:-8192}MB) needs ~${need_mb}MB to run without thrashing. Lower VSCODE_NODE_HEAP_MB or use a bigger runner."
             exit 1
           fi
 
