@@ -870,6 +870,37 @@ jobs:
           Check they are still a collaborator (gh api /repos/${GITHUB_REPOSITORY}/assignees/$PR_ASSIGNEE)."
           fi
 
+      # A successful build + release for a tag resolves any open failure issue
+      # for that same tag — including ones already escalated to needs-human.
+      # Without this every incident's issue outlives its fix until a human
+      # remembers (the 1.132.0-era backlog was 13 stale issues, bulk-closed by
+      # hand). Title-stem matching mirrors report-failure's de-dupe logic.
+      # Non-fatal on purpose: the release itself already succeeded, and a
+      # red-X here would invite a re-run that tries to recreate it.
+      - name: Close resolved build-failure issues
+        run: |
+          set -eo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          numbers=$(
+            for label in build-failure needs-human; do
+              gh issue list --state open --label "$label" --json number,title \
+                | jq -r --arg stem "Build failure: vscode ${MS_TAG}" \
+                    '.[] | select(.title | startswith($stem)) | .number'
+            done | sort -un
+          )
+          if [ -z "$numbers" ]; then
+            echo "::notice::No open failure issues for vscode ${MS_TAG}"
+            exit 0
+          fi
+          for n in $numbers; do
+            if gh issue close "$n" \
+                 --comment "Build + release succeeded for vscode ${MS_TAG} in ${run_url} (release ${RELEASE_VERSION}). Closing."; then
+              echo "::notice::Closed issue #$n (resolved by release ${RELEASE_VERSION})"
+            else
+              echo "::warning::Could not close issue #$n; close it manually"
+            fi
+          done
+
   report-failure:
     name: Open issue on failure
     needs: [check, build, build-reh, release]
@@ -1004,6 +1035,15 @@ jobs:
       contents: write
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          # The tag/commit this PR build actually ran against (for a fix PR
+          # that bumps upstream/stable.json, that's the PR's pin, not main's).
+          # Passed through the dispatch so claude-build-fix stages vscode/ at
+          # the right tree — report-failure has carried these since e33fa12,
+          # but this job didn't, so PR-failure iterations staged main's stale
+          # pin.
+          MS_TAG: ${{ needs.check.outputs.ms_tag }}
+          MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
         with:
           script: |
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
@@ -1049,6 +1089,8 @@ jobs:
                 client_payload: {
                   issue_number: issueNumber,
                   run_url: runUrl,
+                  ms_tag: process.env.MS_TAG,
+                  ms_commit: process.env.MS_COMMIT,
                 },
               });
             } catch (err) {
@@ -1058,3 +1100,67 @@ jobs:
                 `Check job permissions — repos.createDispatchEvent requires \`contents: write\`.`
               );
             }
+
+  # Mirror of report-pr-failure for the green case: when a loop fix PR's
+  # build succeeds, hand it to a human — assign, and say so on both the PR
+  # and the originating issue. Without this the loop's happy path ended in
+  # silence: a green, unassigned PR nobody was told about.
+  report-pr-success:
+    name: Hand off green fix PR
+    needs: [check, build]
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.build.result == 'success' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            // Same line-anchored parse as report-pr-failure: only a whole-line
+            // `Refs #<n>` marks a loop PR; prose mentions don't count.
+            const body = context.payload.pull_request.body || '';
+            const m = body.match(/^Refs #(\d+)$/m);
+            if (!m) {
+              core.notice(
+                `PR #${context.issue.number} is not part of the auto-fix loop ` +
+                `(no "Refs #<n>" line); nothing to hand off.`
+              );
+              return;
+            }
+            const issueNumber = parseInt(m[1], 10);
+            const prNumber = context.payload.pull_request.number;
+            const sha = context.payload.pull_request.head.sha;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const assignee = process.env.PR_ASSIGNEE;
+
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                assignees: [assignee],
+              });
+            } catch (err) {
+              core.warning(`Could not assign ${assignee} to PR #${prNumber}: ${err.message}`);
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `Build green at ${sha} ([run](${runUrl})). Ready for review — assigned to @${assignee}.`,
+            });
+
+            // Keep the originating issue's thread the single audit log the
+            // attempt counter already made it.
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `Fix PR #${prNumber} built green ([run](${runUrl})). Awaiting review/merge; this issue closes automatically when a release for the tag succeeds.`,
+            });
