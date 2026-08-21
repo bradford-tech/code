@@ -320,15 +320,15 @@ index 30199b2b..6e3820d5 100644
 +	"json.tracing.desc": "Traces the communication between BradfordCode and the JSON language server.",
  	"json.colorDecorators.enable.desc": "Enables or disables color decorators",
 diff --git a/extensions/markdown-language-features/package.nls.json b/extensions/markdown-language-features/package.nls.json
-index cb292ba5..0855e6a0 100644
+index 12fcb821..a26b6d0c 100644
 --- a/extensions/markdown-language-features/package.nls.json
 +++ b/extensions/markdown-language-features/package.nls.json
-@@ -30,3 +30,3 @@
+@@ -31,3 +31,3 @@
  	"markdown.trace.extension.desc": "Enable debug logging for the Markdown extension.",
 -	"markdown.trace.server.desc": "Traces the communication between VS Code and the Markdown language server.",
 +	"markdown.trace.server.desc": "Traces the communication between BradfordCode and the Markdown language server.",
  	"markdown.server.log.desc": "Controls the logging level of the Markdown language server.",
-@@ -88,3 +88,3 @@
+@@ -89,3 +89,3 @@
  		"comment": [
 -			"This setting is use the user drops or pastes image data into the editor. In this case, VS Code automatically creates a new image file in the workspace containing the dropped/pasted image.",
 +			"This setting is use the user drops or pastes image data into the editor. In this case, BradfordCode automatically creates a new image file in the workspace containing the dropped/pasted image.",
@@ -403,7 +403,7 @@ index 5c77708d..8a988891 100644
 +	"displayName": "NPM support for BradfordCode",
  	"workspaceTrust": "This extension executes tasks, which require trust to run.",
 diff --git a/extensions/swift/syntaxes/swift.tmLanguage.json b/extensions/swift/syntaxes/swift.tmLanguage.json
-index d52cabb8..f4f26d79 100644
+index b8166680..ead6be7f 100644
 --- a/extensions/swift/syntaxes/swift.tmLanguage.json
 +++ b/extensions/swift/syntaxes/swift.tmLanguage.json
 @@ -260,3 +260,3 @@
@@ -468,7 +468,7 @@ index 1154a29c..a42a1d25 100644
 +				: '') + vscode.l10n.t("Use BradfordCode's Version"),
  			description: bundledVersion.displayName,
 diff --git a/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts b/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts
-index 12cb1cca..6b681ae1 100644
+index eff6db4f..1859e9d1 100644
 --- a/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts
 +++ b/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts
 @@ -70,3 +70,3 @@ export class DiskTypeScriptVersionProvider implements ITypeScriptVersionProvider
@@ -486,26 +486,26 @@ index 823985e9..a4a18aa8 100644
 +			vscode.l10n.t("Please open a folder in BradfordCode to use a TypeScript or JavaScript project"));
  		return;
 diff --git a/extensions/typescript-language-features/src/typescriptServiceClient.ts b/extensions/typescript-language-features/src/typescriptServiceClient.ts
-index d6873bc0..fd0dc267 100644
+index 677721c2..8136cd8a 100644
 --- a/extensions/typescript-language-features/src/typescriptServiceClient.ts
 +++ b/extensions/typescript-language-features/src/typescriptServiceClient.ts
-@@ -664,3 +664,3 @@ export default class TypeScriptServiceClient extends Disposable implements IType
+@@ -670,3 +670,3 @@ export default class TypeScriptServiceClient extends Disposable implements IType
  						prompt = vscode.window.showErrorMessage<vscode.MessageItem>(
 -							vscode.l10n.t("The JS/TS language service immediately crashed 5 times. The service will not be restarted.\nThis may be caused by a plugin contributed by one of these extensions: {0}.\nPlease try disabling these extensions before filing an issue against VS Code.", pluginExtensionList));
 +							vscode.l10n.t("The JS/TS language service immediately crashed 5 times. The service will not be restarted.\nThis may be caused by a plugin contributed by one of these extensions: {0}.\nPlease try disabling these extensions before filing an issue against BradfordCode.", pluginExtensionList));
  					} else if (!plugins.length) {
-@@ -685,3 +685,3 @@ export default class TypeScriptServiceClient extends Disposable implements IType
+@@ -691,3 +691,3 @@ export default class TypeScriptServiceClient extends Disposable implements IType
  							prompt = vscode.window.showWarningMessage<vscode.MessageItem>(
 -								vscode.l10n.t("The JS/TS language service crashed 5 times in the last 5 Minutes.\nThis may be caused by a plugin contributed by one of these extensions: {0}\nPlease try disabling these extensions before filing an issue against VS Code.", pluginExtensionList));
 +								vscode.l10n.t("The JS/TS language service crashed 5 times in the last 5 Minutes.\nThis may be caused by a plugin contributed by one of these extensions: {0}\nPlease try disabling these extensions before filing an issue against BradfordCode.", pluginExtensionList));
  						} else if (!plugins.length) {
-@@ -699,3 +699,3 @@ export default class TypeScriptServiceClient extends Disposable implements IType
+@@ -705,3 +705,3 @@ export default class TypeScriptServiceClient extends Disposable implements IType
  						prompt = vscode.window.showWarningMessage<vscode.MessageItem>(
 -							vscode.l10n.t("The JS/TS language service crashed.\nThis may be caused by a plugin contributed by one of these extensions: {0}.\nPlease try disabling these extensions before filing an issue against VS Code.", pluginExtensionList));
 +							vscode.l10n.t("The JS/TS language service crashed.\nThis may be caused by a plugin contributed by one of these extensions: {0}.\nPlease try disabling these extensions before filing an issue against BradfordCode.", pluginExtensionList));
  					} else if (!plugins.length) {
 diff --git a/extensions/vscode-api-tests/package.json b/extensions/vscode-api-tests/package.json
-index bcc31d36..5774db13 100644
+index 3bbda08c..63996d98 100644
 --- a/extensions/vscode-api-tests/package.json
 +++ b/extensions/vscode-api-tests/package.json
 @@ -2,3 +2,3 @@
@@ -610,10 +610,10 @@ index 085290ba..6164e371 100644
 +			'	// This can help in cases where you see rendering issues in BradfordCode.',
  			'	// "disable-hardware-acceleration": true',
 diff --git a/src/vs/code/electron-main/app.ts b/src/vs/code/electron-main/app.ts
-index 60aec35c..f09c8556 100644
+index 8176a5b4..34672e29 100644
 --- a/src/vs/code/electron-main/app.ts
 +++ b/src/vs/code/electron-main/app.ts
-@@ -671,3 +671,3 @@ export class CodeApplication extends Disposable {
+@@ -675,3 +675,3 @@ export class CodeApplication extends Disposable {
  	async startup(): Promise<void> {
 -		this.logService.debug('Starting VS Code');
 +		this.logService.debug('Starting BradfordCode');
@@ -692,7 +692,7 @@ index 09971caf..4899063a 100644
 +	comment: 'This is used to know how often BradfordCode updates have failed.';
  };
 diff --git a/src/vs/server/node/server.cli.ts b/src/vs/server/node/server.cli.ts
-index 58ff362b..24124df3 100644
+index 4c4ca67c..d739ecbf 100644
 --- a/src/vs/server/node/server.cli.ts
 +++ b/src/vs/server/node/server.cli.ts
 @@ -93,3 +93,3 @@ export async function main(desc: ProductDescription, args: string[]): Promise<vo
@@ -706,10 +706,10 @@ index 58ff362b..24124df3 100644
 +	console.error('Unable to connect to BradfordCode server: ' + message);
  	console.error(err);
 diff --git a/src/vs/workbench/api/browser/mainThreadAuthentication.ts b/src/vs/workbench/api/browser/mainThreadAuthentication.ts
-index 2d619633..b1e69070 100644
+index 30137e70..1314b2aa 100644
 --- a/src/vs/workbench/api/browser/mainThreadAuthentication.ts
 +++ b/src/vs/workbench/api/browser/mainThreadAuthentication.ts
-@@ -567,3 +567,3 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
+@@ -582,3 +582,3 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
  				owner: 'TylerLeonhardt';
 -				comment: 'Used to see which extensions are using the VSCode client id override';
 +				comment: 'Used to see which extensions are using the BradfordCode client id override';
@@ -733,10 +733,10 @@ index 2785bbd7..c6d79962 100644
 +			ApiCommandArgument.String.with('viewId', 'Custom editor view id. This should be the viewType string for custom editors or the notebookType string for notebooks. Use \'default\' to use BradfordCode\'s default text editor'),
  			new ApiCommandArgument<vscode.ViewColumn | typeConverters.TextEditorOpenOptions | undefined, [vscode.ViewColumn?, ITextEditorOptions?] | undefined>('columnOrOptions', 'Either the column in which to open or editor options, see vscode.TextDocumentShowOptions',
 diff --git a/src/vs/workbench/api/common/extHostCommands.ts b/src/vs/workbench/api/common/extHostCommands.ts
-index 92e874dc..b34e04b5 100644
+index 52ea8314..750bc807 100644
 --- a/src/vs/workbench/api/common/extHostCommands.ts
 +++ b/src/vs/workbench/api/common/extHostCommands.ts
-@@ -464,4 +464,4 @@ export class ApiCommandArgument<V, O = V> {
+@@ -465,4 +465,4 @@ export class ApiCommandArgument<V, O = V> {
  	static readonly TypeHierarchyItem = new ApiCommandArgument('item', 'A type hierarchy item', v => v instanceof extHostTypes.TypeHierarchyItem, extHostTypeConverter.TypeHierarchyItem.from);
 -	static readonly TestItem = new ApiCommandArgument('testItem', 'A VS Code TestItem', v => v instanceof TestItemImpl, extHostTypeConverter.TestItem.from);
 -	static readonly TestProfile = new ApiCommandArgument('testProfile', 'A VS Code test profile', v => v instanceof extHostTypes.TestRunProfileBase, extHostTypeConverter.TestRunProfile.from);
@@ -744,10 +744,10 @@ index 92e874dc..b34e04b5 100644
 +	static readonly TestProfile = new ApiCommandArgument('testProfile', 'A BradfordCode test profile', v => v instanceof extHostTypes.TestRunProfileBase, extHostTypeConverter.TestRunProfile.from);
  
 diff --git a/src/vs/workbench/api/node/loopbackServer.ts b/src/vs/workbench/api/node/loopbackServer.ts
-index 1d32a486..ae5c4c7e 100644
+index 0afc1fbd..3aae09db 100644
 --- a/src/vs/workbench/api/node/loopbackServer.ts
 +++ b/src/vs/workbench/api/node/loopbackServer.ts
-@@ -190,7 +190,2 @@ export class LoopbackAuthServer implements ILoopbackServer {
+@@ -194,7 +194,2 @@ export class LoopbackAuthServer implements ILoopbackServer {
  		let backgroundImage = 'url(\'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAQABAMAAACNMzawAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAJ1BMVEUAAAD///9Qm8+ozed8tNsWer+Lvd9trNfF3u9Ck8slgsMzi8eZxeM/Qa6mAAAAAXRSTlMAQObYZgAAAAFiS0dEAf8CLd4AAAAHdElNRQfiCwYULRt0g+ZLAAAJRUlEQVR42u3SUY0CQRREUSy0hSZtBA+wfOwv4wAPYwAJSMAfAthkB6YD79HnKqikzmYjSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIk6cmKhg4AAASAABAAAkAACAABIAAEgAAQAAJAAAgAAaBvBVAjtV2wfFe1ogcA+0gdFgBoe60IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnAjAP/1MkWoAvBvAsUTqBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJAAgAASAABIAAEAACQAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKA7gDlbFwC6AijZagAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQDM2boA0BXAqAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIATARAAAkAAvF7N1hWArgBKthoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfBrAlK0bAF0BjBoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4EQABIAAEwOtN2boB0BVAyVYDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgE8DqNm6AtAVwKgBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAEwEQAAJAAPzd7xypMwDvBnAskToBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAkAACAABIAAEgAAQAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIBKBGarsAwK5qRQ8ANGYAACAABIAAEAACQAAIAAEgAASAABAAAkDfCUCSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJC3uDtO80OSql+i8AAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDE4LTExLTA2VDIwOjQ1OjI3KzAwOjAwEjLurQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAxOC0xMS0wNlQyMDo0NToyNyswMDowMGNvVhEAAAAZdEVYdFNvZnR3YXJlAEFkb2JlIEltYWdlUmVhZHlxyWU8AAAAAElFTkSuQmCC\')';
 -		if (this._appName === 'Visual Studio Code') {
 -			backgroundImage = 'url(\'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxtYXNrIGlkPSJtYXNrMCIgbWFzay10eXBlPSJhbHBoYSIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iMCIgeT0iMCIgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTE4MS41MzQgMjU0LjI1MkMxODUuNTY2IDI1NS44MjMgMTkwLjE2NCAyNTUuNzIyIDE5NC4yMzQgMjUzLjc2NEwyNDYuOTQgMjI4LjQwM0MyNTIuNDc4IDIyNS43MzggMjU2IDIyMC4xMzIgMjU2IDIxMy45ODNWNDIuMDE4MUMyNTYgMzUuODY4OSAyNTIuNDc4IDMwLjI2MzggMjQ2Ljk0IDI3LjU5ODhMMTk0LjIzNCAyLjIzNjgxQzE4OC44OTMgLTAuMzMzMTMyIDE4Mi42NDIgMC4yOTYzNDQgMTc3Ljk1NSAzLjcwNDE4QzE3Ny4yODUgNC4xOTEgMTc2LjY0NyA0LjczNDU0IDE3Ni4wNDkgNS4zMzM1NEw3NS4xNDkgOTcuMzg2MkwzMS4xOTkyIDY0LjAyNDdDMjcuMTA3OSA2MC45MTkxIDIxLjM4NTMgNjEuMTczNSAxNy41ODU1IDY0LjYzTDMuNDg5MzYgNzcuNDUyNUMtMS4xNTg1MyA4MS42ODA1IC0xLjE2Mzg2IDg4Ljk5MjYgMy40Nzc4NSA5My4yMjc0TDQxLjU5MjYgMTI4TDMuNDc3ODUgMTYyLjc3M0MtMS4xNjM4NiAxNjcuMDA4IC0xLjE1ODUzIDE3NC4zMiAzLjQ4OTM2IDE3OC41NDhMMTcuNTg1NSAxOTEuMzdDMjEuMzg1MyAxOTQuODI3IDI3LjEwNzkgMTk1LjA4MSAzMS4xOTkyIDE5MS45NzZMNzUuMTQ5IDE1OC42MTRMMTc2LjA0OSAyNTAuNjY3QzE3Ny42NDUgMjUyLjI2NCAxNzkuNTE5IDI1My40NjcgMTgxLjUzNCAyNTQuMjUyWk0xOTIuMDM5IDY5Ljg4NTNMMTE1LjQ3OSAxMjhMMTkyLjAzOSAxODYuMTE1VjY5Ljg4NTNaIiBmaWxsPSJ3aGl0ZSIvPgo8L21hc2s+CjxnIG1hc2s9InVybCgjbWFzazApIj4KPHBhdGggZD0iTTI0Ni45NCAyNy42MzgzTDE5NC4xOTMgMi4yNDEzOEMxODguMDg4IC0wLjY5ODMwMiAxODAuNzkxIDAuNTQxNzIxIDE3NS45OTkgNS4zMzMzMkwzLjMyMzcxIDE2Mi43NzNDLTEuMzIwODIgMTY3LjAwOCAtMS4zMTU0OCAxNzQuMzIgMy4zMzUyMyAxNzguNTQ4TDE3LjQzOTkgMTkxLjM3QzIxLjI0MjEgMTk0LjgyNyAyNi45NjgyIDE5NS4wODEgMzEuMDYxOSAxOTEuOTc2TDIzOS4wMDMgMzQuMjI2OUMyNDUuOTc5IDI4LjkzNDcgMjU1Ljk5OSAzMy45MTAzIDI1NS45OTkgNDIuNjY2N1Y0Mi4wNTQzQzI1NS45OTkgMzUuOTA3OCAyNTIuNDc4IDMwLjMwNDcgMjQ2Ljk0IDI3LjYzODNaIiBmaWxsPSIjMDA2NUE5Ii8+CjxnIGZpbHRlcj0idXJsKCNmaWx0ZXIwX2QpIj4KPHBhdGggZD0iTTI0Ni45NCAyMjguMzYyTDE5NC4xOTMgMjUzLjc1OUMxODguMDg4IDI1Ni42OTggMTgwLjc5MSAyNTUuNDU4IDE3NS45OTkgMjUwLjY2N0wzLjMyMzcxIDkzLjIyNzJDLTEuMzIwODIgODguOTkyNSAtMS4zMTU0OCA4MS42ODAyIDMuMzM1MjMgNzcuNDUyM0wxNy40Mzk5IDY0LjYyOThDMjEuMjQyMSA2MS4xNzMzIDI2Ljk2ODIgNjAuOTE4OCAzMS4wNjE5IDY0LjAyNDVMMjM5LjAwMyAyMjEuNzczQzI0NS45NzkgMjI3LjA2NSAyNTUuOTk5IDIyMi4wOSAyNTUuOTk5IDIxMy4zMzNWMjEzLjk0NkMyNTUuOTk5IDIyMC4wOTIgMjUyLjQ3OCAyMjUuNjk1IDI0Ni45NCAyMjguMzYyWiIgZmlsbD0iIzAwN0FDQyIvPgo8L2c+CjxnIGZpbHRlcj0idXJsKCNmaWx0ZXIxX2QpIj4KPHBhdGggZD0iTTE5NC4xOTYgMjUzLjc2M0MxODguMDg5IDI1Ni43IDE4MC43OTIgMjU1LjQ1OSAxNzYgMjUwLjY2N0MxODEuOTA0IDI1Ni41NzEgMTkyIDI1Mi4zODkgMTkyIDI0NC4wMzlWMTEuOTYwNkMxOTIgMy42MTA1NyAxODEuOTA0IC0wLjU3MTE3NSAxNzYgNS4zMzMyMUMxODAuNzkyIDAuNTQxMTY2IDE4OC4wODkgLTAuNzAwNjA3IDE5NC4xOTYgMi4yMzY0OEwyNDYuOTM0IDI3LjU5ODVDMjUyLjQ3NiAzMC4yNjM1IDI1NiAzNS44Njg2IDI1NiA0Mi4wMTc4VjIxMy45ODNDMjU2IDIyMC4xMzIgMjUyLjQ3NiAyMjUuNzM3IDI0Ni45MzQgMjI4LjQwMkwxOTQuMTk2IDI1My43NjNaIiBmaWxsPSIjMUY5Q0YwIi8+CjwvZz4KPGcgc3R5bGU9Im1peC1ibGVuZC1tb2RlOm92ZXJsYXkiIG9wYWNpdHk9IjAuMjUiPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTE4MS4zNzggMjU0LjI1MkMxODUuNDEgMjU1LjgyMiAxOTAuMDA4IDI1NS43MjIgMTk0LjA3NyAyNTMuNzY0TDI0Ni43ODMgMjI4LjQwMkMyNTIuMzIyIDIyNS43MzcgMjU1Ljg0NCAyMjAuMTMyIDI1NS44NDQgMjEzLjk4M1Y0Mi4wMTc5QzI1NS44NDQgMzUuODY4NyAyNTIuMzIyIDMwLjI2MzYgMjQ2Ljc4NCAyNy41OTg2TDE5NC4wNzcgMi4yMzY2NUMxODguNzM3IC0wLjMzMzI5OSAxODIuNDg2IDAuMjk2MTc3IDE3Ny43OTggMy43MDQwMUMxNzcuMTI5IDQuMTkwODMgMTc2LjQ5MSA0LjczNDM3IDE3NS44OTIgNS4zMzMzN0w3NC45OTI3IDk3LjM4NkwzMS4wNDI5IDY0LjAyNDVDMjYuOTUxNyA2MC45MTg5IDIxLjIyOSA2MS4xNzM0IDE3LjQyOTIgNjQuNjI5OEwzLjMzMzExIDc3LjQ1MjNDLTEuMzE0NzggODEuNjgwMyAtMS4zMjAxMSA4OC45OTI1IDMuMzIxNiA5My4yMjczTDQxLjQzNjQgMTI4TDMuMzIxNiAxNjIuNzczQy0xLjMyMDExIDE2Ny4wMDggLTEuMzE0NzggMTc0LjMyIDMuMzMzMTEgMTc4LjU0OEwxNy40MjkyIDE5MS4zN0MyMS4yMjkgMTk0LjgyNyAyNi45NTE3IDE5NS4wODEgMzEuMDQyOSAxOTEuOTc2TDc0Ljk5MjcgMTU4LjYxNEwxNzUuODkyIDI1MC42NjdDMTc3LjQ4OCAyNTIuMjY0IDE3OS4zNjMgMjUzLjQ2NyAxODEuMzc4IDI1NC4yNTJaTTE5MS44ODMgNjkuODg1MUwxMTUuMzIzIDEyOEwxOTEuODgzIDE4Ni4xMTVWNjkuODg1MVoiIGZpbGw9InVybCgjcGFpbnQwX2xpbmVhcikiLz4KPC9nPgo8L2c+CjxkZWZzPgo8ZmlsdGVyIGlkPSJmaWx0ZXIwX2QiIHg9Ii0yMS40ODk2IiB5PSI0MC41MjI1IiB3aWR0aD0iMjk4LjgyMiIgaGVpZ2h0PSIyMzYuMTQ5IiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+CjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ii8+CjxmZUNvbG9yTWF0cml4IGluPSJTb3VyY2VBbHBoYSIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDEyNyAwIi8+CjxmZU9mZnNldC8+CjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjEwLjY2NjciLz4KPGZlQ29sb3JNYXRyaXggdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAuMjUgMCIvPgo8ZmVCbGVuZCBtb2RlPSJvdmVybGF5IiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJlZmZlY3QxX2Ryb3BTaGFkb3ciLz4KPGZlQmxlbmQgbW9kZT0ibm9ybWFsIiBpbj0iU291cmNlR3JhcGhpYyIgaW4yPSJlZmZlY3QxX2Ryb3BTaGFkb3ciIHJlc3VsdD0ic2hhcGUiLz4KPC9maWx0ZXI+CjxmaWx0ZXIgaWQ9ImZpbHRlcjFfZCIgeD0iMTU0LjY2NyIgeT0iLTIwLjY3MzUiIHdpZHRoPSIxMjIuNjY3IiBoZWlnaHQ9IjI5Ny4zNDciIGZpbHRlclVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgY29sb3ItaW50ZXJwb2xhdGlvbi1maWx0ZXJzPSJzUkdCIj4KPGZlRmxvb2QgZmxvb2Qtb3BhY2l0eT0iMCIgcmVzdWx0PSJCYWNrZ3JvdW5kSW1hZ2VGaXgiLz4KPGZlQ29sb3JNYXRyaXggaW49IlNvdXJjZUFscGhhIiB0eXBlPSJtYXRyaXgiIHZhbHVlcz0iMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMTI3IDAiLz4KPGZlT2Zmc2V0Lz4KPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMTAuNjY2NyIvPgo8ZmVDb2xvck1hdHJpeCB0eXBlPSJtYXRyaXgiIHZhbHVlcz0iMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMC4yNSAwIi8+CjxmZUJsZW5kIG1vZGU9Im92ZXJsYXkiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9ImVmZmVjdDFfZHJvcFNoYWRvdyIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9ImVmZmVjdDFfZHJvcFNoYWRvdyIgcmVzdWx0PSJzaGFwZSIvPgo8L2ZpbHRlcj4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyIiB4MT0iMTI3Ljg0NCIgeTE9IjAuNjU5OTg4IiB4Mj0iMTI3Ljg0NCIgeTI9IjI1NS4zNCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSJ3aGl0ZSIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IndoaXRlIiBzdG9wLW9wYWNpdHk9IjAiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K\')';
@@ -765,14 +765,14 @@ index 0d713847..33749645 100644
 +	test('Opening a notebook results in BradfordCode firing the event onDidChangeActiveNotebookEditor twice #118470', function () {
  		let count = 0;
 diff --git a/src/vs/workbench/browser/actions/developerActions.ts b/src/vs/workbench/browser/actions/developerActions.ts
-index bceb9ef9..12dcb083 100644
+index c7141aee..f5d2879a 100644
 --- a/src/vs/workbench/browser/actions/developerActions.ts
 +++ b/src/vs/workbench/browser/actions/developerActions.ts
-@@ -763,3 +763,3 @@ class PolicyDiagnosticsAction extends Action2 {
+@@ -1283,3 +1283,3 @@ class PolicyDiagnosticsAction extends Action2 {
  
--		let content = '# VS Code Policy Diagnostics\n\n';
-+		let content = '# BradfordCode Policy Diagnostics\n\n';
- 		content += '*WARNING: This file may contain sensitive information.*\n\n';
+-		const report = '# VS Code Policy Diagnostics\n\n' +
++		const report = '# BradfordCode Policy Diagnostics\n\n' +
+ 			'*WARNING: This file may contain sensitive information.*\n\n' +
 diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/browser/actions/helpActions.ts
 index 8251c4a4..19bee6b0 100644
 --- a/src/vs/workbench/browser/actions/helpActions.ts
@@ -792,16 +792,16 @@ index e342f838..98e500bc 100644
 +		throw new Error('Unable to create the BradfordCode workbench more than once.');
  	} else {
 diff --git a/src/vs/workbench/browser/workbench.contribution.ts b/src/vs/workbench/browser/workbench.contribution.ts
-index 5024adde..78e6d589 100644
+index 832e4f23..d761d1f8 100644
 --- a/src/vs/workbench/browser/workbench.contribution.ts
 +++ b/src/vs/workbench/browser/workbench.contribution.ts
-@@ -840,3 +840,3 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
+@@ -856,3 +856,3 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
  		localize('profileName', "`${profileName}`: name of the profile in which the workspace is opened (e.g. Data Science (Profile)). Ignored if default profile is used."),
 -		localize('appName', "`${appName}`: e.g. VS Code."),
 +		localize('appName', "`${appName}`: e.g. BradfordCode."),
  		localize('remoteName', "`${remoteName}`: e.g. SSH"),
 diff --git a/src/vs/workbench/common/contextkeys.ts b/src/vs/workbench/common/contextkeys.ts
-index ae371f31..3c03de2b 100644
+index 4603a38c..f462f599 100644
 --- a/src/vs/workbench/common/contextkeys.ts
 +++ b/src/vs/workbench/common/contextkeys.ts
 @@ -40,3 +40,3 @@ export const EmbedderIdentifierContext = new RawContextKey<string | undefined>('
@@ -810,15 +810,15 @@ index ae371f31..3c03de2b 100644
 +export const InAutomationContext = new RawContextKey<boolean>('inAutomation', false, localize('inAutomation', "Whether BradfordCode is running under automation/smoke test"));
  
 diff --git a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-index b0348dbb..2a5ae09b 100644
+index 36e92272..f469f0a7 100644
 --- a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-@@ -961,3 +961,3 @@ configurationRegistry.registerConfiguration({
+@@ -1006,3 +1006,3 @@ configurationRegistry.registerConfiguration({
  				nls.localize('chat.mcp.access.none', "No access to MCP servers."),
 -				nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that VS Code is connected to."),
 +				nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that BradfordCode is connected to."),
  				nls.localize('chat.mcp.access.any', "Allow access to any installed MCP server.")
-@@ -988,3 +988,3 @@ configurationRegistry.registerConfiguration({
+@@ -1033,3 +1033,3 @@ configurationRegistry.registerConfiguration({
  						{
 -							key: 'chat.mcp.access.registry', value: nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that VS Code is connected to."),
 +							key: 'chat.mcp.access.registry', value: nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that BradfordCode is connected to."),
@@ -1009,7 +1009,7 @@ index 050dde41..edf24a48 100644
 +				description: localize2('configureLocaleDescription', "Changes the locale of BradfordCode based on installed language packs. Common languages include French, Chinese, Spanish, Japanese, German, Korean, and more.")
  			}
 diff --git a/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts b/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
-index dc231e44..c983379d 100644
+index 720e4d20..598a7553 100644
 --- a/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
 +++ b/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
 @@ -276,3 +276,3 @@ export class McpServersListView extends AbstractExtensionsListView<IWorkbenchMcp
@@ -1029,10 +1029,10 @@ index b533feb1..42539bde 100644
 +	`// ${nls.localize('doc', 'Open BradfordCode and run "Developer: Inspect Key Mappings (JSON)" from Command Palette.')}`,
  	``,
 diff --git a/src/vs/workbench/contrib/tasks/browser/abstractTaskService.ts b/src/vs/workbench/contrib/tasks/browser/abstractTaskService.ts
-index 18311c1c..bcaa6999 100644
+index a3079cd7..49d63e75 100644
 --- a/src/vs/workbench/contrib/tasks/browser/abstractTaskService.ts
 +++ b/src/vs/workbench/contrib/tasks/browser/abstractTaskService.ts
-@@ -3484,3 +3484,3 @@ export abstract class AbstractTaskService extends Disposable implements ITaskSer
+@@ -3488,3 +3488,3 @@ export abstract class AbstractTaskService extends Disposable implements ITaskSer
  						if (response.code && response.code === TerminateResponseCode.ProcessNotFound) {
 -							this._notificationService.error(nls.localize('TerminateAction.noProcess', 'The launched process doesn\'t exist anymore. If the task spawned background tasks exiting VS Code might result in orphaned processes.'));
 +							this._notificationService.error(nls.localize('TerminateAction.noProcess', 'The launched process doesn\'t exist anymore. If the task spawned background tasks exiting BradfordCode might result in orphaned processes.'));
@@ -1111,50 +1111,50 @@ index 72a329b8..2399d553 100644
 +			Write-Host "`e[0m`e[7m * `e[0;103m BradfordCode Python powershell activation failed with exit code $($activationError.Exception.Message) `e[0m"
  		}
 diff --git a/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts b/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts
-index 1486e2b2..3cdf07cc 100644
+index 80c5267d..c6bc9603 100644
 --- a/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts
 +++ b/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts
-@@ -323,3 +323,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -322,3 +322,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  	[TerminalSettingId.DetectLocale]: {
 -		markdownDescription: localize('terminal.integrated.detectLocale', "Controls whether to detect and set the `$LANG` environment variable to a UTF-8 compliant option since VS Code's terminal only supports UTF-8 encoded data coming from the shell."),
 +		markdownDescription: localize('terminal.integrated.detectLocale', "Controls whether to detect and set the `$LANG` environment variable to a UTF-8 compliant option since BradfordCode's terminal only supports UTF-8 encoded data coming from the shell."),
  		type: 'string',
-@@ -337,3 +337,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -336,3 +336,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  		markdownEnumDescriptions: [
 -			localize('terminal.integrated.gpuAcceleration.auto', "Let VS Code detect which renderer will give the best experience."),
 +			localize('terminal.integrated.gpuAcceleration.auto', "Let BradfordCode detect which renderer will give the best experience."),
  			localize('terminal.integrated.gpuAcceleration.on', "Enable GPU acceleration within the terminal."),
-@@ -425,3 +425,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -424,3 +424,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  			'terminal.integrated.commandsToSkipShell',
 -			"A set of command IDs whose keybindings will not be sent to the shell but instead always be handled by VS Code. This allows keybindings that would normally be consumed by the shell to act instead the same as when the terminal is not focused, for example `Ctrl+P` to launch Quick Open.\n\n&nbsp;\n\nMany commands are skipped by default. To override a default and pass that command's keybinding to the shell instead, add the command prefixed with the `-` character. For example add `-workbench.action.quickOpen` to allow `Ctrl+P` to reach the shell.\n\n&nbsp;\n\nThe following list of default skipped commands is truncated when viewed in Settings Editor. To see the full list, {1} and search for the first command from the list below.\n\n&nbsp;\n\nDefault Skipped Commands:\n\n{0}",
 +			"A set of command IDs whose keybindings will not be sent to the shell but instead always be handled by BradfordCode. This allows keybindings that would normally be consumed by the shell to act instead the same as when the terminal is not focused, for example `Ctrl+P` to launch Quick Open.\n\n&nbsp;\n\nMany commands are skipped by default. To override a default and pass that command's keybinding to the shell instead, add the command prefixed with the `-` character. For example add `-workbench.action.quickOpen` to allow `Ctrl+P` to reach the shell.\n\n&nbsp;\n\nThe following list of default skipped commands is truncated when viewed in Settings Editor. To see the full list, {1} and search for the first command from the list below.\n\n&nbsp;\n\nDefault Skipped Commands:\n\n{0}",
  			DEFAULT_COMMANDS_TO_SKIP_SHELL.sort().map(command => `- ${command}`).join('\n'),
-@@ -437,3 +437,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -436,3 +436,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  	[TerminalSettingId.AllowChords]: {
 -		markdownDescription: localize('terminal.integrated.allowChords', "Whether or not to allow chord keybindings in the terminal. Note that when this is true and the keystroke results in a chord it will bypass {0}, setting this to false is particularly useful when you want ctrl+k to go to your shell (not VS Code).", '`#terminal.integrated.commandsToSkipShell#`'),
 +		markdownDescription: localize('terminal.integrated.allowChords', "Whether or not to allow chord keybindings in the terminal. Note that when this is true and the keystroke results in a chord it will bypass {0}, setting this to false is particularly useful when you want ctrl+k to go to your shell (not BradfordCode).", '`#terminal.integrated.commandsToSkipShell#`'),
  		type: 'boolean',
-@@ -448,3 +448,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -447,3 +447,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.env.osx', "Object with environment variables that will be added to the VS Code process to be used by the terminal on macOS. Set to `null` to delete the environment variable."),
 +		markdownDescription: localize('terminal.integrated.env.osx', "Object with environment variables that will be added to the BradfordCode process to be used by the terminal on macOS. Set to `null` to delete the environment variable."),
  		type: 'object',
-@@ -457,3 +457,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -456,3 +456,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.env.linux', "Object with environment variables that will be added to the VS Code process to be used by the terminal on Linux. Set to `null` to delete the environment variable."),
 +		markdownDescription: localize('terminal.integrated.env.linux', "Object with environment variables that will be added to the BradfordCode process to be used by the terminal on Linux. Set to `null` to delete the environment variable."),
  		type: 'object',
-@@ -466,3 +466,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -465,3 +465,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.env.windows', "Object with environment variables that will be added to the VS Code process to be used by the terminal on Windows. Set to `null` to delete the environment variable."),
 +		markdownDescription: localize('terminal.integrated.env.windows', "Object with environment variables that will be added to the BradfordCode process to be used by the terminal on Windows. Set to `null` to delete the environment variable."),
  		type: 'object',
-@@ -485,3 +485,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -484,3 +484,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.windowsUseConptyDll', "Whether to use the conpty.dll (v1.25.260303002) shipped with VS Code, instead of the one bundled with Windows."),
 +		markdownDescription: localize('terminal.integrated.windowsUseConptyDll', "Whether to use the conpty.dll (v1.25.260303002) shipped with BradfordCode, instead of the one bundled with Windows."),
  		type: 'boolean',
-@@ -611,3 +611,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -610,3 +610,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.shellIntegration.enabled', "Determines whether or not shell integration is auto-injected to support features like enhanced command tracking and current working directory detection. \n\nShell integration works by injecting the shell with a startup script. The script gives VS Code insight into what is happening within the terminal.\n\nSupported shells:\n\n- Linux/macOS: bash, fish, pwsh, zsh\n - Windows: pwsh, git bash\n\nThis setting applies only when terminals are created, so you will need to restart your terminals for it to take effect.\n\n Note that the script injection may not work if you have custom arguments defined in the terminal profile, have enabled {1}, have a [complex bash `PROMPT_COMMAND`](https://code.visualstudio.com/docs/editor/integrated-terminal#_complex-bash-promptcommand), or other unsupported setup. To disable decorations, see {0}", '`#terminal.integrated.shellIntegration.decorationsEnabled#`', '`#editor.accessibilitySupport#`'),
 +		markdownDescription: localize('terminal.integrated.shellIntegration.enabled', "Determines whether or not shell integration is auto-injected to support features like enhanced command tracking and current working directory detection. \n\nShell integration works by injecting the shell with a startup script. The script gives BradfordCode insight into what is happening within the terminal.\n\nSupported shells:\n\n- Linux/macOS: bash, fish, pwsh, zsh\n - Windows: pwsh, git bash\n\nThis setting applies only when terminals are created, so you will need to restart your terminals for it to take effect.\n\n Note that the script injection may not work if you have custom arguments defined in the terminal profile, have enabled {1}, have a [complex bash `PROMPT_COMMAND`](https://code.visualstudio.com/docs/editor/integrated-terminal#_complex-bash-promptcommand), or other unsupported setup. To disable decorations, see {0}", '`#terminal.integrated.shellIntegration.decorationsEnabled#`', '`#editor.accessibilitySupport#`'),
@@ -1405,10 +1405,10 @@ index 168a3d01..fd76dda2 100644
 +						type: 'svg', altText: 'BradfordCode extension marketplace with featured language extensions', path: 'extensions.svg'
  					},
 diff --git a/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts b/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts
-index c1fb3e12..4bbf4eb3 100644
+index e60eaee8..e30208c0 100644
 --- a/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts
 +++ b/src/vs/workbench/contrib/welcomeOnboarding/browser/onboardingVariationA.ts
-@@ -182,3 +182,3 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
+@@ -181,3 +181,3 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
  		this.overlay.setAttribute('aria-modal', 'true');
 -		this.overlay.setAttribute('aria-label', localize('onboarding.a.aria', "Welcome to Visual Studio Code"));
 +		this.overlay.setAttribute('aria-label', localize('onboarding.a.aria', "Welcome to BradfordCode"));
