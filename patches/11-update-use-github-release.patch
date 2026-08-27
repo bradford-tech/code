@@ -59,7 +59,7 @@ index 4899063a..79985854 100644
  import { StorageScope, StorageTarget } from '../../storage/common/storage.js';
 @@ -23,3 +23,3 @@ import { IApplicationStorageMainService } from '../../storage/electron-main/stor
  import { ITelemetryService } from '../../telemetry/common/telemetry.js';
--import { AvailableForDownload, DisablementReason, IUpdateService, State, StateType, UpdateType } from '../common/update.js';
+-import { AvailableForDownload, DisablementReason, IUpdate, IUpdateService, State, StateType, UpdateType } from '../common/update.js';
 +import { Architecture, AvailableForDownload, DisablementReason, IUpdate, IUpdateService, Platform, State, StateType, Target, UpdateType } from '../common/update.js';
  
 @@ -32,12 +32,8 @@ export interface IUpdateURLOptions {
