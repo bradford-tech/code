@@ -812,7 +812,33 @@ jobs:
           if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
             git push origin --delete "$branch"
           fi
+          # Cut the branch from CURRENT origin/main, not this run's checked-out
+          # SHA. The build takes ~15 min and main moves under us — dependabot's
+          # action-pin bumps land in .github/workflows/. A branch cut from the
+          # stale SHA then carries workflow files that differ from the default
+          # branch's, and GITHUB_TOKEN is a GitHub App token with no `workflows`
+          # permission (there is no such key for `permissions:`, so it cannot be
+          # granted), which GitHub refuses at push time:
+          #   ! [remote rejected] release/X -> release/X (refusing to allow a
+          #     GitHub App to create or update workflow
+          #     `.github/workflows/claude-build-fix.yml` without `workflows`
+          #     permission)
+          # GitHub compares the branch's workflow files against the default
+          # branch, NOT the diff of the new commit — so a commit touching only
+          # the two files below is still rejected. Took run 33795347082 down
+          # after both builds had already passed. Regression test:
+          # ./dev/test-release-branch-race.sh
+          staged=$(mktemp -d)
+          cp upstream/stable.json "$staged/stable.json"
+          cp versions/stable/darwin-arm64/latest.json "$staged/latest.json"
+          git fetch --no-tags origin main
+          # Discards the working-tree edits made by the two steps above (saved
+          # in $staged); leaves untracked assets/ alone.
+          git reset --hard FETCH_HEAD
           git checkout -B "$branch"
+          cp "$staged/stable.json" upstream/stable.json
+          mkdir -p versions/stable/darwin-arm64
+          cp "$staged/latest.json" versions/stable/darwin-arm64/latest.json
           git add upstream/stable.json versions/stable/darwin-arm64/latest.json
           git commit -m "chore(release): ${RELEASE_VERSION} (vscode ${MS_TAG})"
           git push -u origin "$branch"
