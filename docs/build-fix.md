@@ -57,6 +57,46 @@ Historical failure classes, most→least common:
 - **Native module ABI mismatch** (`NODE_MODULE_VERSION`) after a Node version
   bump — check `.nvmrc` against upstream's `vscode/.nvmrc`.
 
+**Check which job failed before assuming it's a patch problem.** `release`
+failures look like build failures in the issue text but have nothing to do with
+patches. If `build` and `build-reh` are green, skip straight to the release job's
+log — see "Release-job failures" below.
+
+## Release-job failures
+
+The `release` job runs ~15 minutes after checkout, and **main moves under it**
+(dependabot bumps action pins inside `.github/workflows/`). Anything that cuts a
+branch from the run's own `GITHUB_SHA` is racing.
+
+`GITHUB_TOKEN` is a GitHub App token with **no `workflows` permission**, and
+there is no `workflows:` key for `permissions:` — it cannot be granted. So a push
+is rejected whenever the pushed branch's workflow files differ from the default
+branch's:
+
+```
+! [remote rejected] release/X -> release/X (refusing to allow a GitHub App to
+  create or update workflow `.github/workflows/claude-build-fix.yml` without
+  `workflows` permission)
+```
+
+The trap: GitHub compares the branch's workflow files **against the default
+branch**, not the diff of the commits being pushed. A release commit touching
+only `upstream/stable.json` + `latest.json` is still rejected, so the error names
+a file the commit never touched and reads like a permissions bug rather than the
+staleness bug it is. Cost run 33795347082 a full release after both builds had
+already passed.
+
+Fix pattern: `git fetch origin main` and cut the branch from `FETCH_HEAD`,
+re-applying generated files on top — never from the checked-out SHA. Guarded by
+`./dev/test-release-branch-race.sh`, which extracts and runs the real workflow
+step, so it cannot drift from the step it guards.
+
+**Fixing this class means editing a workflow file, which the fix-loop's own
+`claude[bot]` token may likewise be unable to push.** If the push is rejected,
+say so in the PR/issue and hand it to a human rather than routing the change
+somewhere else — a shell script called *from* the workflow still requires editing
+the workflow.
+
 ## Step 2 — Enumerate every broken patch
 
 ```bash
