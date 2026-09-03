@@ -247,7 +247,7 @@ index e9178ced..1b8d8a0b 100644
      },
 -    "node_modules/@vscode/vsce/node_modules/brace-expansion": {
 +    "node_modules/@vscodium/vsce/node_modules/brace-expansion": {
-       "version": "5.0.7",
+       "version": "5.0.9",
 @@ -2159,3 +2039,3 @@
      },
 -    "node_modules/@vscode/vsce/node_modules/chalk": {
