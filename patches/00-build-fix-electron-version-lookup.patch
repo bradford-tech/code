@@ -1,0 +1,18 @@
+diff --git a/build/lib/electronVersion.ts b/build/lib/electronVersion.ts
+index 809d06673ef..0a90e21f072 100644
+--- a/build/lib/electronVersion.ts
++++ b/build/lib/electronVersion.ts
+@@ -11,3 +11,12 @@ const root = path.dirname(path.dirname(import.meta.dirname));
+ export function getElectronVersion(): Record<string, string> {
+-	const npmrc = fs.readFileSync(path.join(root, '.npmrc'), 'utf8');
++	// prepare_vscode.sh swaps `.npmrc` for a build-specific one that omits the
++	// electron settings, and restores it from `.npmrc.bak` once `npm ci` is
++	// done. postinstall resolves the electron version inside that window, so
++	// fall back to the backup when the live file has no `target=`.
++	const npmrcPath = path.join(root, '.npmrc');
++	const backupPath = `${npmrcPath}.bak`;
++	let npmrc = fs.readFileSync(npmrcPath, 'utf8');
++	if (!/^target="(.*)"$/m.test(npmrc) && fs.existsSync(backupPath)) {
++		npmrc = fs.readFileSync(backupPath, 'utf8');
++	}
+ 	const electronVersion = /^target="(.*)"$/m.exec(npmrc)![1];

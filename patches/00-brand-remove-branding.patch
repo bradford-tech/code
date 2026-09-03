@@ -858,8 +858,8 @@ index 06a36292..eb54b3b5 100644
  						} else {
 @@ -322,3 +322,3 @@ export class PromptValidator {
  					case PromptsType.skill:
--						report(toMarker(localize('promptValidator.unknownAttribute.skill', "Attribute '{0}' is not supported by VS Code agents. Supported: {1}.", attribute.key, supportedNames.value), attribute.range, MarkerSeverity.Hint, [MarkerTag.Unnecessary]));
-+						report(toMarker(localize('promptValidator.unknownAttribute.skill', "Attribute '{0}' is not supported by BradfordCode agents. Supported: {1}.", attribute.key, supportedNames.value), attribute.range, MarkerSeverity.Hint, [MarkerTag.Unnecessary]));
+-						report(toMarker(localize('promptValidator.unknownAttribute.skill', "Attribute '{0}' is not supported by VS Code skills. Supported: {1}.", attribute.key, supportedNames.value), attribute.range, MarkerSeverity.Hint, [MarkerTag.Unnecessary]));
++						report(toMarker(localize('promptValidator.unknownAttribute.skill', "Attribute '{0}' is not supported by BradfordCode skills. Supported: {1}.", attribute.key, supportedNames.value), attribute.range, MarkerSeverity.Hint, [MarkerTag.Unnecessary]));
  						break;
 @@ -1226,3 +1226,3 @@ export function mapClaudeModels(claudeModelNames: readonly string[]): readonly s
  /**
