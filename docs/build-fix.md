@@ -185,6 +185,33 @@ If one exists and its author is `claude[bot]`, read its commits and comments,
 then **push to its branch** (`git fetch origin && git switch <headRefName>`).
 Duplicate PRs split the fix across orphan branches that can never merge.
 
+### When the existing fix PR is already green
+
+**A green fix PR does not stop the nightly cron.** The cron builds `main`, so it
+keeps failing with the original rejection until that PR *merges* — the new
+failure issue comment is expected, not evidence that the fix is wrong. Attempts
+2, 3 and 4 of the 1.137.0 incident were each spent re-diagnosing a build that
+#70 had already fixed.
+
+Confirm, don't rebuild:
+
+1. `gh pr checks <pr>` green, and `gh pr view <pr> --json mergeStateStatus,reviewDecision`
+   showing `BLOCKED` / `REVIEW_REQUIRED` → the blocker is human review, not the
+   patches.
+2. Check the failing run's `MS_COMMIT` against the branch's `upstream/stable.json`
+   pin. If they agree, you are not in the pin-swap trap and the patches are fine.
+3. Re-run the cheap integrity checks (dry-apply, deletion-set and token counts)
+   to confirm the branch has not gone stale, then **say so on the PR and stop.**
+
+Do not open a second PR, and do not push a no-op or cosmetic commit to look
+busy: that re-runs a ~25-minute build and can turn a green PR red, destroying
+the one asset the incident has.
+
+The loop terminates itself — at `FIX_ATTEMPT_CAP` (5) `claude-build-fix.yml`
+swaps `build-failure` → `needs-human`, after which the cron only records
+recurrences instead of dispatching. Adding `needs-human` early is the supported
+way to stop burning attempts on a fix that is already done.
+
 ## Loop contract
 
 - One PR per issue. The PR body must contain `Refs #<issue>` on its own line —
