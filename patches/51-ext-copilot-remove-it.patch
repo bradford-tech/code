@@ -15069,7 +15069,7 @@ index 1e6ce8a83af..18037da80d2 100644
 +// `GitHubTokenProvider` originally came from '@github/copilot-sdk' (removed in
 +// !!APP_NAME!!); alias it locally so this module keeps compiling.
 +/* eslint-disable @typescript-eslint/no-explicit-any */
-+type GitHubTokenProvider = any;
++type GitHubTokenProvider = (options: any) => Promise<any>;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { DeferredPromise, timeout } from '../../../../base/common/async.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotGitHubTelemetryForwarder.ts b/src/vs/platform/agentHost/node/copilot/copilotGitHubTelemetryForwarder.ts
