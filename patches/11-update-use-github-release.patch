@@ -1,5 +1,5 @@
 diff --git a/src/vs/platform/update/common/update.ts b/src/vs/platform/update/common/update.ts
-index 1afbb0d3..87c877fd 100644
+index 1afbb0d3985..87c877fdd98 100644
 --- a/src/vs/platform/update/common/update.ts
 +++ b/src/vs/platform/update/common/update.ts
 @@ -57,3 +57,4 @@ export const enum UpdateType {
@@ -49,7 +49,7 @@ index 1afbb0d3..87c877fd 100644
 +	| "user";
 \ No newline at end of file
 diff --git a/src/vs/platform/update/electron-main/abstractUpdateService.ts b/src/vs/platform/update/electron-main/abstractUpdateService.ts
-index 4899063a..79985854 100644
+index c21ebb1031c..6b541107658 100644
 --- a/src/vs/platform/update/electron-main/abstractUpdateService.ts
 +++ b/src/vs/platform/update/electron-main/abstractUpdateService.ts
 @@ -19,3 +19,3 @@ import { ILogService } from '../../log/common/log.js';
@@ -80,7 +80,7 @@ index 4899063a..79985854 100644
 -
 -	return url.toString();
  }
-@@ -98,2 +94,19 @@ function isCancellableState(type: StateType): boolean {
+@@ -103,2 +99,19 @@ interface IInternalUpdateState {
  
 +// Dotted-numeric version compare (release versions only — no prerelease or
 +// build-metadata handling needed for the normalized x.y.z strings compared
@@ -100,12 +100,12 @@ index 4899063a..79985854 100644
 +}
 +
  export abstract class AbstractUpdateService extends Disposable implements IUpdateService {
-@@ -535,3 +548,3 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
+@@ -655,3 +668,3 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
  
 -		if (mode === 'none') {
 +		if (mode === 'none' || mode === 'manual') {
  			return undefined;
-@@ -545,17 +558,37 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
+@@ -665,17 +678,37 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
  
 +		return this._isLatestVersion(url, false)
 +			.then((result) => {
@@ -156,7 +156,7 @@ index 4899063a..79985854 100644
 +			})
  	}
 diff --git a/src/vs/platform/update/electron-main/updateService.darwin.ts b/src/vs/platform/update/electron-main/updateService.darwin.ts
-index 90634472..7c10813c 100644
+index 90634472658..7c10813c1e5 100644
 --- a/src/vs/platform/update/electron-main/updateService.darwin.ts
 +++ b/src/vs/platform/update/electron-main/updateService.darwin.ts
 @@ -15,3 +15,3 @@ import { ILogService } from '../../log/common/log.js';
@@ -221,7 +221,7 @@ index 90634472..7c10813c 100644
 +			const context = await this.requestService.request({ url, headers, callSite: NO_FETCH_TELEMETRY }, CancellationToken.None);
  			const statusCode = context.res.statusCode;
 diff --git a/src/vs/platform/update/electron-main/updateService.linux.ts b/src/vs/platform/update/electron-main/updateService.linux.ts
-index dbb08664..68ce1182 100644
+index dbb08664cc5..68ce1182652 100644
 --- a/src/vs/platform/update/electron-main/updateService.linux.ts
 +++ b/src/vs/platform/update/electron-main/updateService.linux.ts
 @@ -5,3 +5,2 @@
@@ -296,7 +296,7 @@ index dbb08664..68ce1182 100644
 +
  				this.setState(State.Idle(UpdateType.Archive, message));
 diff --git a/src/vs/platform/update/electron-main/updateService.win32.ts b/src/vs/platform/update/electron-main/updateService.win32.ts
-index d4cb9d55..b4028b09 100644
+index d2a743fb317..326588a2aa4 100644
 --- a/src/vs/platform/update/electron-main/updateService.win32.ts
 +++ b/src/vs/platform/update/electron-main/updateService.win32.ts
 @@ -15,3 +15,2 @@ import { memoize } from '../../../base/common/decorators.js';
@@ -314,35 +314,24 @@ index d4cb9d55..b4028b09 100644
 +import { AvailableForDownload, DisablementReason, IUpdate, State, StateType, Target, UpdateType } from '../common/update.js';
 +import { AbstractUpdateService, createUpdateURL, IUpdateURLOptions } from './abstractUpdateService.js';
  import { getRelaunchArguments } from './updateRelaunchArguments.js';
-@@ -54,3 +53,9 @@ function getUpdateType(): UpdateType {
- 	if (typeof _updateType === 'undefined') {
--		_updateType = getWin32UpdateType();
-+		if (getWin32UpdateType() === UpdateType.Setup) {
-+			_updateType = UpdateType.Setup;
-+		} else if (path.basename(path.normalize(path.join(process.execPath, '..', '..'))) === 'Program Files') {
-+			_updateType = UpdateType.WindowsInstaller;
-+		} else {
-+			_updateType = UpdateType.Archive;
-+		}
- 	}
-@@ -190,3 +195,3 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -181,3 +180,3 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -		const fastUpdatesEnabled = this.configurationService.getValue('update.enableWindowsBackgroundUpdates');
-+		const fastUpdatesEnabled = getUpdateType() === UpdateType.Setup && this.configurationService.getValue('update.enableWindowsBackgroundUpdates');
++		const fastUpdatesEnabled = this.getUpdateType() === UpdateType.Setup && this.configurationService.getValue('update.enableWindowsBackgroundUpdates');
  		// GC for background updates in system setup happens via inno_setup since it requires elevated permissions.
-@@ -216,12 +221,22 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -207,12 +206,22 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -	protected buildUpdateFeedUrl(quality: string, commit: string, options?: IUpdateURLOptions): string | undefined {
 -		let platform = `win32-${process.arch}`;
 -
--		if (getUpdateType() === UpdateType.Archive) {
+-		if (this.getUpdateType() === UpdateType.Archive) {
 -			platform += '-archive';
 -		} else if (this.productService.target === 'user') {
 -			platform += '-user';
 +	protected buildUpdateFeedUrl(quality: string, _commit: string, _options?: IUpdateURLOptions): string {
 +		let target: Target;
 +
-+		switch (getUpdateType()) {
++		switch (this.getUpdateType()) {
 +			case UpdateType.Archive:
 +				target = "archive"
 +				break;
@@ -361,14 +350,14 @@ index d4cb9d55..b4028b09 100644
 -		return createUpdateURL(this.productService.updateUrl!, platform, quality, commit, options);
 +		return createUpdateURL(this.productService, quality, process.platform, process.arch, target);
  	}
-@@ -233,6 +248,2 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -224,6 +233,2 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -		const internalOrg = this.getInternalOrg();
 -		const background = !explicit && !internalOrg;
 -		const url = this.buildUpdateFeedUrl(this.quality, pendingCommit ?? this.productService.commit!, { background, internalOrg });
 -
  		// Only set CheckingForUpdates if we're not already in Overwriting state
-@@ -247,6 +258,10 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -238,6 +243,10 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -		const headers = getUpdateRequestHeaders(this.productService.version);
 -		const promise = this.requestService.request({ url, headers, callSite: 'updateService.win32.checkForUpdates' }, token)
@@ -382,13 +371,13 @@ index d4cb9d55..b4028b09 100644
 +
 +		const promise = this._isLatestVersion(url, explicit)
 +			.then((result) => {
- 				const updateType = getUpdateType();
-@@ -257,3 +272,3 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+ 				const updateType = this.getUpdateType();
+@@ -248,3 +257,3 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -				if (!update || !update.url || !update.version || !update.productVersion) {
 +				if(!result) {
  					// If we were checking for an overwrite update and found nothing newer,
-@@ -269,2 +284,9 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -260,2 +269,9 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 +				const { lastest, update } = result;
 +
@@ -398,12 +387,12 @@ index d4cb9d55..b4028b09 100644
 +				}
 +
  				if (updateType === UpdateType.Archive) {
-@@ -294,3 +316,3 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -285,3 +301,3 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -							return this.requestService.request({ url: update.url, callSite: 'updateService.win32.downloadUpdate' }, token)
 +							return this.requestService.request({ url: update.url, callSite: NO_FETCH_TELEMETRY }, token)
  								.then(context => {
-@@ -343,5 +365,5 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -334,5 +350,5 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  			})
 -			.then(undefined, err => {
 +			.then(undefined, (error) => {
@@ -411,7 +400,7 @@ index d4cb9d55..b4028b09 100644
 -				if (token.isCancellationRequested || isCancellationError(err)) {
 +				if (token.isCancellationRequested || isCancellationError(error)) {
  					return;
-@@ -349,7 +371,6 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -340,7 +356,6 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -				this.telemetryService.publicLog2<{ messageHash: string }, UpdateErrorClassification>('update:error', { messageHash: String(hash(String(err))) });
 -				this.logService.error(err);
@@ -421,14 +410,14 @@ index d4cb9d55..b4028b09 100644
 -				const message: string | undefined = explicit ? (err.message || err) : undefined;
 +				const message: string | undefined = explicit ? (error.message || error) : undefined;
  
-@@ -450,11 +471,21 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -446,11 +461,21 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
 -			const child = spawn(this.availableUpdate.packagePath,
 -				installerArgs,
 -				{
 +			let child: ChildProcess
 +
-+			const type = getUpdateType();
++			const type = this.getUpdateType();
 +			if (type == UpdateType.WindowsInstaller) {
 +				child = spawn('msiexec.exe', ['/i', this.availableUpdate.packagePath], {
  					detached: true,
@@ -451,3 +440,14 @@ index d4cb9d55..b4028b09 100644
 +				);
 +			}
  
+@@ -700,3 +725,9 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+ 	protected override getUpdateType(): UpdateType {
+-		return getWin32UpdateType(this.productService.target);
++		if (getWin32UpdateType(this.productService.target) === UpdateType.Setup) {
++			return UpdateType.Setup;
++		} else if (path.basename(path.normalize(path.join(process.execPath, '..', '..'))) === 'Program Files') {
++			return UpdateType.WindowsInstaller;
++		} else {
++			return UpdateType.Archive;
++		}
+ 	}
