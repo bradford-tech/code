@@ -52,6 +52,8 @@ Historical failure classes, most→least common:
   pair is the most fragile; 1.133.0 broke four patches at once).
 - **TypeScript errors in `compile-src`** from dangling references after our
   patches remove code upstream now uses.
+- **tsgo/tsb compiler divergence** — a type error in a *pristine upstream* file
+  that only the build-mode compile sees. See "Two type-checkers" below.
 - **`vscode-min-prepack` ASCII hygiene check** rejecting non-ASCII regex
   literals introduced by a patch.
 - **Native module ABI mismatch** (`NODE_MODULE_VERSION`) after a Node version
@@ -96,6 +98,60 @@ step, so it cannot drift from the step it guards.
 say so in the PR/issue and hand it to a human rather than routing the change
 somewhere else — a shell script called *from* the workflow still requires editing
 the workflow.
+
+## Two type-checkers (tsgo vs tsb)
+
+Since 1.138.0, `compileTask` in `build/lib/compilation.ts` type-checks **twice**:
+
+- `spawnTsgo(...)` — `@typescript/native`, the **Go** compiler, `--noEmit`. Logs
+  `Finished compile-src <tsconfig> with N errors`. Runs in dev *and* build mode.
+- the `tsb` emit pipeline — imports `typescript`, which `package.json` aliases to
+  `npm:@typescript/typescript6`, the **JS** compiler. Logs
+  `Finished compilation with N errors`. Build mode only (`transpileOnly: false`).
+
+**They disagree.** 1.138.0 shipped `codexProviderConfiguration.test.ts` with three
+`const client = new TestConfigurationClient(() => ...client.readCount...)`
+self-referential initializers: tsgo accepts them, the JS compiler rejects them
+with TS7022/TS7024 circularity. Upstream's dev loop and PR gate only run tsgo, so
+the defect shipped; our release build runs `vscode-min-prepack` →
+`compile-build-without-mangling` → the tsb path, and fails.
+
+Consequences for diagnosis:
+
+- A log containing **both** `compile-src ... with 0 errors` and
+  `compilation with N errors` is not a contradiction — it is this split. The
+  `compilation` line is the authoritative one.
+- `npm run compile` (and so `ci-verify.sh` **without** `--full`) uses the dev path
+  and **cannot reproduce this class**. You must use `--full`.
+- The failing file may be pristine upstream code that no patch touches. Grep
+  `patches/` for it before assuming we broke it.
+- Fix by adding the explicit annotation the JS compiler wants
+  (`const client: TestConfigurationClient = ...`); it is a no-op for tsgo.
+
+### Type-checking on a RAM-constrained runner
+
+`npm run gulp vscode-min-prepack` hardcodes `--max-old-space-size=8192`. On a
+runner with less than ~8 GB it OOMs (`FATAL ERROR: Ineffective mark-compacts`,
+`Abort trap: 6`, exit 134) **after ~60 min and before the reporter prints the
+type errors** — so a genuine type failure looks like an infra crash. Whole-program
+`tsc6 --noEmit` OOMs the same way.
+
+Bounded workaround — type-check just the suspect file's dependency closure with
+the same compiler the build uses:
+
+```bash
+cd vscode
+cat > src/tsconfig.check.json <<'EOF'
+{ "extends": "./tsconfig.json", "include": ["./typings", "<path to file>.ts"] }
+EOF
+node node_modules/typescript/bin/tsc6 -p src/tsconfig.check.json --noEmit
+rm src/tsconfig.check.json      # never commit it
+```
+
+Runs in minutes. The narrow program emits extra `TS2591`/`TS7006` noise because
+it drops most of the `types`/`typings` graph — that noise is **identical with and
+without your fix**, so always run it both ways and compare only the error codes
+you are targeting.
 
 ## Step 2 — Enumerate every broken patch
 
