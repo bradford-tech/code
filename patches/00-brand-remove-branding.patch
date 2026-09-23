@@ -613,8 +613,9 @@ diff --git a/src/vs/code/electron-main/app.ts b/src/vs/code/electron-main/app.ts
 index 8176a5b4..34672e29 100644
 --- a/src/vs/code/electron-main/app.ts
 +++ b/src/vs/code/electron-main/app.ts
-@@ -675,3 +675,3 @@ export class CodeApplication extends Disposable {
+@@ -694,4 +694,4 @@ export class CodeApplication extends Disposable {
  	async startup(): Promise<void> {
+ 		mark('code/willStartCodeApplication');
 -		this.logService.debug('Starting VS Code');
 +		this.logService.debug('Starting BradfordCode');
  		this.logService.debug(`from: ${this.environmentMainService.appRoot}`);
