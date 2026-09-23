@@ -1,3 +1,15 @@
+diff --git a/build/gulpfile.reh.ts b/build/gulpfile.reh.ts
+--- a/build/gulpfile.reh.ts
++++ b/build/gulpfile.reh.ts
+@@ -537,2 +537,8 @@ ['reh', 'reh-web'].forEach(type => {
+ 	const esbuildBundleMinTask = task.define(`esbuild-vscode-${type}-min`, () => runEsbuildBundle(`out-vscode-${type}-min`, true, true, target, `https://main.vscode-cdn.net/sourcemaps/${commit}/core`));
++	// Registered so build.sh can run the REH bundle on its own, between
++	// `vscode-min-prepack` and `vscode-reh-<platform>-<arch>-min-ci`. Upstream
++	// only reaches these through the full `vscode-reh-*-min` series, which would
++	// redo the extension compile the prepack stage has already done.
++	task.task(esbuildBundleTask);
++	task.task(esbuildBundleMinTask);
+ 
 diff --git a/build/gulpfile.vscode.ts b/build/gulpfile.vscode.ts
 --- a/build/gulpfile.vscode.ts
 +++ b/build/gulpfile.vscode.ts
