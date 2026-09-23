@@ -1,50 +1,36 @@
+diff --git a/build/gulpfile.reh.ts b/build/gulpfile.reh.ts
+--- a/build/gulpfile.reh.ts
++++ b/build/gulpfile.reh.ts
+@@ -537,2 +537,8 @@ ['reh', 'reh-web'].forEach(type => {
+ 	const esbuildBundleMinTask = task.define(`esbuild-vscode-${type}-min`, () => runEsbuildBundle(`out-vscode-${type}-min`, true, true, target, `https://main.vscode-cdn.net/sourcemaps/${commit}/core`));
++	// Registered so build.sh can run the REH bundle on its own, between
++	// `vscode-min-prepack` and `vscode-reh-<platform>-<arch>-min-ci`. Upstream
++	// only reaches these through the full `vscode-reh-*-min` series, which would
++	// redo the extension compile the prepack stage has already done.
++	task.task(esbuildBundleTask);
++	task.task(esbuildBundleMinTask);
+ 
 diff --git a/build/gulpfile.vscode.ts b/build/gulpfile.vscode.ts
-index 66514015..009e1d4d 100644
 --- a/build/gulpfile.vscode.ts
 +++ b/build/gulpfile.vscode.ts
-@@ -27,3 +27,3 @@ import { createAsar } from './lib/asar.ts';
- import minimist from 'minimist';
--import { compileBuildWithoutManglingTask, compileBuildWithManglingTask } from './gulpfile.compile.ts';
-+import { compileBuildWithoutManglingTask } from './gulpfile.compile.ts';
- import { compileNonNativeExtensionsBuildTask, compileNativeExtensionsBuildTask, compileAllExtensionsBuildTask, compileExtensionMediaBuildTask, cleanExtensionsBuildTask, compileCopilotExtensionBuildTask } from './gulpfile.extensions.ts';
-@@ -724,3 +724,3 @@ BUILD_TARGETS.forEach(buildTarget => {
- 			);
--			vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
-+			const prepackTask = task.define(`vscode${dashed(minified)}-prepack`, task.series(
- 				copyCodiconsTask,
-@@ -730,2 +730,6 @@ BUILD_TARGETS.forEach(buildTarget => {
- 				compileExtensionMediaBuildTask,
-+			));
-+			task.task(prepackTask);
+@@ -602,3 +602,3 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 		);
+-		const vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
++		const prepackTask = task.define(`vscode${dashed(minified)}-prepack`, task.series(
+ 			copyCodiconsTask,
+@@ -608,2 +608,6 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 			compileExtensionMediaBuildTask,
++		));
++		task.task(prepackTask);
 +
-+			const packingTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}-packing`, task.series(
- 				writeISODate('out-build'),
-@@ -734,5 +738,11 @@ BUILD_TARGETS.forEach(buildTarget => {
- 			));
--		} else {
-+			task.task(packingTask);
++		const packingTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}-packing`, task.series(
+ 			writeISODate('out-build'),
+@@ -612,2 +616,8 @@ BUILD_TARGETS.forEach(buildTarget => {
+ 		));
++		task.task(packingTask);
 +
- 			vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
--				minified ? compileBuildWithManglingTask : compileBuildWithoutManglingTask,
-+				prepackTask,
-+				packingTask,
-+			));
-+		} else {
-+			const prepackTask = task.define(`vscode${dashed(minified)}-prepack`, task.series(
-+				compileBuildWithoutManglingTask,
- 				cleanExtensionsBuildTask,
-@@ -742,4 +752,14 @@ BUILD_TARGETS.forEach(buildTarget => {
- 				minified ? minifyVSCodeTask : bundleVSCodeTask,
-+			));
-+			task.task(prepackTask);
-+
-+			const packingTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}-packing`, task.series(
- 				vscodeTaskCI
- 			));
-+			task.task(packingTask);
-+
-+			vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
-+				prepackTask,
-+				packingTask,
-+			));
- 		}
++		const vscodeTask = task.define(`vscode${dashed(platform)}${dashed(arch)}${dashed(minified)}`, task.series(
++			prepackTask,
++			packingTask,
++		));
+ 		task.task(vscodeTask);
