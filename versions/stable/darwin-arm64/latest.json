@@ -1,9 +1,9 @@
 {
-  "url": "https://github.com/bradford-tech/code/releases/download/1.139.06401/BradfordCode-darwin-arm64-1.139.06401.zip",
-  "name": "1.139.06401",
-  "version": "2242ebbb54efeeb0129e08e919e7e8d43033cd83",
-  "productVersion": "1.139.0",
-  "hash": "12bb5fa8f12434a41d7f2a336d06e4226ab8fe5173bc582a1fcfcd6418fcde43",
-  "timestamp": 1790185816868,
+  "url": "https://github.com/bradford-tech/code/releases/download/1.139.16443/BradfordCode-darwin-arm64-1.139.16443.zip",
+  "name": "1.139.16443",
+  "version": "04c0d99f4fb0d8afe6ce4f0c58e31e183ac3e4b1",
+  "productVersion": "1.139.1",
+  "hash": "564cea3d26f1447f42afc8162453a43249f87597d9d6c3ea1c38cf9fe9da2652",
+  "timestamp": 1790336824019,
   "supportsFastUpdate": true
 }
