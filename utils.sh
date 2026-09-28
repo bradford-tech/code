@@ -37,6 +37,34 @@ reh_url_template() {
   echo "https://github.com/${GH_REPO_PATH}/releases/download/\${version}\${release}/${APP_NAME_LC}-reh-\${os}-\${arch}-\${version}\${release}.tar.gz"
 }
 
+# --- Auto-update feed `productVersion` -----------------------------------
+#
+# patches/11-update-use-github-release.patch decides whether an update exists
+# by comparing the feed's `productVersion` against the running app's
+# `product.version` (RELEASE_VERSION, e.g. 1.139.06401 -> 1.139.6401 once the
+# updater strips leading zeros). The feed therefore has to carry the FULL
+# release version, not the bare upstream tag: with "1.139.1" in the feed an
+# installed 1.139.06401 ranks *newer* (6401 > 1) and every release that only
+# bumps upstream's patch level is invisible to "Check for Updates...".
+#
+# This is VSCodium's transformVersion(): 4-part form, leading zeros dropped
+# from the build component, trailing ".0" the updater strips before comparing.
+#   1.139.16443 -> 1.139.16443.0   (updater compares 1.139.16443)
+# dev/test-update-feed-version.sh asserts the round-trip; run it after
+# touching this or the "Write versions/.../latest.json" workflow step.
+
+update_feed_product_version() {
+  local version parts
+  version="${1%-insider}"
+  IFS='.' read -r -a parts <<< "${version}"
+  parts[2]="$(( 10#${parts[2]} ))"
+  version="${parts[0]}.${parts[1]}.${parts[2]}.0"
+  if [[ "${1}" == *-insider ]]; then
+    version="${version}-insider"
+  fi
+  echo "${version}"
+}
+
 if [[ "${VSCODE_QUALITY}" == "insider" ]]; then
   GLOBAL_DIRNAME="${GLOBAL_DIRNAME:-"${APP_NAME}"}-Insiders"
 else
