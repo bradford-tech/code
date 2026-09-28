@@ -52,6 +52,14 @@ reh_url_template() {
 #   1.139.16443 -> 1.139.16443.0   (updater compares 1.139.16443)
 # dev/test-update-feed-version.sh asserts the round-trip; run it after
 # touching this or the "Write versions/.../latest.json" workflow step.
+#
+# Known gap (inherited from VSCodium, not fixed here): the build component is
+# MS_TAG's patch digit + get_repo.sh's TIME_PATCH (day-of-year * 24 + hour,
+# 4-digit padded). TIME_PATCH resets every January 1st, so a January build of
+# an UNCHANGED upstream tag (1.139.10024) ranks below a December one
+# (1.139.18783) and "Check for Updates..." goes quiet with the same
+# `found: X, current: Y` log line as the bug above. Upstream's monthly minor
+# bump usually papers over it; if it bites, that is why.
 
 update_feed_product_version() {
   local version parts

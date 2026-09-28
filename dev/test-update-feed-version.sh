@@ -52,10 +52,12 @@ normalize_current() {
 }
 
 # Dotted-numeric compare like the updater's compareVersions(): prints -1/0/1.
+# Like the original, anything from the first '-' on (e.g. "-insider") is
+# dropped before splitting on '.'.
 compare_versions() {
   local -a a b
-  IFS='.' read -r -a a <<< "$1"
-  IFS='.' read -r -a b <<< "$2"
+  IFS='.' read -r -a a <<< "${1%%-*}"
+  IFS='.' read -r -a b <<< "${2%%-*}"
   local i n=${#a[@]}
   (( ${#b[@]} > n )) && n=${#b[@]}
   for (( i = 0; i < n; i++ )); do
@@ -93,6 +95,10 @@ assert_eq "1" "$( compare_versions "${installed}" "$( normalize_fetched "1.139.1
 assert_eq "0" "$( compare_versions "$( normalize_current "1.139.16443" )" "${fetched}" )" \
   "feed equals the installed build once updated (no re-offer)"
 
+# The prerelease marker is ignored by the compare, as in the original.
+assert_eq "-1" "$( compare_versions "1.139.6401-insider" "1.139.16443-insider" )" \
+  "compare ignores the -insider marker"
+
 # --- committed feed -------------------------------------------------------
 FEED="versions/stable/darwin-arm64/latest.json"
 feed_name="$( jq -r '.name' "${FEED}" )"
@@ -118,7 +124,7 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
-if grep -q '^\s*\. utils\.sh' <<< "${step}"; then
+if grep -q '^[[:space:]]*\. utils\.sh' <<< "${step}"; then
   echo "ok   - workflow step sources utils.sh"
 else
   echo "FAIL - workflow step must source utils.sh to get the helper"
