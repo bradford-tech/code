@@ -117,10 +117,23 @@ else
   echo "ok   - workflow does not write \$MS_TAG into productVersion"
 fi
 
-if grep -q 'update_feed_product_version' <<< "${step}"; then
+# Grep the code, not the step's own comment, which names the helper too.
+code="$( grep -v '^[[:space:]]*#' <<< "${step}" )"
+
+if grep -q 'product_version=\$( update_feed_product_version "\${RELEASE_VERSION}" )' <<< "${code}"; then
   echo "ok   - workflow derives productVersion via update_feed_product_version"
 else
   echo "FAIL - workflow must derive productVersion via update_feed_product_version"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
+# Pin what jq actually consumes, not only what it must not consume: a partial
+# revert to "${MS_TAG}" or any other expression would slip past the negative
+# assertion above.
+if grep -q -- '--arg productVersion "\$product_version"' <<< "${code}"; then
+  echo "ok   - jq reads productVersion from the helper's output"
+else
+  echo "FAIL - jq must read productVersion from \$product_version"
   FAILURES=$(( FAILURES + 1 ))
 fi
 

@@ -49,6 +49,9 @@ reh_url_template() {
 #
 # This is VSCodium's transformVersion(): 4-part form, leading zeros dropped
 # from the build component, trailing ".0" the updater strips before comparing.
+# (update_version.sh carries the unused VSCodium original of the same
+# function; nothing in this repo invokes that script. This copy is the one CI
+# uses — fix it here.)
 #   1.139.16443 -> 1.139.16443.0   (updater compares 1.139.16443)
 # dev/test-update-feed-version.sh asserts the round-trip; run it after
 # touching this or the "Write versions/.../latest.json" workflow step.
