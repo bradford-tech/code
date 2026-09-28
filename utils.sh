@@ -37,6 +37,45 @@ reh_url_template() {
   echo "https://github.com/${GH_REPO_PATH}/releases/download/\${version}\${release}/${APP_NAME_LC}-reh-\${os}-\${arch}-\${version}\${release}.tar.gz"
 }
 
+# --- Auto-update feed `productVersion` -----------------------------------
+#
+# patches/11-update-use-github-release.patch decides whether an update exists
+# by comparing the feed's `productVersion` against the running app's
+# `product.version` (RELEASE_VERSION, e.g. 1.139.06401 -> 1.139.6401 once the
+# updater strips leading zeros). The feed therefore has to carry the FULL
+# release version, not the bare upstream tag: with "1.139.1" in the feed an
+# installed 1.139.06401 ranks *newer* (6401 > 1) and every release that only
+# bumps upstream's patch level is invisible to "Check for Updates...".
+#
+# This is VSCodium's transformVersion(): 4-part form, leading zeros dropped
+# from the build component, trailing ".0" the updater strips before comparing.
+# (update_version.sh carries the unused VSCodium original of the same
+# function; nothing in this repo invokes that script. This copy is the one CI
+# uses — fix it here.)
+#   1.139.16443 -> 1.139.16443.0   (updater compares 1.139.16443)
+# dev/test-update-feed-version.sh asserts the round-trip; run it after
+# touching this or the "Write versions/.../latest.json" workflow step.
+#
+# Known gap (inherited from VSCodium, not fixed here): the build component is
+# MS_TAG's patch digit + get_repo.sh's TIME_PATCH (day-of-year * 24 + hour,
+# 4-digit padded). TIME_PATCH resets every January 1st, so a January build of
+# an UNCHANGED upstream tag (1.139.10024) ranks below a December one
+# (1.139.18783) and "Check for Updates..." goes quiet with the same
+# `found: X, current: Y` log line as the bug above. Upstream's monthly minor
+# bump usually papers over it; if it bites, that is why.
+
+update_feed_product_version() {
+  local version parts
+  version="${1%-insider}"
+  IFS='.' read -r -a parts <<< "${version}"
+  parts[2]="$(( 10#${parts[2]} ))"
+  version="${parts[0]}.${parts[1]}.${parts[2]}.0"
+  if [[ "${1}" == *-insider ]]; then
+    version="${version}-insider"
+  fi
+  echo "${version}"
+}
+
 if [[ "${VSCODE_QUALITY}" == "insider" ]]; then
   GLOBAL_DIRNAME="${GLOBAL_DIRNAME:-"${APP_NAME}"}-Insiders"
 else

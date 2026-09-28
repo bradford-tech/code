@@ -774,11 +774,20 @@ jobs:
             echo "::error::Expected a 13-digit epoch-ms timestamp from date +%s%3N, got '${timestamp_ms}'"
             exit 1
           fi
+          # `productVersion` is what the patched updater compares against the
+          # installed app's product.version (RELEASE_VERSION). It MUST be the
+          # full release version in VSCodium's 4-part form (1.139.16443.0), NOT
+          # the bare upstream tag: with "1.139.1" here an installed 1.139.06401
+          # ranked newer (6401 > 1) and "Check for Updates..." said nothing was
+          # available for every patch-level upstream bump. Helper + regression
+          # test: utils.sh update_feed_product_version, dev/test-update-feed-version.sh.
+          . utils.sh
+          product_version=$( update_feed_product_version "${RELEASE_VERSION}" )
           jq -n \
             --arg url "https://github.com/bradford-tech/code/releases/download/${RELEASE_VERSION}/BradfordCode-darwin-arm64-${RELEASE_VERSION}.zip" \
             --arg name "$RELEASE_VERSION" \
             --arg version "$MS_COMMIT" \
-            --arg productVersion "$MS_TAG" \
+            --arg productVersion "$product_version" \
             --arg hash "$ZIP_SHA256" \
             --argjson timestamp "$timestamp_ms" \
             '{url: $url, name: $name, version: $version, productVersion: $productVersion, hash: $hash, timestamp: $timestamp, supportsFastUpdate: true}' \

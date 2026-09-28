@@ -114,7 +114,9 @@ Set these at `Settings → Secrets and variables → Actions`. The workflow can'
 
 ### How auto-update works
 
-The build embeds an `updateUrl` of `https://raw.githubusercontent.com/bradford-tech/code/main/versions`. Installed apps poll this base + `stable/darwin-arm64/latest.json` and download the DMG referenced by `url` if its `version` (commit sha) differs from the running app's commit. The release workflow rewrites that JSON every release.
+The build embeds an `updateUrl` of `https://raw.githubusercontent.com/bradford-tech/code/main/versions`. Installed apps poll this base + `stable/darwin-arm64/latest.json`, compare its `productVersion` against the running app's version, and hand the ZIP referenced by `url` to Squirrel.Mac when the feed is newer. The release workflow rewrites that JSON every release.
+
+`productVersion` must be the full release version in VSCodium's 4-part form (`1.139.16443.0`), never the bare upstream tag. The updater strips leading zeros from the installed version (`1.139.06401` → `1.139.6401`) and the trailing `.0` from the feed, then compares numerically. A feed of `1.139.1` would rank *below* an installed `1.139.06401`, so patch-level upstream bumps would never be offered. `utils.sh` `update_feed_product_version` produces the right form; `./dev/test-update-feed-version.sh` locks it down.
 
 ### What to do when a build fails
 
