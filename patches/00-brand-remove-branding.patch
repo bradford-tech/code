@@ -591,10 +591,10 @@ index 32a93fe3..aab9f635 100644
 -					progress.report({ message: 'Installing VSCode Server' });
 +					progress.report({ message: 'Installing BradfordCode Server' });
  					serverLocation = await downloadAndUnzipVSCodeServer(updateUrl, commit, quality, serverBin, m => outputChannel.appendLine(m));
-diff --git a/src/main.ts b/src/main.ts
+diff --git a/src/mainImpl.ts b/src/mainImpl.ts
 index 085290ba..6164e371 100644
---- a/src/main.ts
-+++ b/src/main.ts
+--- a/src/mainImpl.ts
++++ b/src/mainImpl.ts
 @@ -422,3 +422,3 @@ function createDefaultArgvConfigSync(argvConfigPath: string): void {
  		const defaultArgvConfigContent = [
 -			'// This configuration file allows you to pass permanent command line arguments to VS Code.',

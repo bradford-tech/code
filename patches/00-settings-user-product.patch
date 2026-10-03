@@ -34,10 +34,10 @@ index b643e34..2f228ef 100644
 +	}
 +}
 \ No newline at end of file
-diff --git a/src/main.ts b/src/main.ts
+diff --git a/src/mainImpl.ts b/src/mainImpl.ts
 index ec188d0..0160be6 100644
---- a/src/main.ts
-+++ b/src/main.ts
+--- a/src/mainImpl.ts
++++ b/src/mainImpl.ts
 @@ -8,2 +8,3 @@ import * as fs from 'original-fs';
  import * as os from 'node:os';
 +import { createRequire } from 'node:module';
