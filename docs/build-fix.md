@@ -268,6 +268,34 @@ swaps `build-failure` → `needs-human`, after which the cron only records
 recurrences instead of dispatching. Adding `needs-human` early is the supported
 way to stop burning attempts on a fix that is already done.
 
+## Non-interactive session rules (CI loop)
+
+The fix session runs headless (`claude -p` via the Agent SDK). Two things
+follow that do not hold in an interactive terminal:
+
+- **Ending a turn ends the run.** There is no user to answer a question or
+  say "continue". The SDK returns a *successful* result the moment the
+  assistant stops calling tools, and the workflow cannot tell that from a
+  finished fix.
+- **Background tasks never report back.** Completion notifications are not
+  delivered in headless mode, and the background shell is killed about five
+  seconds after the result returns. A turn that ends "waiting for the
+  notification" has silently thrown the whole session away.
+
+Issue #96 spent two attempts exactly this way: each rebased all six broken
+patches in ~7 minutes, started `ci-verify.sh` in the background, ended the
+turn to wait, and the job finished green with nothing pushed. The workflow
+now sets `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` (no `run_in_background`,
+no auto-backgrounding of commands that hit their timeout) and
+`BASH_MAX_TIMEOUT_MS=5400000` so one foreground `ci-verify.sh` call can run
+to completion. Run long commands in the foreground with an explicit timeout;
+if something must outlive one tool call, `nohup ... > log 2>&1 &` and poll
+the log with `sleep` loops. Never end a turn before the PR exists.
+
+The "Summarize Claude session" step prints a redacted outline of the session
+(assistant prose, tool names, truncated commands) to the job log, so the next
+green-but-empty run can be read without reproducing it locally.
+
 ## Loop contract
 
 - One PR per issue. The PR body must contain `Refs #<issue>` on its own line —
