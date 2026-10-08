@@ -412,6 +412,20 @@ jobs:
         with:
           allowed_bots: "*"
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The settings file also carries two env vars that exist because of
+          # issue #96, where two attempts each rebased every broken patch and
+          # then produced nothing:
+          #   CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 — this is a headless run.
+          #     Background-task completion notifications are never delivered
+          #     in `-p` mode, and the SDK returns a *successful* result the
+          #     moment Claude ends a turn. Both attempts launched the 20–30 min
+          #     ci-verify as a background task, ended the turn to "wait for the
+          #     notification", and the job finished green with nothing pushed.
+          #     Disabling the feature removes `run_in_background` from the Bash
+          #     tool and stops auto-backgrounding of commands that hit their
+          #     timeout, so the only way to run ci-verify is the foreground.
+          #   BASH_MAX_TIMEOUT_MS=5400000 — raises the foreground ceiling from
+          #     10 min to 90 so that one ci-verify call can actually finish.
           settings: .github/claude-code-settings.json
           # The superpowers plugin is published via the
           # `claude-plugins-official` marketplace at
@@ -508,6 +522,18 @@ jobs:
             passed and what didn't in the PR body — never imply a verified
             fix without a passing run.
 
+            THIS SESSION IS NON-INTERACTIVE. Nobody can answer a question,
+            and the run ends the moment you end a turn — so never end a turn
+            to "wait" for anything. Background tasks are disabled here on
+            purpose: on issue #96 two attempts rebased every patch, launched
+            ci-verify in the background, ended the turn to wait for a
+            completion notification that headless mode never delivers, and
+            the job finished green with nothing pushed. Run ci-verify in the
+            FOREGROUND with an explicit long timeout (the Bash tool's ceiling
+            here is 90 minutes). If a command must outlive one tool call,
+            start it with `nohup ... > log 2>&1 &` and poll the log with
+            `sleep` loops until it finishes.
+
             Two rules that have each cost an attempt before:
               - Pin consistency: a PR build always builds the version pinned
                 in upstream/stable.json. If this fix targets a newer upstream
@@ -579,6 +605,55 @@ jobs:
           )"
           echo "::warning::Attempt ${ATTEMPT_NUM} voided (infra death at ${num_turns} turns); not counted against FIX_ATTEMPT_CAP"
 
+      # The action hides Claude's transcript ("full output hidden for
+      # security") and uploads nothing, so a run that ends green without a PR
+      # is undiagnosable from the Actions UI: issue #96 burned two attempts
+      # before a local reproduction showed Claude had backgrounded ci-verify
+      # and ended its turn. Print a redacted outline to the job log instead:
+      # assistant prose, tool names and the first 200 chars of each command.
+      # Tool RESULTS are deliberately omitted — that is where `git remote -v`
+      # would echo the auth token — and GitHub's secret masking still applies
+      # to the log on top. Guarded by ./dev/test-fix-run-summary.sh.
+      - name: Summarize Claude session
+        if: always() && steps.count.outputs.proceed == 'true'
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          set -eo pipefail
+          if [ -z "$EXECUTION_FILE" ] || [ ! -f "$EXECUTION_FILE" ]; then
+            echo "::warning::No Claude execution file recorded; cannot summarize the session"
+            exit 0
+          fi
+          echo "::group::Claude session outline"
+          jq -r '
+            (if type == "array" then .[] else . end)
+            | select(.type == "assistant" or .type == "result")
+            | if .type == "result" then
+                "== result: subtype=\(.subtype) is_error=\(.is_error) turns=\(.num_turns) duration_ms=\(.duration_ms)"
+              else
+                .message.content[]?
+                | if .type == "text" then
+                    "-- " + (.text | gsub("\n"; " ") | .[0:400])
+                  elif .type == "tool_use" then
+                    "[\(.name)] "
+                    + ((.input.command // .input.file_path // .input.description // .input.prompt // "")
+                       | tostring | gsub("\n"; " ") | .[0:200])
+                  else empty end
+              end
+          ' "$EXECUTION_FILE"
+          echo "::endgroup::"
+          # The exact failure mode behind issue #96, surfaced on the run page
+          # in case the kill switch is ever dropped from the settings file.
+          pending=$(jq -r '
+            [ (if type == "array" then .[] else . end)
+              | select(.type == "assistant")
+              | .message.content[]?
+              | select(.type == "tool_use" and .input.run_in_background == true)
+            ] | length' "$EXECUTION_FILE")
+          if [ "$pending" -gt 0 ]; then
+            echo "::warning::Claude started $pending background task(s). Headless runs never deliver their completion notification; a turn that ends waiting for one ends the run. Check the settings file still sets CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1."
+          fi
+
       # Claude opens the fix PR itself, so there is no `gh pr create` here to
       # hang an --assignee off; assign afterwards instead.
       #
@@ -605,7 +680,9 @@ jobs:
                    | .[0].number // empty')
 
           if [ -z "$pr" ]; then
-            echo "::notice::No open PR references \"Refs #${ISSUE}\"; nothing to assign"
+            # A warning, not a notice: a green run with no PR is the symptom
+            # of issue #96, and it must stand out on the run page.
+            echo "::warning::No open PR references \"Refs #${ISSUE}\"; this attempt produced nothing to assign"
             exit 0
           fi
 
