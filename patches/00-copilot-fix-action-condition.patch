@@ -1,44 +1,48 @@
 diff --git a/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts b/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts
-index 5a064adc..14e66e95 100644
+index 7b9e3b0b..3b868508 100644
 --- a/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts
 +++ b/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts
-@@ -1224,3 +1224,3 @@ export function registerChatActions() {
+@@ -1236,3 +1236,3 @@ export function registerChatActions() {
  				precondition: ContextKeyExpr.and(
 -					ChatContextKeys.Setup.installed,
 +					ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  					ChatContextKeys.Setup.disabled.negate(),
 diff --git a/src/vs/workbench/contrib/chat/browser/actions/chatContextActions.ts b/src/vs/workbench/contrib/chat/browser/actions/chatContextActions.ts
-index 5c0d324b..c3ba615a 100644
+index 7f368a27..a1544c7c 100644
 --- a/src/vs/workbench/contrib/chat/browser/actions/chatContextActions.ts
 +++ b/src/vs/workbench/contrib/chat/browser/actions/chatContextActions.ts
-@@ -319,3 +319,4 @@ class AttachSelectionToChatAction extends Action2 {
+@@ -321,3 +321,4 @@ class AttachSelectionToChatAction extends Action2 {
  						ResourceContextKey.Scheme.isEqualTo(Schemas.vscodeUserData)
 -					)
 +					),
 +					ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  				)
 diff --git a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-index b0348dbb..3f3b81aa 100644
+index d00df7a6..698cd57c 100644
 --- a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-@@ -2100,3 +2100,3 @@ configurationRegistry.registerConfiguration({
+@@ -2354,3 +2354,3 @@ configurationRegistry.registerConfiguration({
  			description: nls.localize('chat.disableAIFeatures', "Disable and hide built-in AI features provided by GitHub Copilot, including chat and inline suggestions."),
 -			default: false,
 +			default: true,
  			scope: ConfigurationScope.WINDOW,
 diff --git a/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts b/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
-index 8fb472b3..16cff2b1 100644
+index 89200842..c4a7cffb 100644
 --- a/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
-@@ -74,2 +74,3 @@ const chatViewDescriptor: IViewDescriptor = {
+@@ -76,2 +76,3 @@ const chatViewDescriptor: IViewDescriptor = {
  			ContextKeyExpr.and(
 +			ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  				ChatContextKeys.Setup.hidden.negate(),
 diff --git a/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupContributions.ts b/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupContributions.ts
-index ce20f7bb..1152196d 100644
+index dafd354c..b6e7599f 100644
 --- a/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupContributions.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupContributions.ts
-@@ -233,8 +233,9 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
+@@ -73,2 +73,3 @@ const SIGN_IN_TITLE_BAR_ACTION_ID = 'workbench.action.chat.signInIndicator';
+ export const ChatSetupFromAccountsWhen = ContextKeyExpr.and(
++	ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
+ 	ChatContextKeys.Setup.hidden.negate(),
+@@ -241,8 +242,9 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
  					f1: true,
 -					precondition: ContextKeyExpr.or(
 -						ChatContextKeys.Setup.hidden,
@@ -54,27 +58,23 @@ index ce20f7bb..1152196d 100644
 +						ChatContextKeys.Setup.completed,
 +						ChatContextKeys.Entitlement.canSignUp.negate()
  					)
-@@ -375,2 +376,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
- 						when: ContextKeyExpr.and(
-+							ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
- 							ChatContextKeys.Setup.hidden.negate(),
-@@ -408,2 +410,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
+@@ -412,2 +414,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
  						when: ContextKeyExpr.and(
 +							ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  							IsWebContext.negate(),
-@@ -458,2 +461,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
+@@ -462,2 +465,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
  					precondition: ContextKeyExpr.and(
 +						ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  						ChatContextKeys.Setup.hidden.negate(),
-@@ -523,2 +527,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
+@@ -530,2 +534,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
  					precondition: ContextKeyExpr.and(
 +						ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  						ChatContextKeys.Setup.hidden.negate(),
-@@ -617,2 +622,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
+@@ -628,2 +633,3 @@ export class ChatSetupContribution extends Disposable implements IWorkbenchContr
  		const internalGenerateCodeContext = ContextKeyExpr.and(
 +			ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  			ChatContextKeys.Setup.hidden.negate(),
-@@ -882,3 +888,7 @@ export class ChatTeardownContribution extends Disposable implements IWorkbenchCo
+@@ -893,3 +899,7 @@ export class ChatTeardownContribution extends Disposable implements IWorkbenchCo
  					category: CHAT_CATEGORY,
 -					precondition: ContextKeyExpr.and(ChatContextKeys.Setup.hidden.negate(), ChatContextKeys.Setup.disabledInWorkspace.negate()),
 +					precondition: ContextKeyExpr.and(
@@ -94,7 +94,7 @@ index 7e5d8f63..e949b389 100644
 +	ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  );
 diff --git a/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts b/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
-index dc231e44..633de730 100644
+index 720e4d20..5a3dc86e 100644
 --- a/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
 +++ b/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
 @@ -545,3 +545,3 @@ export class McpServersViewsContribution extends Disposable implements IWorkbenc
@@ -123,7 +123,7 @@ index dc231e44..633de730 100644
 +				when: ContextKeyExpr.and(SearchMcpServersContext, ChatContextKeys.Setup.hidden.negate(), ChatContextKeys.Setup.disabledInWorkspace.negate(), McpServersGalleryStatusContext.isEqualTo(McpGalleryManifestStatus.Available), ContextKeyDefinedExpr.create(`config.${mcpGalleryServiceUrlConfig}`).negate(), ProductQualityContext.isEqualTo('stable'), ContextKeyDefinedExpr.create(`config.${mcpGalleryServiceEnablementConfig}`).negate(), ContextKeyExpr.has('config.chat.disableAIFeatures').negate()),
  			}
 diff --git a/src/vs/workbench/contrib/scm/browser/scm.contribution.ts b/src/vs/workbench/contrib/scm/browser/scm.contribution.ts
-index 6ee2a32c..c5cdc792 100644
+index 22920b5f..990b9fe9 100644
 --- a/src/vs/workbench/contrib/scm/browser/scm.contribution.ts
 +++ b/src/vs/workbench/contrib/scm/browser/scm.contribution.ts
 @@ -680,2 +680,3 @@ registerAction2(class extends Action2 {
@@ -131,7 +131,7 @@ index 6ee2a32c..c5cdc792 100644
 +					ContextKeyExpr.has('config.chat.disableAIFeatures').negate(),
  					ChatContextKeys.Setup.hidden.negate(),
 diff --git a/src/vs/workbench/contrib/scm/browser/scmInput.ts b/src/vs/workbench/contrib/scm/browser/scmInput.ts
-index 63642985..5dee8dca 100644
+index d73da821..bb828ea6 100644
 --- a/src/vs/workbench/contrib/scm/browser/scmInput.ts
 +++ b/src/vs/workbench/contrib/scm/browser/scmInput.ts
 @@ -849,2 +849,3 @@ registerAction2(class extends Action2 {
