@@ -100,10 +100,10 @@ index 1be4d0e1..d60d8357 100644
 -export const redundantImplicitActivationEvent = l10n.t("This activation event can be removed as VS Code generates these automatically from your package.json contribution declarations.");
 +export const redundantImplicitActivationEvent = l10n.t("This activation event can be removed as BradfordCode generates these automatically from your package.json contribution declarations.");
 diff --git a/extensions/extension-editing/src/extensionLinter.ts b/extensions/extension-editing/src/extensionLinter.ts
-index a6ab287a..dc928226 100644
+index 77ff2383..a4f5b177 100644
 --- a/extensions/extension-editing/src/extensionLinter.ts
 +++ b/extensions/extension-editing/src/extensionLinter.ts
-@@ -34,3 +34,3 @@ const relativeUrlRequiresHttpsRepository = l10n.t("Relative image URLs require a
+@@ -35,3 +35,3 @@ const relativeUrlRequiresHttpsRepository = l10n.t("Relative image URLs require a
  const relativeBadgeUrlRequiresHttpsRepository = l10n.t("Relative badge URLs require a repository with HTTPS protocol to be specified in this package.json.");
 -const apiProposalNotListed = l10n.t("This proposal cannot be used because for this extension the product defines a fixed set of API proposals. You can test your extension but before publishing you MUST reach out to the VS Code team.");
 +const apiProposalNotListed = l10n.t("This proposal cannot be used because for this extension the product defines a fixed set of API proposals. You can test your extension but before publishing you MUST reach out to the BradfordCode team.");
@@ -320,15 +320,15 @@ index 03e1c0d6..6afdf254 100644
 +	"json.tracing.desc": "Traces the communication between BradfordCode and the JSON language server.",
  	"json.colorDecorators.enable.desc": "Enables or disables color decorators",
 diff --git a/extensions/markdown-language-features/package.nls.json b/extensions/markdown-language-features/package.nls.json
-index cb47e668..50716991 100644
+index 5509452f..59e6bc4c 100644
 --- a/extensions/markdown-language-features/package.nls.json
 +++ b/extensions/markdown-language-features/package.nls.json
-@@ -31,3 +31,3 @@
+@@ -35,3 +35,3 @@
  	"markdown.trace.extension.desc": "Enable debug logging for the Markdown extension.",
 -	"markdown.trace.server.desc": "Traces the communication between VS Code and the Markdown language server.",
 +	"markdown.trace.server.desc": "Traces the communication between BradfordCode and the Markdown language server.",
  	"markdown.server.log.desc": "Controls the logging level of the Markdown language server.",
-@@ -89,3 +89,3 @@
+@@ -93,3 +93,3 @@
  		"comment": [
 -			"This setting is use the user drops or pastes image data into the editor. In this case, VS Code automatically creates a new image file in the workspace containing the dropped/pasted image.",
 +			"This setting is use the user drops or pastes image data into the editor. In this case, BradfordCode automatically creates a new image file in the workspace containing the dropped/pasted image.",
@@ -468,7 +468,7 @@ index 450606ef..11121629 100644
 +				: '') + vscode.l10n.t("Use BradfordCode's Version"),
  			description: bundledVersion.displayName,
 diff --git a/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts b/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts
-index eff6db4f..1859e9d1 100644
+index 03d8e11f..28c9edf1 100644
 --- a/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts
 +++ b/extensions/typescript-language-features/src/tsServer/versionProvider.electron.ts
 @@ -70,3 +70,3 @@ export class DiskTypeScriptVersionProvider implements ITypeScriptVersionProvider
@@ -610,7 +610,7 @@ index 3d34aea5..1037a4ba 100644
 +			'	// This can help in cases where you see rendering issues in BradfordCode.',
  			'	// "disable-hardware-acceleration": true',
 diff --git a/src/vs/code/electron-main/app.ts b/src/vs/code/electron-main/app.ts
-index d0e7e0f7..edc21bed 100644
+index 41ec3495..040ad62b 100644
 --- a/src/vs/code/electron-main/app.ts
 +++ b/src/vs/code/electron-main/app.ts
 @@ -699,3 +699,3 @@ export class CodeApplication extends Disposable {
@@ -706,10 +706,10 @@ index 040656c0..667d4dfc 100644
 +	console.error('Unable to connect to BradfordCode server: ' + message);
  	console.error(err);
 diff --git a/src/vs/workbench/api/browser/mainThreadAuthentication.ts b/src/vs/workbench/api/browser/mainThreadAuthentication.ts
-index 2db9308a..4166a8f1 100644
+index 07a79c92..94e240f6 100644
 --- a/src/vs/workbench/api/browser/mainThreadAuthentication.ts
 +++ b/src/vs/workbench/api/browser/mainThreadAuthentication.ts
-@@ -583,3 +583,3 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
+@@ -586,3 +586,3 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
  				owner: 'TylerLeonhardt';
 -				comment: 'Used to see which extensions are using the VSCode client id override';
 +				comment: 'Used to see which extensions are using the BradfordCode client id override';
@@ -801,7 +801,7 @@ index 75c746cf..34aac539 100644
 +		localize('appName', "`${appName}`: e.g. BradfordCode."),
  		localize('remoteName', "`${remoteName}`: e.g. SSH"),
 diff --git a/src/vs/workbench/common/contextkeys.ts b/src/vs/workbench/common/contextkeys.ts
-index 41aace1b..537f3273 100644
+index 0b5b0077..1688582d 100644
 --- a/src/vs/workbench/common/contextkeys.ts
 +++ b/src/vs/workbench/common/contextkeys.ts
 @@ -42,3 +42,3 @@ export const EmbedderIdentifierContext = new RawContextKey<string | undefined>('
@@ -810,15 +810,15 @@ index 41aace1b..537f3273 100644
 +export const InAutomationContext = new RawContextKey<boolean>('inAutomation', false, localize('inAutomation', "Whether BradfordCode is running under automation/smoke test"));
  
 diff --git a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-index d00df7a6..5d345ec0 100644
+index 4c350900..f2d603af 100644
 --- a/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts
-@@ -1106,3 +1106,3 @@ configurationRegistry.registerConfiguration({
+@@ -1122,3 +1122,3 @@ configurationRegistry.registerConfiguration({
  				nls.localize('chat.mcp.access.none', "No access to MCP servers."),
 -				nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that VS Code is connected to."),
 +				nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that BradfordCode is connected to."),
  				nls.localize('chat.mcp.access.any', "Allow access to any installed MCP server.")
-@@ -1133,3 +1133,3 @@ configurationRegistry.registerConfiguration({
+@@ -1149,3 +1149,3 @@ configurationRegistry.registerConfiguration({
  						{
 -							key: 'chat.mcp.access.registry', value: nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that VS Code is connected to."),
 +							key: 'chat.mcp.access.registry', value: nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that BradfordCode is connected to."),
@@ -876,7 +876,7 @@ index 0b9ced32..b5ed7134 100644
 +						description: nls.localize('debugServer', "For debug extension development only: if a port is specified BradfordCode tries to connect to a debug adapter running in server mode"),
  						default: 4711
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-index b06c588b..a360b4d2 100644
+index 695859ca..58b663d2 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 @@ -449,3 +449,3 @@ CommandsRegistry.registerCommand({
@@ -931,15 +931,15 @@ index 79468b8c..12632a55 100644
 +				this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('deprecated with alternate settings tooltip', "This extension is deprecated as this functionality is now built-in to BradfordCode. Configure these {0} to use this functionality.", link)) }, true);
  			} else {
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
-index 2e1a7081..c79fe09b 100644
+index 7d9de121..1b497559 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
-@@ -479,3 +479,3 @@ export class Extension implements IExtension {
+@@ -480,3 +480,3 @@ export class Extension implements IExtension {
  			return Promise.resolve(`# ${this.displayName || this.name}
 -**Notice:** This extension is bundled with Visual Studio Code. It can be disabled but not uninstalled.
 +**Notice:** This extension is bundled with BradfordCode. It can be disabled but not uninstalled.
  ## Features
-@@ -517,3 +517,3 @@ ${this.description}
+@@ -518,3 +518,3 @@ ${this.description}
  		if (this.type === ExtensionType.System) {
 -			return Promise.resolve(`Please check the [VS Code Release Notes](command:${ShowCurrentReleaseNotesActionId}) for changes to the built-in extensions.`);
 +			return Promise.resolve(`Please check the [BradfordCode Release Notes](command:${ShowCurrentReleaseNotesActionId}) for changes to the built-in extensions.`);
@@ -1008,15 +1008,6 @@ index 050dde41..edf24a48 100644
 -				description: localize2('configureLocaleDescription', "Changes the locale of VS Code based on installed language packs. Common languages include French, Chinese, Spanish, Japanese, German, Korean, and more.")
 +				description: localize2('configureLocaleDescription', "Changes the locale of BradfordCode based on installed language packs. Common languages include French, Chinese, Spanish, Japanese, German, Korean, and more.")
  			}
-diff --git a/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts b/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
-index 720e4d20..598a7553 100644
---- a/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
-+++ b/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
-@@ -276,3 +276,3 @@ export class McpServersListView extends AbstractExtensionsListView<IWorkbenchMcp
- 			new MarkdownString(
--				localize('mcp.welcome.descriptionWithLink', "Browse and install [Model Context Protocol (MCP) servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers) directly from VS Code to extend agent mode with extra tools for connecting to databases, invoking APIs and performing specialized tasks."),
-+				localize('mcp.welcome.descriptionWithLink', "Browse and install [Model Context Protocol (MCP) servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers) directly from BradfordCode to extend agent mode with extra tools for connecting to databases, invoking APIs and performing specialized tasks."),
- 				{ isTrusted: { enabledCommands: ['workbench.action.openSettings'] } },
 diff --git a/src/vs/workbench/contrib/preferences/browser/keyboardLayoutPicker.ts b/src/vs/workbench/contrib/preferences/browser/keyboardLayoutPicker.ts
 index b533feb1..42539bde 100644
 --- a/src/vs/workbench/contrib/preferences/browser/keyboardLayoutPicker.ts
@@ -1111,50 +1102,50 @@ index 72a329b8..2399d553 100644
 +			Write-Host "`e[0m`e[7m * `e[0;103m BradfordCode Python powershell activation failed with exit code $($activationError.Exception.Message) `e[0m"
  		}
 diff --git a/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts b/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts
-index 83b558e9..3c503f0b 100644
+index 566efc7c..bfefcd98 100644
 --- a/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts
 +++ b/src/vs/workbench/contrib/terminal/common/terminalConfiguration.ts
-@@ -334,3 +334,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -334,3 +334,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  	[TerminalSettingId.DetectLocale]: {
 -		markdownDescription: localize('terminal.integrated.detectLocale', "Controls whether to detect and set the `$LANG` environment variable to a UTF-8 compliant option since VS Code's terminal only supports UTF-8 encoded data coming from the shell."),
 +		markdownDescription: localize('terminal.integrated.detectLocale', "Controls whether to detect and set the `$LANG` environment variable to a UTF-8 compliant option since BradfordCode's terminal only supports UTF-8 encoded data coming from the shell."),
  		type: 'string',
-@@ -348,3 +348,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -348,3 +348,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  		markdownEnumDescriptions: [
 -			localize('terminal.integrated.gpuAcceleration.auto', "Let VS Code detect which renderer will give the best experience."),
 +			localize('terminal.integrated.gpuAcceleration.auto', "Let BradfordCode detect which renderer will give the best experience."),
  			localize('terminal.integrated.gpuAcceleration.on', "Enable GPU acceleration within the terminal."),
-@@ -436,3 +436,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -436,3 +436,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  			'terminal.integrated.commandsToSkipShell',
 -			"A set of command IDs whose keybindings will not be sent to the shell but instead always be handled by VS Code. This allows keybindings that would normally be consumed by the shell to act instead the same as when the terminal is not focused, for example `Ctrl+P` to launch Quick Open.\n\n&nbsp;\n\nMany commands are skipped by default. To override a default and pass that command's keybinding to the shell instead, add the command prefixed with the `-` character. For example add `-workbench.action.quickOpen` to allow `Ctrl+P` to reach the shell.\n\n&nbsp;\n\nThe following list of default skipped commands is truncated when viewed in Settings Editor. To see the full list, {1} and search for the first command from the list below.\n\n&nbsp;\n\nDefault Skipped Commands:\n\n{0}",
 +			"A set of command IDs whose keybindings will not be sent to the shell but instead always be handled by BradfordCode. This allows keybindings that would normally be consumed by the shell to act instead the same as when the terminal is not focused, for example `Ctrl+P` to launch Quick Open.\n\n&nbsp;\n\nMany commands are skipped by default. To override a default and pass that command's keybinding to the shell instead, add the command prefixed with the `-` character. For example add `-workbench.action.quickOpen` to allow `Ctrl+P` to reach the shell.\n\n&nbsp;\n\nThe following list of default skipped commands is truncated when viewed in Settings Editor. To see the full list, {1} and search for the first command from the list below.\n\n&nbsp;\n\nDefault Skipped Commands:\n\n{0}",
  			DEFAULT_COMMANDS_TO_SKIP_SHELL.sort().map(command => `- ${command}`).join('\n'),
-@@ -448,3 +448,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -448,3 +448,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  	[TerminalSettingId.AllowChords]: {
 -		markdownDescription: localize('terminal.integrated.allowChords', "Whether or not to allow chord keybindings in the terminal. Note that when this is true and the keystroke results in a chord it will bypass {0}, setting this to false is particularly useful when you want ctrl+k to go to your shell (not VS Code).", '`#terminal.integrated.commandsToSkipShell#`'),
 +		markdownDescription: localize('terminal.integrated.allowChords', "Whether or not to allow chord keybindings in the terminal. Note that when this is true and the keystroke results in a chord it will bypass {0}, setting this to false is particularly useful when you want ctrl+k to go to your shell (not BradfordCode).", '`#terminal.integrated.commandsToSkipShell#`'),
  		type: 'boolean',
-@@ -459,3 +459,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -459,3 +459,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.env.osx', "Object with environment variables that will be added to the VS Code process to be used by the terminal on macOS. Set to `null` to delete the environment variable."),
 +		markdownDescription: localize('terminal.integrated.env.osx', "Object with environment variables that will be added to the BradfordCode process to be used by the terminal on macOS. Set to `null` to delete the environment variable."),
  		type: 'object',
-@@ -468,3 +468,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -468,3 +468,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.env.linux', "Object with environment variables that will be added to the VS Code process to be used by the terminal on Linux. Set to `null` to delete the environment variable."),
 +		markdownDescription: localize('terminal.integrated.env.linux', "Object with environment variables that will be added to the BradfordCode process to be used by the terminal on Linux. Set to `null` to delete the environment variable."),
  		type: 'object',
-@@ -477,3 +477,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -477,3 +477,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.env.windows', "Object with environment variables that will be added to the VS Code process to be used by the terminal on Windows. Set to `null` to delete the environment variable."),
 +		markdownDescription: localize('terminal.integrated.env.windows', "Object with environment variables that will be added to the BradfordCode process to be used by the terminal on Windows. Set to `null` to delete the environment variable."),
  		type: 'object',
-@@ -496,3 +496,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -496,3 +496,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.windowsUseConptyDll', "Whether to use the conpty.dll (v1.25.260303002) shipped with VS Code, instead of the one bundled with Windows."),
 +		markdownDescription: localize('terminal.integrated.windowsUseConptyDll', "Whether to use the conpty.dll (v1.25.260303002) shipped with BradfordCode, instead of the one bundled with Windows."),
  		type: 'boolean',
-@@ -622,3 +622,3 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
+@@ -623,3 +623,3 @@ export const terminalConfiguration: IStringDictionary<IConfigurationPropertySche
  		restricted: true,
 -		markdownDescription: localize('terminal.integrated.shellIntegration.enabled', "Determines whether or not shell integration is auto-injected to support features like enhanced command tracking and current working directory detection. \n\nShell integration works by injecting the shell with a startup script. The script gives VS Code insight into what is happening within the terminal.\n\nSupported shells:\n\n- Linux/macOS: bash, fish, pwsh, zsh\n - Windows: pwsh, git bash\n\nThis setting applies only when terminals are created, so you will need to restart your terminals for it to take effect.\n\n Note that the script injection may not work if you have custom arguments defined in the terminal profile, have enabled {1}, have a [complex bash `PROMPT_COMMAND`](https://code.visualstudio.com/docs/editor/integrated-terminal#_complex-bash-promptcommand), or other unsupported setup. To disable decorations, see {0}", '`#terminal.integrated.shellIntegration.decorationsEnabled#`', '`#editor.accessibilitySupport#`'),
 +		markdownDescription: localize('terminal.integrated.shellIntegration.enabled', "Determines whether or not shell integration is auto-injected to support features like enhanced command tracking and current working directory detection. \n\nShell integration works by injecting the shell with a startup script. The script gives BradfordCode insight into what is happening within the terminal.\n\nSupported shells:\n\n- Linux/macOS: bash, fish, pwsh, zsh\n - Windows: pwsh, git bash\n\nThis setting applies only when terminals are created, so you will need to restart your terminals for it to take effect.\n\n Note that the script injection may not work if you have custom arguments defined in the terminal profile, have enabled {1}, have a [complex bash `PROMPT_COMMAND`](https://code.visualstudio.com/docs/editor/integrated-terminal#_complex-bash-promptcommand), or other unsupported setup. To disable decorations, see {0}", '`#terminal.integrated.shellIntegration.decorationsEnabled#`', '`#editor.accessibilitySupport#`'),
@@ -1475,7 +1466,7 @@ index e60991aa..f7e95209 100644
 +		const productName = localize('BradfordCode for Web', "{0} for the Web", this.productService.nameLong);
  		const virtualWorkspaceSupport = this.extensionManifestPropertiesService.getExtensionVirtualWorkspaceSupportType(manifest);
 diff --git a/src/vs/workbench/services/extensions/common/extensionsRegistry.ts b/src/vs/workbench/services/extensions/common/extensionsRegistry.ts
-index d5220dbd..a9b8c1d4 100644
+index 0a1400dd..21d28918 100644
 --- a/src/vs/workbench/services/extensions/common/extensionsRegistry.ts
 +++ b/src/vs/workbench/services/extensions/common/extensionsRegistry.ts
 @@ -181,3 +181,3 @@ export const schema: IJSONSchema = {
@@ -1533,11 +1524,11 @@ index d5220dbd..a9b8c1d4 100644
 +					description: nls.localize('vscode.extension.scripts.uninstall', 'Uninstall hook for BradfordCode extension. Script that gets executed when the extension is completely uninstalled from BradfordCode which is when BradfordCode is restarted (shutdown and start) after the extension is uninstalled. Only Node scripts are supported.'),
  					type: 'string'
 diff --git a/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts b/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts
-index 4340604b..9ea3a495 100644
+index 615f2e59..9a13afc5 100644
 --- a/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts
 +++ b/src/vs/workbench/services/extensions/electron-browser/nativeExtensionService.ts
-@@ -167,3 +167,3 @@ export class NativeExtensionService extends AbstractExtensionService implements
- 					[{
+@@ -169,3 +169,3 @@ export class NativeExtensionService extends AbstractExtensionService implements
+ 						telemetryId: NotificationActionTelemetryId.Relaunch,
 -						label: nls.localize('relaunch', "Relaunch VS Code"),
 +						label: nls.localize('relaunch', "Relaunch BradfordCode"),
  						run: () => {

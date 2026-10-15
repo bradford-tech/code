@@ -1,5 +1,5 @@
 diff --git a/build/.moduleignore b/build/.moduleignore
-index d5debac03ce..bd7fd81a8da 100644
+index 7dcc5d7e032..210ed7b68be 100644
 --- a/build/.moduleignore
 +++ b/build/.moduleignore
 @@ -157,9 +157,11 @@ vsda/**
@@ -65,21 +65,21 @@ index bd5958cbf0b..b45f99b9b56 100644
 +		<string>bradford-tech</string>
  		<key>PayloadType</key>
 diff --git a/eslint.config.js b/eslint.config.js
-index 1a14c1b26ff..100a343e33b 100644
+index 10564f5ccf8..68cb8138e53 100644
 --- a/eslint.config.js
 +++ b/eslint.config.js
-@@ -1546,3 +1546,3 @@ export default defineConfig(
+@@ -1644,3 +1644,3 @@ export default defineConfig(
  						'@vscode/native-watchdog',
 -						'@vscode/policy-watcher',
 +						'@vscodium/policy-watcher',
  						'@vscode/proxy-agent',
 diff --git a/package-lock.json b/package-lock.json
-index e83d9c82c7c..005812e9090 100644
+index ed3f93d4881..2d62e123462 100644
 --- a/package-lock.json
 +++ b/package-lock.json
-@@ -34,3 +34,2 @@
+@@ -33,3 +33,2 @@
          "@vscode/os-proxy-resolver": "^0.4.0",
--        "@vscode/policy-watcher": "^1.4.0",
+-        "@vscode/policy-watcher": "^1.6.0",
          "@vscode/proxy-agent": "^0.45.0",
 @@ -81,3 +80,4 @@
          "yazl": "^2.4.3",
@@ -87,12 +87,12 @@ index e83d9c82c7c..005812e9090 100644
 +        "zod": "^4.4.3",
 +        "@vscodium/policy-watcher": "^1.3.2-252465"
        },
-@@ -4945,22 +4945,2 @@
+@@ -4969,22 +4969,2 @@
      },
 -    "node_modules/@vscode/policy-watcher": {
--      "version": "1.4.0",
--      "resolved": "https://registry.npmjs.org/@vscode/policy-watcher/-/policy-watcher-1.4.0.tgz",
--      "integrity": "sha512-QKTLV/UtV0HH5AJELfN5D3Jcxj2hB9CYT9GtG334I8bU5TdusaSGYSpDjumZBGWO2YxwVYpBNytA7mq/I3ZtzA==",
+-      "version": "1.6.0",
+-      "resolved": "https://registry.npmjs.org/@vscode/policy-watcher/-/policy-watcher-1.6.0.tgz",
+-      "integrity": "sha512-v7ucf7atz36xRpo4EvqgIZrf0uXKYkmpLQzmT+dzS5M+quMYW8d5TKBKetUGvxOEhKWuwHeR7plAzI4I8K5vyQ==",
 -      "hasInstallScript": true,
 -      "license": "MIT",
 -      "dependencies": {
@@ -110,7 +110,7 @@ index e83d9c82c7c..005812e9090 100644
 -      }
 -    },
      "node_modules/@vscode/proxy-agent": {
-@@ -5377,2 +5357,22 @@
+@@ -5401,2 +5381,22 @@
      },
 +    "node_modules/@vscodium/policy-watcher": {
 +      "version": "1.3.2-255408",
@@ -134,12 +134,12 @@ index e83d9c82c7c..005812e9090 100644
 +    },
      "node_modules/@webgpu/types": {
 diff --git a/package.json b/package.json
-index 2769d2bafb7..2d0f6d294e3 100644
+index 8ccf58f6d97..f7ecf52c396 100644
 --- a/package.json
 +++ b/package.json
-@@ -124,3 +124,3 @@
+@@ -123,3 +123,3 @@
      "@vscode/os-proxy-resolver": "^0.4.0",
--    "@vscode/policy-watcher": "^1.4.0",
+-    "@vscode/policy-watcher": "^1.6.0",
 +    "@vscodium/policy-watcher": "^1.3.2-252465",
      "@vscode/proxy-agent": "^0.45.0",
 diff --git a/src/vs/base/test/node/uri.perf.data.txt b/src/vs/base/test/node/uri.perf.data.txt
