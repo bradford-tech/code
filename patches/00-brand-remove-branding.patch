@@ -2,10 +2,11 @@ diff --git a/build/win32/i18n/messages.en.isl b/build/win32/i18n/messages.en.isl
 index 6255123d..6e6013e7 100644
 --- a/build/win32/i18n/messages.en.isl
 +++ b/build/win32/i18n/messages.en.isl
-@@ -16,2 +16,2 @@ SourceFile=%1 Source File
+@@ -16,3 +16,3 @@ SourceFile=%1 Source File
  OpenWithCodeContextMenu=Open w&ith %1
 -UpdatingVisualStudioCode=Updating Visual Studio Code...
 +UpdatingVisualStudioCode=Updating BradfordCode...
+ CopilotCliPageCaption=GitHub Copilot CLI
 diff --git a/build/win32/i18n/messages.es.isl b/build/win32/i18n/messages.es.isl
 index 7f6f1bd0..f508cf3a 100644
 --- a/build/win32/i18n/messages.es.isl
