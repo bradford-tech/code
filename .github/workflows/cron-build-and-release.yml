@@ -199,15 +199,16 @@ jobs:
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.full_name == github.repository &&
         !contains(github.event.pull_request.labels.*.name, 'auto-release')))
-    # Larger runner, bought deliberately: macos-15 is free with unlimited
-    # minutes on this public repo, but larger runners are billed even here
-    # (~$1.90/build, ~$57/month for the daily cron). Measured on run
-    # 31301283190: 6m33s to build vs 30-41 min on macos-15 (whole job 11m42s
-    # vs ~36-45 min). Cause is likely RAM, not cores — build.sh asks for an
-    # 8 GB Node heap that doesn't fit macos-15's 7 GB. Dropping that heap
-    # under 7 GB may recover the gap for free and let us switch back.
+    # Free runner, chosen for cost: macos-15 has unlimited minutes on this
+    # public repo, while macos-15-xlarge is billed even here (~$1.90/build,
+    # ~$57/month for the daily cron). The xlarge box built in 6m33s (whole job
+    # 11m42s, run 31301283190) against 30-41 min here — but that measurement
+    # was taken with build.sh's default 8 GB Node heap, which does not fit
+    # this runner's 7 GB and thrashed swap. VSCODE_NODE_HEAP_MB below sizes
+    # the heap to the machine; the slower build that remains is the price of
+    # three cores instead of six, and is fine for a daily cron.
     # Must stay arm64: macos-15-large is Intel and would cross-compile.
-    runs-on: macos-15-xlarge
+    runs-on: macos-15
     timeout-minutes: 120
     env:
       APP_NAME: BradfordCode
@@ -225,6 +226,10 @@ jobs:
       SHOULD_BUILD_DMG: ${{ github.event_name == 'pull_request' && 'no' || 'yes' }}
       CI_BUILD: "yes"
       DISABLE_UPDATE: "no"
+      # Node heap sized for this runner's 7 GB — see the runs-on comment.
+      # Same value the REH job uses on its 7.8 GB ubuntu runner, so the
+      # upstream compile is known to fit. build.sh defaults to 8192 when unset.
+      VSCODE_NODE_HEAP_MB: "5120"
       MS_TAG: ${{ needs.check.outputs.ms_tag }}
       MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
       RELEASE_VERSION: ${{ needs.check.outputs.release_version }}
@@ -269,8 +274,8 @@ jobs:
 
       # Same rationale as the REH job's baseline: record the machine before the
       # long step, via channels that outlive it. This job has its own history of
-      # memory trouble — build.sh asks for an 8 GB Node heap, which did not fit
-      # macos-15's 7 GB and made the build take 30-41 min instead of 6m33s.
+      # memory trouble — an 8 GB Node heap on this runner's 7 GB made the build
+      # take 30-41 min instead of 6m33s, which is why VSCODE_NODE_HEAP_MB is set.
       # No `free` on macOS, so sysctl/df stand in; available memory needs vm_stat
       # and is not worth the arithmetic when total is what sizing turns on.
       - name: Record runner baseline
@@ -279,7 +284,7 @@ jobs:
           cores=$( sysctl -n hw.ncpu )
           mem_total=$(( $( sysctl -n hw.memsize ) / 1024 / 1024 ))
           disk_avail=$( df -m / | tail -1 | awk '{print $4}' )
-          baseline="cores=${cores} mem_total=${mem_total}MB disk_avail=${disk_avail}MB"
+          baseline="cores=${cores} mem_total=${mem_total}MB disk_avail=${disk_avail}MB heap=${VSCODE_NODE_HEAP_MB}MB"
 
           echo "${baseline}"
           echo "::notice::macOS runner baseline: ${baseline}"
@@ -291,13 +296,14 @@ jobs:
             echo "| cores | ${cores} |"
             echo "| memory total | ${mem_total} MB |"
             echo "| disk available (/) | ${disk_avail} MB |"
+            echo "| node heap (VSCODE_NODE_HEAP_MB) | ${VSCODE_NODE_HEAP_MB} MB |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # A silent fallback to the 7 GB standard runner does not fail — it just
-          # swaps for half an hour. Surface it as a warning rather than an error:
-          # unlike REH, this configuration does still complete.
-          if [ "${mem_total}" -lt 12000 ]; then
-            echo "::warning::macOS runner has ${mem_total}MB RAM; build.sh requests an 8GB Node heap, so expect heavy swapping and a 30-40 min build. Check the macos-15-xlarge label still resolves."
+          # The heap must leave room for the OS and the build's other node
+          # processes, or the runner swaps for half an hour instead of failing.
+          # Warn rather than fail: the build does still complete that way.
+          if [ "${mem_total}" -lt $(( VSCODE_NODE_HEAP_MB + 1536 )) ]; then
+            echo "::warning::macOS runner has ${mem_total}MB RAM but VSCODE_NODE_HEAP_MB is ${VSCODE_NODE_HEAP_MB}; expect heavy swapping and a slow build. Lower the heap or check which runner the macos-15 label resolved to."
           fi
 
       - name: Build BradfordCode.app
@@ -436,7 +442,7 @@ jobs:
       CI_BUILD: "yes"
       DISABLE_UPDATE: "no"
       # Node heap sized for this runner's 7.8 GB — see the runs-on comment.
-      # build.sh defaults to 8192 when unset (the macOS xlarge builder).
+      # build.sh defaults to 8192 when unset; both CI jobs override it.
       VSCODE_NODE_HEAP_MB: "5120"
       MS_TAG: ${{ needs.check.outputs.ms_tag }}
       MS_COMMIT: ${{ needs.check.outputs.ms_commit }}
