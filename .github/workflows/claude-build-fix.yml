@@ -24,8 +24,8 @@ jobs:
     # ci + compile), which needs the build toolchain and the build platform.
     # Free macos-15 (unlimited minutes on public repos), NOT macos-15-xlarge —
     # xlarge is billed even here, and the compile tier fits the free runner's
-    # 7 GB RAM with ci-verify's default 6 GB Node heap. Full packaging
-    # (vscode-min-prepack's 8 GB heap) stays on the cron's xlarge builder.
+    # 7 GB RAM with ci-verify's default 6 GB Node heap. Full packaging runs on
+    # the same free runner in the cron workflow, with VSCODE_NODE_HEAP_MB=5120.
     runs-on: macos-15
     # 120 min budget. Was 45 with --max-turns 50, and 1.133.0 showed that is
     # not enough: two of three attempts died on "Reached maximum number of
