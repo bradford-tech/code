@@ -1,21 +1,21 @@
 diff --git a/src/vs/platform/extensionManagement/common/extensionGalleryService.ts b/src/vs/platform/extensionManagement/common/extensionGalleryService.ts
-index 5974768..876f779 100644
+index 41b763a2b46..725c4277978 100644
 --- a/src/vs/platform/extensionManagement/common/extensionGalleryService.ts
 +++ b/src/vs/platform/extensionManagement/common/extensionGalleryService.ts
-@@ -1788,2 +1788,8 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
+@@ -1991,2 +1991,8 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
  
 +		const excludeUnsafes = this.configurationService.getValue('extensions.excludeUnsafes') ?? true;
 +
 +		if (!excludeUnsafes) {
-+			return { malicious: [], deprecated: {}, search: [] };
++			return { malicious: [], deprecated: {}, search: [], autoUpdate: {} };
 +		}
 +
- 		const context = await this.requestService.request({
+ 		const accessToken = await this.extensionGalleryManifestService.getAccessToken(this.extensionsControlUrl);
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-index 4c44d3b..fe989e0 100644
+index 58b663d2ac8..7ffa497bd10 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-@@ -294,2 +294,9 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
+@@ -407,2 +407,9 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
  			},
 +			'extensions.excludeUnsafes': {
 +				scope: ConfigurationScope.MACHINE,
