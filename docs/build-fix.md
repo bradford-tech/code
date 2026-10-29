@@ -58,6 +58,14 @@ Historical failure classes, most→least common:
   literals introduced by a patch.
 - **Native module ABI mismatch** (`NODE_MODULE_VERSION`) after a Node version
   bump — check `.nvmrc` against upstream's `vscode/.nvmrc`.
+- **Packaging-only features that assume Microsoft's Electron build.** Product
+  builds download Electron from `product.electronArtifactFeed`; ours use stock
+  GitHub Electron. 1.144.0's `generateNodeCompileCache` failed in
+  `vscode-darwin-arm64-min-packing` with "produced 0 arm64 version-tag
+  directories": stock Node appends `-<uid>` to the cache tag and ignores
+  `readOnly`. Patched out by `00-build-disable-node-compile-cache.patch`
+  (guarded by `./dev/test-node-compile-cache-gate.sh`). `ci-verify.sh` stops
+  before packaging, so this class only reproduces by running the packing task.
 
 **Check which job failed before assuming it's a patch problem.** `release`
 failures look like build failures in the issue text but have nothing to do with
