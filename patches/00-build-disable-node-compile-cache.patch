@@ -1,0 +1,23 @@
+diff --git a/build/lib/nodeCompileCache.ts b/build/lib/nodeCompileCache.ts
+index 66dfaf4c1b5..0447ed2ee48 100644
+--- a/build/lib/nodeCompileCache.ts
++++ b/build/lib/nodeCompileCache.ts
+@@ -17,6 +17,7 @@ export interface INodeCompileCacheProduct {
+ 	readonly nameLong: string;
+ 	readonly nameShort: string;
+ 	readonly quality?: string;
++	readonly electronArtifactFeed?: string;
+ }
+ 
+ export interface INodeCompileCachePaths {
+@@ -25,7 +26,9 @@ export interface INodeCompileCachePaths {
+ }
+ 
+ export function shouldGenerateNodeCompileCache(platform: string, arch: string, product: INodeCompileCacheProduct): boolean {
+-	if (!product.quality) {
++	// The packaged cache depends on Microsoft's Electron build: stock Electron
++	// appends the build uid to the cache version tag and ignores `readOnly`.
++	if (!product.quality || !product.electronArtifactFeed) {
+ 		return false;
+ 	}
+ 
