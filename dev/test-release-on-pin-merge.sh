@@ -99,15 +99,17 @@ node -e '
 ' "${WF}" > "${work}/step.sh"
 bash -n "${work}/step.sh" || { echo "FAIL - extracted step is not valid bash"; exit 1; }
 
-# Stubs: `git ls-remote` answers with STUB_TAG_COMMIT for any tag; `gh release
-# list` prints STUB_RELEASES one per line; `gh pr list` finds nothing. Every
-# call is logged so the test can assert the guard is consulted only on push.
+# Stubs: `git ls-remote` answers with STUB_TAG_COMMIT for any tag (nothing
+# when it is empty, as git does for a missing tag; exit 128 when
+# STUB_GIT_FAIL is set, as for a network failure); `gh release list` prints
+# STUB_RELEASES one per line. Every call is logged.
 mkdir -p "${work}/bin"
 cat > "${work}/bin/git" <<'EOF'
 #!/usr/bin/env bash
 echo "git $*" >> "${STUB_LOG}"
 if [[ "$1" == "ls-remote" ]]; then
-  printf '%s\t%s\n' "${STUB_TAG_COMMIT}" "${@: -1}"
+  [[ -n "${STUB_GIT_FAIL}" ]] && { echo "fatal: unable to access (stub)" >&2; exit 128; }
+  [[ -n "${STUB_TAG_COMMIT}" ]] && printf '%s\t%s\n' "${STUB_TAG_COMMIT}" "${@: -1}"
   exit 0
 fi
 echo "unexpected git call: $*" >&2; exit 1
@@ -117,32 +119,55 @@ cat > "${work}/bin/gh" <<'EOF'
 echo "gh $*" >> "${STUB_LOG}"
 case "$1 $2" in
   "release list") [[ -n "${STUB_RELEASES}" ]] && printf '%s\n' "${STUB_RELEASES}"; exit 0 ;;
-  "pr list") exit 0 ;;
 esac
 echo "unexpected gh call: $*" >&2; exit 1
 EOF
 chmod +x "${work}/bin/git" "${work}/bin/gh"
 
-# run_step <event> <force_build> <releases> ; sets OUT_needs_build / OUT_ms_tag
+# The pin is always 1.144.0 @ c0ffee. Upstream-latest and what the git tag
+# resolves to are per-case knobs.
+#   run_step <event> <force_build> <releases> [upstream_tag] [tag_commit]
+# Sets OUT_needs_build / OUT_ms_tag / OUT_ms_commit. The step is run under
+# `bash -e`, which is what Actions uses for a `run:` with no `shell:` key
+# (pipefail is NOT on there). With EXPECT_FAIL=1 a non-zero exit is the pass.
 run_step() {
-  local event="$1" force="$2" releases="$3"
+  local event="$1" force="$2" releases="$3" upstream_tag="${4:-1.144.0}" tag_commit="${5-c0ffee}"
   : > "${work}/out"
   : > "${work}/log"
-  ( cd "${repo_root}" && \
+  if ( cd "${repo_root}" && \
     PATH="${work}/bin:${PATH}" \
-    STUB_LOG="${work}/log" STUB_RELEASES="${releases}" STUB_TAG_COMMIT="c0ffee" \
+    STUB_LOG="${work}/log" STUB_RELEASES="${releases}" STUB_TAG_COMMIT="${tag_commit}" \
+    STUB_GIT_FAIL="${STUB_GIT_FAIL:-}" \
     GITHUB_OUTPUT="${work}/out" GH_TOKEN="stub" \
     EVENT_NAME="${event}" FORCE_BUILD="${force}" \
     CURRENT_TAG="1.144.0" CURRENT_COMMIT="c0ffee" \
-    UPSTREAM_TAG="1.144.0" UPSTREAM_COMMIT="c0ffee" \
-    bash -e "${work}/step.sh" > "${work}/stdout" 2>&1 ) || {
+    UPSTREAM_TAG="${upstream_tag}" UPSTREAM_COMMIT="${tag_commit}" \
+    bash -e "${work}/step.sh" > "${work}/stdout" 2>&1 ); then
+    if [[ -n "${EXPECT_FAIL:-}" ]]; then
+      echo "FAIL - step should have exited non-zero (event=${event})"; cat "${work}/stdout"
+      FAILURES=$(( FAILURES + 1 ))
+    fi
+  else
+    if [[ -z "${EXPECT_FAIL:-}" ]]; then
       echo "FAIL - step exited non-zero for event=${event}"; cat "${work}/stdout"
-      FAILURES=$(( FAILURES + 1 )); return
-    }
+      FAILURES=$(( FAILURES + 1 ))
+    fi
+  fi
   OUT_needs_build=$( sed -n 's/^needs_build=//p' "${work}/out" )
   OUT_ms_tag=$( sed -n 's/^ms_tag=//p' "${work}/out" )
+  OUT_ms_commit=$( sed -n 's/^ms_commit=//p' "${work}/out" )
 }
 
+assert_reason_names() {
+  if grep -q -- "$1" "${work}/stdout"; then
+    echo "ok   - ${2}"
+  else
+    echo "FAIL - ${2}"; sed 's/^/         /' "${work}/stdout"
+    FAILURES=$(( FAILURES + 1 ))
+  fi
+}
+
+# --- push: the pin just changed on main -------------------------------------
 # 1. Fix PR merged: pin advanced to 1.144.0, no release for it yet -> build it.
 run_step push "" $'1.143.16401\n1.143.06112'
 assert_eq "true" "${OUT_needs_build}" "push with unreleased pin builds"
@@ -151,29 +176,66 @@ assert_eq "1.144.0" "${OUT_ms_tag}" "push builds the PINNED tag"
 # 2. Auto-release PR merged: a release already covers the pin -> skip.
 run_step push "" $'1.144.00725\n1.143.16401'
 assert_eq "false" "${OUT_needs_build}" "push with an already-released pin skips (no rebuild loop)"
-if grep -q "1.144.00725" "${work}/stdout"; then
-  echo "ok   - skip reason names the existing release"
-else
-  echo "FAIL - skip reason should name the existing release"; cat "${work}/stdout"
-  FAILURES=$(( FAILURES + 1 ))
-fi
+assert_reason_names "1.144.00725" "skip reason names the existing release"
 
 # 3. Only a neighbouring tag's release exists -> still build.
 run_step push "" $'1.144.10234'
 assert_eq "true" "${OUT_needs_build}" "push ignores releases of other tags (1.144.1 is not 1.144.0)"
 
-# 4. Cron with upstream == pin is unchanged: skip, and never consult releases.
+# --- schedule: the same guard answers "already built?" for the cron ---------
+# 4. Upstream == pin and the pin is released: the steady state, skip.
 run_step schedule "" $'1.144.00725'
-assert_eq "false" "${OUT_needs_build}" "cron with upstream matching the pin still skips"
-if grep -q "gh release list" "${work}/log"; then
-  echo "FAIL - cron should not query releases"; FAILURES=$(( FAILURES + 1 ))
-else
-  echo "ok   - cron does not query releases"
-fi
+assert_eq "false" "${OUT_needs_build}" "cron with upstream == pin and a release skips"
 
-# 5. force_build stays explicit: builds even when a release exists.
+# 5. Upstream == pin but nothing released it (missed push event, failed
+#    release build): the cron picks it up instead of waiting for upstream.
+run_step schedule "" $'1.143.16401'
+assert_eq "true" "${OUT_needs_build}" "cron with upstream == pin and NO release builds the pin"
+assert_eq "1.144.0" "${OUT_ms_tag}" "...and targets the pin"
+
+# 6. Upstream advanced, nothing released it -> build upstream at the git tag's
+#    commit (the API hash is deliberately not trusted).
+run_step schedule "" $'1.144.00725' "1.145.0" "tag5"
+assert_eq "true" "${OUT_needs_build}" "cron with upstream advanced and no release builds"
+assert_eq "1.145.0" "${OUT_ms_tag}" "...targets upstream-latest"
+assert_eq "tag5" "${OUT_ms_commit}" "...at the git tag's commit"
+
+# 7. Upstream advanced and already released (its auto-release PR is waiting
+#    for a human, or was closed unmerged) -> skip. This used to be a search
+#    for an OPEN auto-release PR by title, which rebuilt and re-published
+#    daily once that PR was closed.
+run_step schedule "" $'1.145.00800\n1.144.00725' "1.145.0" "tag5"
+assert_eq "false" "${OUT_needs_build}" "cron with upstream advanced but already released skips"
+assert_reason_names "1.145.00800" "skip reason names the existing release"
+
+# 8. Update API announced a tag microsoft/vscode hasn't pushed yet -> skip
+#    with that reason, never "no release yet; building the pin".
+run_step schedule "" $'1.144.00725' "1.145.0" ""
+assert_eq "false" "${OUT_needs_build}" "cron with an unpushed upstream tag skips"
+assert_reason_names "hasn't pushed the tag yet" "skip reason says the tag is not pushed yet"
+
+# 9. `git ls-remote` failing (network) must fail the step loudly, not read
+#    as "tag absent". Under `bash -e` without pipefail, a `git | awk`
+#    pipeline cannot do that.
+EXPECT_FAIL=1 STUB_GIT_FAIL=1 run_step schedule "" "" "1.145.0" "tag5"
+echo "ok   - git ls-remote failure fails the step (checked above)"
+
+# --- explicit builds bypass the guard ---------------------------------------
+# 10. force_build builds even when a release exists.
 run_step workflow_dispatch true $'1.144.00725'
 assert_eq "true" "${OUT_needs_build}" "force_build builds even when a release already exists"
+
+# 11. A PR always verifies its pin, released or not.
+run_step pull_request "" $'1.144.00725'
+assert_eq "true" "${OUT_needs_build}" "pull_request builds even when a release already exists"
+
+# --- one guard, not two -----------------------------------------------------
+if grep -q 'in:title' "${work}/step.sh"; then
+  echo "FAIL - step still searches open auto-release PRs by title; the release guard replaces that"
+  FAILURES=$(( FAILURES + 1 ))
+else
+  echo "ok   - step does not duplicate the guard with an open-PR title search"
+fi
 
 echo
 if (( FAILURES > 0 )); then
