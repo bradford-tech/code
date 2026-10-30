@@ -153,7 +153,10 @@ jobs:
           tag_commit_of() {
             local ref
             if ! ref=$( git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$1" ); then
-              echo "::error::git ls-remote microsoft/vscode refs/tags/$1 failed; cannot tell whether the tag exists"
+              # stderr: callers run this inside $( ... ), which would swallow
+              # the annotation from stdout. Actions reads workflow commands
+              # from either stream.
+              echo "::error::git ls-remote microsoft/vscode refs/tags/$1 failed; cannot tell whether the tag exists" >&2
               return 1
             fi
             awk '{print $1}' <<< "$ref"

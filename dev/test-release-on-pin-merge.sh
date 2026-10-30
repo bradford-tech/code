@@ -219,6 +219,9 @@ assert_reason_names "hasn't pushed the tag yet" "skip reason says the tag is not
 #    pipeline cannot do that.
 EXPECT_FAIL=1 STUB_GIT_FAIL=1 run_step schedule "" "" "1.145.0" "tag5"
 echo "ok   - git ls-remote failure fails the step (checked above)"
+# ...and says why. The helper runs inside $( ... ), so an annotation on
+# stdout is captured into the variable and never reaches the job log.
+assert_reason_names "::error::git ls-remote" "git ls-remote failure prints its ::error:: annotation"
 
 # --- explicit builds bypass the guard ---------------------------------------
 # 10. force_build builds even when a release exists.
