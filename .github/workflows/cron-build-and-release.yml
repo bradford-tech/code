@@ -9,6 +9,16 @@ on:
         description: 'Build the pinned VS Code version (from upstream/stable.json) regardless of whether upstream has advanced'
         type: boolean
         default: false
+  # Pin advanced on main — a merged fix PR, normally. Build + release the
+  # pinned version like force_build does, because the cron can't: once the
+  # pin equals upstream its "upstream advanced?" test is false, so a fixed
+  # tag never shipped without a manual dispatch (1.144.0, PR #118). The
+  # auto-release PR touches this file too; the check job skips when a
+  # release already covers the pin, so that merge costs one ubuntu minute.
+  push:
+    branches: [main]
+    paths:
+      - 'upstream/stable.json'
   # PR trigger feeds the Claude auto-fix loop: build + bundle only, with
   # release/codesign/notarize gated off below. `paths:` lists every input to
   # the build so doc-only PRs don't burn macOS minutes — add new build inputs
@@ -104,16 +114,35 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # force_build / pull_request: build the PINNED version. For PRs this
-          # is critical — chasing upstream-latest would test the wrong tag, and
-          # skipping when upstream already matches the pin would leave the PR
-          # misleadingly green with report-pr-failure dormant.
+          # force_build / pull_request / push: build the PINNED version. For
+          # PRs this is critical — chasing upstream-latest would test the wrong
+          # tag, and skipping when upstream already matches the pin would leave
+          # the PR misleadingly green with report-pr-failure dormant.
+          # push (main, upstream/stable.json changed) is a merged fix PR that
+          # advanced the pin, OR the auto-release PR that merged after a
+          # release — the only way to tell them apart is whether a release
+          # already covers the pinned tag. Without that guard the release
+          # job's own PR would trigger a rebuild of what it just released,
+          # forever. force_build deliberately bypasses the guard (explicit).
           # Cron: build only if upstream advanced past the pin, no auto-release
           # PR already pins that tag (avoids daily rebuilds while one awaits
           # review), and microsoft/vscode actually pushed the git tag — the
           # update API announces it hours early, and catching that here saves a
           # ~25-min runner that would fail at `Clone VS Code source` (issue #10).
-          if [[ "$FORCE_BUILD" == "true" || "$EVENT_NAME" == "pull_request" ]]; then
+          existing_release=""
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            . utils.sh
+            # Two statements, not a pipe: with `bash -e` a gh failure must
+            # fail the step, not silently read as "no release" and rebuild.
+            release_tags=$( gh release list --limit 200 --json tagName --jq '.[].tagName' )
+            existing_release=$( find_release_for_tag "$CURRENT_TAG" <<< "$release_tags" )
+          fi
+          if [[ "$EVENT_NAME" == "push" && -n "$existing_release" ]]; then
+            ms_tag="$CURRENT_TAG"
+            ms_commit="$CURRENT_COMMIT"
+            needs_build=false
+            reason="push: release $existing_release already covers pinned $CURRENT_TAG (auto-release PR merged); skipping"
+          elif [[ "$FORCE_BUILD" == "true" || "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "push" ]]; then
             ms_tag="$CURRENT_TAG"
             ms_commit="$CURRENT_COMMIT"
             needs_build=true

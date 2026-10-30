@@ -76,6 +76,30 @@ update_feed_product_version() {
   echo "${version}"
 }
 
+# --- "Is this upstream tag already released?" ----------------------------
+#
+# Reads release tags on stdin (one per line, as `gh release list --json
+# tagName --jq '.[].tagName'` prints them) and prints the first one that is
+# a release OF upstream tag $1, or nothing. The cron workflow's `push`
+# trigger uses it to tell "a fix PR just advanced the pin — build it" from
+# "the auto-release PR just merged — already built"; both touch
+# upstream/stable.json.
+#
+# A release tag is MS_TAG + get_repo.sh's 4-digit TIME_PATCH with no
+# separator (1.144.0 -> 1.144.00725), so the test is "starts with the tag
+# and exactly four digits follow". Plain prefix matching would let 1.144.1
+# claim a 1.144.10 release. awk, not grep -m1, so the producer is never
+# SIGPIPEd mid-list under pipefail. dev/test-release-on-pin-merge.sh locks
+# this and the workflow step down.
+
+find_release_for_tag() {
+  awk -v tag="$1" '
+    !found && length($0) == length(tag) + 4 \
+      && substr($0, 1, length(tag)) == tag \
+      && substr($0, length(tag) + 1) ~ /^[0-9][0-9][0-9][0-9]$/ { print; found = 1 }
+  '
+}
+
 if [[ "${VSCODE_QUALITY}" == "insider" ]]; then
   GLOBAL_DIRNAME="${GLOBAL_DIRNAME:-"${APP_NAME}"}-Insiders"
 else
