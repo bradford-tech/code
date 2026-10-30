@@ -96,7 +96,7 @@ A daily GitHub Actions cron tracks new Microsoft VS Code stable releases. When u
 
 The workflow is `.github/workflows/cron-build-and-release.yml`. The cron runs once daily at 06:00 UTC; an upstream patch release cut after that time isn't picked up until the next morning. Use `Run workflow → force_build: true` if you need an off-schedule build.
 
-The workflow also runs when a push to `main` changes `upstream/stable.json`. That is how a fix PR for a broken upstream tag gets released: merging it advances the pin, and the push builds, signs, and publishes that pinned version without a manual dispatch. The `check` job skips the push if a GitHub release already covers the pinned tag, so merging the auto-release PR (which also touches that file) does not rebuild. `./dev/test-release-on-pin-merge.sh` exercises both cases against the real workflow step.
+The workflow also runs when a push to `main` changes `upstream/stable.json`. That is how a fix PR for a broken upstream tag gets released: merging it advances the pin, and the push builds, signs, and publishes that pinned version without a manual dispatch. The `check` job skips any build whose tag a GitHub release already covers. That is what keeps the auto-release PR's own merge (which also touches that file) from rebuilding, and what keeps the daily cron from rebuilding while that PR awaits review. A pin with no release gets built by the next cron even if upstream hasn't moved. `./dev/test-release-on-pin-merge.sh` exercises these cases against the real workflow step. `force_build: true` and PR builds bypass the check.
 
 ### Triggering manually
 

@@ -84,8 +84,13 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
+      # Only the cron and a plain dispatch chase upstream-latest; force_build,
+      # pull_request and push build the pin and never read these outputs.
+      # Gated so a three-retry update-API outage cannot fail a push-triggered
+      # release for a reason unrelated to it.
       - name: Query upstream VS Code latest stable
         id: upstream
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.force_build)
         run: |
           for attempt in 1 2 3; do
             if curl -sf 'https://update.code.visualstudio.com/api/update/darwin/stable/0000000000000000000000000000000000000000' -o /tmp/update.json; then
@@ -114,39 +119,53 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # force_build / pull_request / push: build the PINNED version. For
-          # PRs this is critical — chasing upstream-latest would test the wrong
-          # tag, and skipping when upstream already matches the pin would leave
-          # the PR misleadingly green with report-pr-failure dormant.
-          # push (main, upstream/stable.json changed) is a merged fix PR that
-          # advanced the pin, OR the auto-release PR that merged after a
-          # release — the only way to tell them apart is whether a release
-          # already covers the pinned tag. Without that guard the release
-          # job's own PR would trigger a rebuild of what it just released,
-          # forever. force_build deliberately bypasses the guard (explicit).
-          # Cron: build only if upstream advanced past the pin, no auto-release
-          # PR already pins that tag (avoids daily rebuilds while one awaits
-          # review), and microsoft/vscode actually pushed the git tag — the
-          # update API announces it hours early, and catching that here saves a
-          # ~25-min runner that would fail at `Clone VS Code source` (issue #10).
-          existing_release=""
-          if [[ "$EVENT_NAME" == "push" ]]; then
-            . utils.sh
-            # Two statements, not a pipe: with `bash -e` a gh failure must
-            # fail the step, not silently read as "no release" and rebuild.
-            release_tags=$( gh release list --limit 200 --json tagName --jq '.[].tagName' )
-            existing_release=$( find_release_for_tag "$CURRENT_TAG" <<< "$release_tags" )
-          fi
-          if [[ "$EVENT_NAME" == "push" && -n "$existing_release" ]]; then
+          # Two decisions, taken separately:
+          #
+          # 1. WHICH tag. force_build, pull_request and push build the PIN;
+          #    the cron (and a plain dispatch) builds upstream-latest. For PRs
+          #    the pin is critical — chasing upstream-latest would test the
+          #    wrong tag, and skipping when upstream already matches the pin
+          #    would leave the PR misleadingly green with report-pr-failure
+          #    dormant. push (main, upstream/stable.json changed) is a merged
+          #    fix PR that advanced the pin, the auto-release PR that merged
+          #    after a release, or a hand edit.
+          #
+          # 2. WHETHER to build it: not if a GitHub release already covers
+          #    that tag. That one test tells the pushes above apart (without
+          #    it the release job's own PR would rebuild what it just released,
+          #    forever), stops the cron rebuilding daily while an auto-release
+          #    PR awaits review — and keeps doing so if that PR is closed
+          #    unmerged, where the open-PR-by-title search this replaced would
+          #    have re-published every day — and makes the cron self-healing:
+          #    a pin nothing released (missed push event, failed release
+          #    build) gets built. force_build and pull_request bypass the
+          #    guard: one is explicit, the other must always verify.
+          . utils.sh
+          # Not a pipe: under `bash -e` a gh failure must fail the step, not
+          # silently read as "no release" and rebuild.
+          release_tags=$( gh release list --limit 200 --json tagName --jq '.[].tagName' )
+
+          # Prints the commit microsoft/vscode's git tag points at, or nothing
+          # if the tag does not exist. Wire-protocol query, no clone (~1s).
+          # git's status is checked explicitly: Actions runs this step as
+          # `bash -e` WITHOUT pipefail, so the former `git ls-remote | awk`
+          # turned a network failure into "tag absent".
+          tag_commit_of() {
+            local ref
+            if ! ref=$( git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$1" ); then
+              # stderr: callers run this inside $( ... ), which would swallow
+              # the annotation from stdout. Actions reads workflow commands
+              # from either stream.
+              echo "::error::git ls-remote microsoft/vscode refs/tags/$1 failed; cannot tell whether the tag exists" >&2
+              return 1
+            fi
+            awk '{print $1}' <<< "$ref"
+          }
+
+          skip_reason=""
+          if [[ "$FORCE_BUILD" == "true" || "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "push" ]]; then
             ms_tag="$CURRENT_TAG"
             ms_commit="$CURRENT_COMMIT"
-            needs_build=false
-            reason="push: release $existing_release already covers pinned $CURRENT_TAG (auto-release PR merged); skipping"
-          elif [[ "$FORCE_BUILD" == "true" || "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "push" ]]; then
-            ms_tag="$CURRENT_TAG"
-            ms_commit="$CURRENT_COMMIT"
-            needs_build=true
-            reason="$EVENT_NAME: building PR's/pinned $ms_tag"
             # The update API and the git tag can name DIFFERENT commits for
             # the same version (1.134.0: API said 110a328, tag says 474a349
             # after a Microsoft re-tag). get_repo.sh silently adopts the
@@ -156,33 +175,20 @@ jobs:
             # one — dry-apply green locally, "patch does not apply" in CI,
             # forever. Fail HERE, in seconds, naming the real problem,
             # instead of red-herring patch rejects 25 minutes in.
-            tag_commit=$( git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$CURRENT_TAG" | awk '{print $1}' )
+            tag_commit=$( tag_commit_of "$CURRENT_TAG" )
             if [[ -n "$tag_commit" && "$tag_commit" != "$CURRENT_COMMIT" ]]; then
               echo "::error::upstream/stable.json pins $CURRENT_TAG at $CURRENT_COMMIT, but microsoft/vscode's git tag points at $tag_commit. get_repo.sh would silently build $tag_commit while patches were verified against the pin. Fix the pin to the git-authoritative hash: jq '.commit = \"$tag_commit\"' upstream/stable.json"
               exit 1
             fi
           elif [[ "$UPSTREAM_TAG" != "$CURRENT_TAG" ]]; then
-            # Matches the title the release job sets ("chore(release): <ver>
-            # (vscode <tag>)"). Empty result → absent field → next guard.
-            existing_pr=$(gh pr list \
-              --state open \
-              --label auto-release \
-              --search "$UPSTREAM_TAG in:title" \
-              --json number \
-              --jq '.[0].number // empty')
-            if [[ -n "$existing_pr" ]]; then
+            # The update API announces a version hours before microsoft/vscode
+            # pushes the git tag; catching that here saves a ~25-min runner
+            # that would fail at `Clone VS Code source` (issue #10).
+            tag_commit=$( tag_commit_of "$UPSTREAM_TAG" )
+            if [[ -z "$tag_commit" ]]; then
               ms_tag="$CURRENT_TAG"
               ms_commit="$CURRENT_COMMIT"
-              needs_build=false
-              reason="open auto-release PR #$existing_pr already pins $UPSTREAM_TAG; awaiting human merge"
-            # Wire-protocol query, no clone (~1s). ls-remote prints the ref if
-            # it exists, nothing otherwise. A network failure fails the step
-            # (Actions defaults to set -eo pipefail), rather than skipping.
-            elif tag_commit=$( git ls-remote https://github.com/microsoft/vscode.git "refs/tags/$UPSTREAM_TAG" | awk '{print $1}' ); [[ -z "$tag_commit" ]]; then
-              ms_tag="$CURRENT_TAG"
-              ms_commit="$CURRENT_COMMIT"
-              needs_build=false
-              reason="update API announced $UPSTREAM_TAG but microsoft/vscode hasn't pushed the tag yet; next cron will retry"
+              skip_reason="update API announced $UPSTREAM_TAG but microsoft/vscode hasn't pushed the tag yet; next cron will retry"
             else
               ms_tag="$UPSTREAM_TAG"
               # Prefer the git tag's hash over the update API's when they
@@ -195,14 +201,25 @@ jobs:
                 echo "::warning::git tag $UPSTREAM_TAG points at $tag_commit, not update-API hash $UPSTREAM_COMMIT; using the git-authoritative hash"
               fi
               ms_commit="$tag_commit"
-              needs_build=true
-              reason="upstream advanced from $CURRENT_TAG to $ms_tag"
             fi
           else
             ms_tag="$CURRENT_TAG"
             ms_commit="$CURRENT_COMMIT"
+          fi
+
+          existing_release=$( find_release_for_tag "$ms_tag" <<< "$release_tags" )
+          if [[ -n "$skip_reason" ]]; then
             needs_build=false
-            reason="upstream tag $UPSTREAM_TAG matches pin; skipping"
+            reason="$skip_reason"
+          elif [[ "$FORCE_BUILD" == "true" || "$EVENT_NAME" == "pull_request" ]]; then
+            needs_build=true
+            reason="$EVENT_NAME: building pinned $ms_tag"
+          elif [[ -n "$existing_release" ]]; then
+            needs_build=false
+            reason="release $existing_release already covers $ms_tag; skipping (merge its auto-release PR if open; force_build to rebuild)"
+          else
+            needs_build=true
+            reason="$EVENT_NAME: no release covers $ms_tag yet; building"
           fi
 
           time_patch=$(printf "%04d" $(($(date +%-j) * 24 + $(date +%-H))))
@@ -974,8 +991,10 @@ jobs:
 
           # Idempotent. Must filter `--state open`: the branch delete above
           # auto-closes any prior PR, and `gh pr view` would happily return
-          # that closed one — leaving a release and branch with no open PR
-          # that the next cron's open-only filter would never find.
+          # that closed one — leaving a release and branch with no open PR,
+          # so nobody is prompted to merge the pin. (The check job's "already
+          # released?" guard keys on the release, not this PR, so the cron
+          # would still not rebuild.)
           existing=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             echo "::notice::Open PR #$existing already exists for $BRANCH; skipping create"
