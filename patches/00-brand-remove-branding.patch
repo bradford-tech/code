@@ -774,7 +774,7 @@ index 4c350900..f2d603af 100644
 +							key: 'chat.mcp.access.registry', value: nls.localize('chat.mcp.access.registry', "Allows access to MCP servers listed in the registry that BradfordCode is connected to."),
  						},
 diff --git a/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupProviders.ts b/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupProviders.ts
-index 899c849d..ea190570 100644
+index e71460a8c88..eae6fed74b6 100644
 --- a/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupProviders.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chatSetup/chatSetupProviders.ts
 @@ -120,3 +120,3 @@ export class SetupAgent extends Disposable implements IChatAgentImplementation {
@@ -782,13 +782,6 @@ index 899c849d..ea190570 100644
 -			const { disposable: vscodeDisposable } = SetupAgent.doRegisterAgent(instantiationService, chatAgentService, 'setup.vscode', 'vscode', false, localize2('vscodeAgentDescription', "Ask questions about VS Code").value, ChatAgentLocation.Chat, ChatModeKind.Agent, context, controller);
 +			const { disposable: vscodeDisposable } = SetupAgent.doRegisterAgent(instantiationService, chatAgentService, 'setup.vscode', 'vscode', false, localize2('vscodeAgentDescription', "Ask questions about BradfordCode").value, ChatAgentLocation.Chat, ChatModeKind.Agent, context, controller);
  			disposables.add(vscodeDisposable);
-@@ -137,4 +137,4 @@ export class SetupAgent extends Disposable implements IChatAgentImplementation {
- 				displayName: localize('setupToolDisplayName', "New Workspace"),
--				modelDescription: 'Scaffold a new workspace in VS Code',
--				userDescription: localize('setupToolsDescription', "Scaffold a new workspace in VS Code"),
-+				modelDescription: 'Scaffold a new workspace in BradfordCode',
-+				userDescription: localize('setupToolsDescription', "Scaffold a new workspace in BradfordCode"),
- 				canBeReferencedInPrompt: true,
 diff --git a/src/vs/workbench/contrib/chat/common/promptSyntax/languageProviders/promptValidator.ts b/src/vs/workbench/contrib/chat/common/promptSyntax/languageProviders/promptValidator.ts
 index a80feca3..0c8e13bb 100644
 --- a/src/vs/workbench/contrib/chat/common/promptSyntax/languageProviders/promptValidator.ts
@@ -1190,10 +1183,10 @@ index 297598ef..45282b79 100644
 +											description: localize('walkthroughs.steps.completionEvents.onCommand', 'Check off step when a given command is executed anywhere in BradfordCode.'),
  											body: 'onCommand:${1:commandId}'
 diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
-index 168a3d01..fd76dda2 100644
+index 7a870e4010d..fd76dda25f2 100644
 --- a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
 +++ b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
-@@ -201,24 +201,2 @@ export const startEntries: GettingStartedStartEntryContent = [
+@@ -201,13 +201,2 @@ export const startEntries: GettingStartedStartEntryContent = [
  	},
 -	{
 -		id: 'topLevelOpenTunnel',
@@ -1206,19 +1199,8 @@ index 168a3d01..fd76dda2 100644
 -			command: 'command:workbench.action.remote.showWebStartEntryActions',
 -		}
 -	},
--	{
--		id: 'topLevelNewWorkspaceChat',
--		title: localize('gettingStarted.newWorkspaceChat.title', "Generate New Workspace..."),
--		description: localize('gettingStarted.newWorkspaceChat.description', "Chat to create a new workspace"),
--		icon: Codicon.chatSparkle,
--		when: '!isWeb && !chatSetupHidden && !chatSetupDisabledInWorkspace',
--		content: {
--			type: 'startEntry',
--			command: 'command:welcome.newWorkspaceChat',
--		}
--	},
  ];
-@@ -227,26 +205,2 @@ const Button = (title: string, href: string) => `[${title}](${href})`;
+@@ -216,26 +205,2 @@ const Button = (title: string, href: string) => `[${title}](${href})`;
  
 -const CopilotStepTitle = localize('gettingStarted.copilotSetup.title', "Use AI features with Copilot for free");
 -const CopilotDescription = localize({ key: 'gettingStarted.copilotSetup.description', comment: ['{Locked="["}', '{Locked="]({0})"}'] }, "You can use [Copilot]({0}) to generate code across multiple files, fix errors, ask questions about your code, and much more using natural language.", defaultChat.documentationUrl ?? '');
@@ -1245,41 +1227,41 @@ index 168a3d01..fd76dda2 100644
 -}
 -
  export const walkthroughs: GettingStartedWalkthroughContent = [
-@@ -254,3 +208,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -243,3 +208,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  		id: 'Setup',
 -		title: localize('gettingStarted.setup.title', "Get started with VS Code"),
 +		title: localize('gettingStarted.setup.title', "Get started with BradfordCode"),
  		description: localize('gettingStarted.setup.description', "Customize your editor, learn the basics, and start coding"),
-@@ -259,3 +213,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -248,3 +213,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  		when: '!isWeb',
 -		walkthroughPageTitle: localize('gettingStarted.setup.walkthroughPageTitle', 'Setup VS Code'),
 +		walkthroughPageTitle: localize('gettingStarted.setup.walkthroughPageTitle', 'Setup BradfordCode'),
  		next: 'Beginner',
-@@ -264,6 +218,2 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -253,6 +218,2 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  			steps: [
 -				createCopilotSetupStep('CopilotSetupAnonymous', CopilotAnonymousButton, 'chatAnonymous && !chatSetupCompleted', true),
 -				createCopilotSetupStep('CopilotSetupSignedOut', CopilotSignedOutButton, 'chatEntitlementSignedOut && !chatAnonymous && !github.copilot.hasByokModels', false),
 -				createCopilotSetupStep('CopilotSetupComplete', CopilotCompleteButton, 'chatSetupCompleted && !chatSetupDisabled && (chatAnonymous || chatPlanPro || chatPlanProPlus || chatPlanMax || chatPlanBusiness || chatPlanEnterprise || chatPlanFree)', false),
 -				createCopilotSetupStep('CopilotSetupSignedIn', CopilotSignedInButton, '!chatEntitlementSignedOut && (!chatSetupCompleted || chatSetupDisabled || chatPlanCanSignUp)', false),
  				{
-@@ -281,4 +231,4 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -270,4 +231,4 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					title: localize('gettingStarted.videoTutorial.title', "Watch video tutorials"),
 -					description: localize('gettingStarted.videoTutorial.description.interpolated', "Watch the first in a series of short & practical video tutorials for VS Code's key features.\n{0}", Button(localize('watch', "Watch Tutorial"), 'https://aka.ms/vscode-getting-started-video')),
 -					media: { type: 'svg', altText: 'VS Code Settings', path: 'learn.svg' },
 +					description: localize('gettingStarted.videoTutorial.description.interpolated', "Watch the first in a series of short & practical video tutorials for BradfordCode's key features.\n{0}", Button(localize('watch', "Watch Tutorial"), 'https://aka.ms/vscode-getting-started-video')),
 +					media: { type: 'svg', altText: 'BradfordCode Settings', path: 'learn.svg' },
  				}
-@@ -290,3 +240,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -279,3 +240,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  		id: 'SetupWeb',
 -		title: localize('gettingStarted.setupWeb.title', "Get Started with VS Code for the Web"),
 +		title: localize('gettingStarted.setupWeb.title', "Get Started with BradfordCode for the Web"),
  		description: localize('gettingStarted.setupWeb.description', "Customize your editor, learn the basics, and start coding"),
-@@ -296,3 +246,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -285,3 +246,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  		next: 'Beginner',
 -		walkthroughPageTitle: localize('gettingStarted.setupWeb.walkthroughPageTitle', 'Setup VS Code Web'),
 +		walkthroughPageTitle: localize('gettingStarted.setupWeb.walkthroughPageTitle', 'Setup BradfordCode Web'),
  		content: {
-@@ -322,6 +272,6 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -311,6 +272,6 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					title: localize('gettingStarted.extensions.title', "Code with extensions"),
 -					description: localize('gettingStarted.extensionsWeb.description.interpolated', "Extensions are VS Code's power-ups. A growing number are becoming available in the web.\n{0}", Button(localize('browsePopularWeb', "Browse Popular Web Extensions"), 'command:workbench.extensions.action.showPopularExtensions')),
 +					description: localize('gettingStarted.extensionsWeb.description.interpolated', "Extensions are BradfordCode's power-ups. A growing number are becoming available in the web.\n{0}", Button(localize('browsePopularWeb', "Browse Popular Web Extensions"), 'command:workbench.extensions.action.showPopularExtensions')),
@@ -1288,7 +1270,7 @@ index 168a3d01..fd76dda2 100644
 -						type: 'svg', altText: 'VS Code extension marketplace with featured language extensions', path: 'extensions-web.svg'
 +						type: 'svg', altText: 'BradfordCode extension marketplace with featured language extensions', path: 'extensions-web.svg'
  					},
-@@ -337,12 +287,2 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -326,12 +287,2 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  				},
 -				{
 -					id: 'settingsSyncWeb',
@@ -1301,42 +1283,42 @@ index 168a3d01..fd76dda2 100644
 -					},
 -				},
  				{
-@@ -350,3 +290,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -339,3 +290,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					title: localize('gettingStarted.commandPalette.title', "Unlock productivity with the Command Palette "),
 -					description: localize('gettingStarted.commandPalette.description.interpolated', "Run commands without reaching for your mouse to accomplish any task in VS Code.\n{0}", Button(localize('commandPalette', "Open Command Palette"), 'command:workbench.action.showCommands')),
 +					description: localize('gettingStarted.commandPalette.description.interpolated', "Run commands without reaching for your mouse to accomplish any task in BradfordCode.\n{0}", Button(localize('commandPalette', "Open Command Palette"), 'command:workbench.action.showCommands')),
  					media: { type: 'svg', altText: 'Command Palette overlay for searching and executing commands.', path: 'commandPalette.svg' },
-@@ -356,3 +296,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -345,3 +296,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					title: localize('gettingStarted.setup.OpenFolder.title', "Open up your code"),
 -					description: localize('gettingStarted.setup.OpenFolderWeb.description.interpolated', "You're all set to start coding. You can open a local project or a remote repository to get your files into VS Code.\n{0}\n{1}", Button(localize('openFolder', "Open Folder"), 'command:workbench.action.addRootFolder'), Button(localize('openRepository', "Open Repository"), 'command:remoteHub.openRepository')),
 +					description: localize('gettingStarted.setup.OpenFolderWeb.description.interpolated', "You're all set to start coding. You can open a local project or a remote repository to get your files into BradfordCode.\n{0}\n{1}", Button(localize('openFolder', "Open Folder"), 'command:workbench.action.addRootFolder'), Button(localize('openRepository', "Open Repository"), 'command:remoteHub.openRepository')),
  					when: 'workspaceFolderCount == 0',
-@@ -377,3 +317,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -366,3 +317,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  		title: localize('gettingStarted.setupAccessibility.title', "Get Started with Accessibility Features"),
 -		description: localize('gettingStarted.setupAccessibility.description', "Learn the tools and shortcuts that make VS Code accessible. Note that some actions are not actionable from within the context of the walkthrough."),
 +		description: localize('gettingStarted.setupAccessibility.description', "Learn the tools and shortcuts that make BradfordCode accessible. Note that some actions are not actionable from within the context of the walkthrough."),
  		isFeatured: true,
-@@ -382,3 +322,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -371,3 +322,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  		next: 'Setup',
 -		walkthroughPageTitle: localize('gettingStarted.setupAccessibility.walkthroughPageTitle', 'Setup VS Code Accessibility'),
 +		walkthroughPageTitle: localize('gettingStarted.setupAccessibility.walkthroughPageTitle', 'Setup BradfordCode Accessibility'),
  		content: {
-@@ -413,3 +353,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -402,3 +353,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					title: localize('gettingStarted.commandPaletteAccessibility.title', "Unlock productivity with the Command Palette "),
 -					description: localize('gettingStarted.commandPaletteAccessibility.description.interpolated', "Run commands without reaching for your mouse to accomplish any task in VS Code.\n{0}", Button(localize('commandPalette', "Open Command Palette"), 'command:workbench.action.showCommands')),
 +					description: localize('gettingStarted.commandPaletteAccessibility.description.interpolated', "Run commands without reaching for your mouse to accomplish any task in BradfordCode.\n{0}", Button(localize('commandPalette', "Open Command Palette"), 'command:workbench.action.showCommands')),
  					media: { type: 'markdown', path: 'empty' },
-@@ -493,3 +433,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -482,3 +433,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					title: localize('gettingStarted.settings.title', "Tune your settings"),
 -					description: localize('gettingStarted.settingsAndSync.description.interpolated', "Customize every aspect of VS Code and [sync](command:workbench.userDataSync.actions.turnOn) customizations across devices.\n{0}", Button(localize('tweakSettings', "Open Settings"), 'command:toSide:workbench.action.openSettings')),
 +					description: localize('gettingStarted.settingsAndSync.description.interpolated', "Customize every aspect of BradfordCode and [sync](command:workbench.userDataSync.actions.turnOn) customizations across devices.\n{0}", Button(localize('tweakSettings', "Open Settings"), 'command:toSide:workbench.action.openSettings')),
  					when: 'workspacePlatform != \'webworker\' && syncStatus != uninitialized',
-@@ -497,3 +437,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -486,3 +437,3 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					media: {
 -						type: 'svg', altText: 'VS Code Settings', path: 'settings.svg'
 +						type: 'svg', altText: 'BradfordCode Settings', path: 'settings.svg'
  					},
-@@ -503,6 +443,6 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
+@@ -492,6 +443,6 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
  					title: localize('gettingStarted.extensions.title', "Code with extensions"),
 -					description: localize('gettingStarted.extensions.description.interpolated', "Extensions are VS Code's power-ups. They range from handy productivity hacks, expanding out-of-the-box features, to adding completely new capabilities.\n{0}", Button(localize('browsePopular', "Browse Popular Extensions"), 'command:workbench.extensions.action.showPopularExtensions')),
 +					description: localize('gettingStarted.extensions.description.interpolated', "Extensions are BradfordCode's power-ups. They range from handy productivity hacks, expanding out-of-the-box features, to adding completely new capabilities.\n{0}", Button(localize('browsePopular', "Browse Popular Extensions"), 'command:workbench.extensions.action.showPopularExtensions')),
