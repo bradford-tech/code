@@ -74,12 +74,12 @@ index 10564f5ccf8..68cb8138e53 100644
 +						'@vscodium/policy-watcher',
  						'@vscode/proxy-agent',
 diff --git a/package-lock.json b/package-lock.json
-index ed3f93d4881..2d62e123462 100644
+index 82afa03af8f..ec34cac31e4 100644
 --- a/package-lock.json
 +++ b/package-lock.json
 @@ -33,3 +33,2 @@
          "@vscode/os-proxy-resolver": "^0.4.0",
--        "@vscode/policy-watcher": "^1.6.0",
+-        "@vscode/policy-watcher": "^1.7.0",
          "@vscode/proxy-agent": "^0.45.0",
 @@ -81,3 +80,4 @@
          "yazl": "^2.4.3",
@@ -87,17 +87,20 @@ index ed3f93d4881..2d62e123462 100644
 +        "zod": "^4.4.3",
 +        "@vscodium/policy-watcher": "^1.3.2-252465"
        },
-@@ -4969,22 +4969,2 @@
+@@ -4969,25 +4969,2 @@
      },
 -    "node_modules/@vscode/policy-watcher": {
--      "version": "1.6.0",
--      "resolved": "https://registry.npmjs.org/@vscode/policy-watcher/-/policy-watcher-1.6.0.tgz",
--      "integrity": "sha512-v7ucf7atz36xRpo4EvqgIZrf0uXKYkmpLQzmT+dzS5M+quMYW8d5TKBKetUGvxOEhKWuwHeR7plAzI4I8K5vyQ==",
+-      "version": "1.7.0",
+-      "resolved": "https://registry.npmjs.org/@vscode/policy-watcher/-/policy-watcher-1.7.0.tgz",
+-      "integrity": "sha512-l6N5iJnPoAQpRVm1TPP7fOHO9TrT2W/cbn/SwFT0yfXwoE8veq9waFwblxcmfqJCzUNSEYouMWhuMhnc67kkPA==",
 -      "hasInstallScript": true,
 -      "license": "MIT",
 -      "dependencies": {
 -        "bindings": "^1.5.0",
 -        "node-addon-api": "^8.2.0"
+-      },
+-      "engines": {
+-        "node": ">=22"
 -      }
 -    },
 -    "node_modules/@vscode/policy-watcher/node_modules/node-addon-api": {
@@ -110,7 +113,7 @@ index ed3f93d4881..2d62e123462 100644
 -      }
 -    },
      "node_modules/@vscode/proxy-agent": {
-@@ -5401,2 +5381,22 @@
+@@ -5404,2 +5381,22 @@
      },
 +    "node_modules/@vscodium/policy-watcher": {
 +      "version": "1.3.2-255408",
@@ -134,12 +137,12 @@ index ed3f93d4881..2d62e123462 100644
 +    },
      "node_modules/@webgpu/types": {
 diff --git a/package.json b/package.json
-index 8ccf58f6d97..f7ecf52c396 100644
+index 1a44519d020..399d863d9b7 100644
 --- a/package.json
 +++ b/package.json
-@@ -123,3 +123,3 @@
+@@ -124,3 +124,3 @@
      "@vscode/os-proxy-resolver": "^0.4.0",
--    "@vscode/policy-watcher": "^1.6.0",
+-    "@vscode/policy-watcher": "^1.7.0",
 +    "@vscodium/policy-watcher": "^1.3.2-252465",
      "@vscode/proxy-agent": "^0.45.0",
 diff --git a/src/vs/base/test/node/uri.perf.data.txt b/src/vs/base/test/node/uri.perf.data.txt
