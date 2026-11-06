@@ -597,10 +597,10 @@ index 63a5c801f10..9c1374b791a 100644
  import { isObject } from '../../../../base/common/types.js';
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts b/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
 deleted file mode 100644
-index 66d4563d1a4..00000000000
+index c3290bce179..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
 +++ /dev/null
-@@ -1,11769 +0,0 @@
+@@ -1,11772 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -2045,7 +2045,7 @@ index 66d4563d1a4..00000000000
 -		const discoveryRoot = resourceJoinPath(this._copilotHomeService.home, 'session-state');
 -		this._copilotChatDiscovery = this._register(this._instantiationService.createInstance(CopilotChatDiscovery,
 -			discoveryRoot, scan => this._emitCopilotChats(scan)));
--		this._gitHubTelemetryForwarder = this._instantiationService.createInstance(CopilotGitHubTelemetryForwarder, () => this._restrictedTelemetryEnabled);
+-		this._gitHubTelemetryForwarder = this._instantiationService.createInstance(CopilotGitHubTelemetryForwarder);
 -		this._secondaryAssignmentContext = this._instantiationService.createInstance(CopilotSecondaryAssignmentContext);
 -		this._register(this._configurationService.onDidRootConfigChange(() => {
 -			this._updateVSCodeAssignmentContext();
@@ -4329,6 +4329,9 @@ index 66d4563d1a4..00000000000
 -	}
 -
 -	private async _forwardGitHubTelemetry(notification: GitHubTelemetryNotification): Promise<void> {
+-		if (notification.restricted) {
+-			return;
+-		}
 -		if (notification.event.kind === 'response.success' || notification.event.kind === 'response.error') {
 -			await this._forwardResponseTelemetry(notification);
 -		} else if (isCompactionTelemetryKind(notification.event.kind)) {
@@ -12372,10 +12375,10 @@ index 66d4563d1a4..00000000000
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts b/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts
 deleted file mode 100644
-index 282b8ac10ae..00000000000
+index 7def8ab2a4b..00000000000
 --- a/src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts
 +++ /dev/null
-@@ -1,12804 +0,0 @@
+@@ -1,12809 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -12649,6 +12652,7 @@ index 282b8ac10ae..00000000000
 -
 -interface ICopilotActiveToolCall {
 -	readonly turnId: string;
+-	readonly copilotTrackingId?: string;
 -	readonly startedAt?: string;
 -	readonly toolName: string;
 -	readonly displayName: string;
@@ -21973,8 +21977,12 @@ index 282b8ac10ae..00000000000
 -			const isToolSearch = this._isToolSearchActive() && e.data.toolName === RUNTIME_TOOL_SEARCH_TOOL_NAME;
 -			const contributor = replacementFailure === undefined ? this._getToolCallContributor(e.data.toolName, mcpServerName) : undefined;
 -			const intention = getToolIntention(e.data.toolName, parameters, intentionSummary);
+-			const telemetryContext = parentToolCallId && !this._fusionPhases.has(parentToolCallId)
+-				? this._subagents.getAccountContext(parentToolCallId)
+-				: this._currentTurn.value?.telemetryContext;
 -			this._activeToolCalls.set(e.data.toolCallId, {
 -				turnId: this._turnId,
+-				copilotTrackingId: telemetryContext?.copilotTrackingId,
 -				startedAt: e.timestamp,
 -				toolName: e.data.toolName,
 -				displayName,
@@ -22176,7 +22184,7 @@ index 282b8ac10ae..00000000000
 -			const chatUri = parentToolCallId ? this._subagentChatUri(parentToolCallId) : this._chatChannelUri.toString();
 -			const modelId = tracked.fusionSourceModel ?? this._lastSeenModelId;
 -			// Recording an SDK edit must finish even when its turn no longer accepts display updates.
--			const fileEdits = filePaths.map(filePath => this._editTracker.takeCompletedEdit(turnId, e.data.toolCallId, filePath, tracked.toolName, tracked.parameters, modelId, parentToolCallId !== undefined, turn?.clientContext, chatUri, tracked.autoTier, tracked.fusionModel)
+-			const fileEdits = filePaths.map(filePath => this._editTracker.takeCompletedEdit(turnId, e.data.toolCallId, filePath, tracked.toolName, tracked.parameters, modelId, parentToolCallId !== undefined, turn?.clientContext, chatUri, tracked.autoTier, tracked.fusionModel, tracked.copilotTrackingId)
 -				.catch(err => {
 -					this._logService.warn(`[Copilot:${sessionId}] Failed to take completed edit`, err);
 -					return undefined;
@@ -50959,10 +50967,10 @@ index c429a801a53..97b1153839c 100644
  import type { ISessionDatabase } from '../../common/sessionDataService.js';
 diff --git a/src/vs/platform/agentHost/test/node/copilotAgent.test.ts b/src/vs/platform/agentHost/test/node/copilotAgent.test.ts
 deleted file mode 100644
-index 3fe9978da4b..00000000000
+index c63d345caf2..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotAgent.test.ts
 +++ /dev/null
-@@ -1,31087 +0,0 @@
+@@ -1,31133 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -56616,6 +56624,51 @@ index 3fe9978da4b..00000000000
 -		]);
 -	});
 -
+-	for (const kind of ['response.success', 'response.error']) {
+-		for (const initiatorType of ['user', 'agent']) {
+-			test(`restricted ${kind} does not consume ${initiatorType} turn correlation before its standard copy`, async () => {
+-				const events: ITelemetryData[] = [];
+-				const received = new DeferredPromise<void>();
+-				const telemetryService = new class extends RecordingTelemetryService {
+-					override publicLog(eventName?: string, data?: ITelemetryData): void {
+-						if (eventName === `copilotSdk/${kind}` && data) {
+-							events.push(data);
+-							received.complete();
+-						}
+-					}
+-				}();
+-				const agent = createTestAgent(disposables, { copilotClient: new TestCopilotClient([]), telemetryService });
+-				afterTest(() => disposeAgent(agent));
+-				await agent.listChatsToMigrate();
+-				const forward = getCreatedClientOptions(agent).at(-1)?.onGitHubTelemetry;
+-				assert.ok(forward);
+-				const correlation = new ModelCallTurnCorrelation();
+-				correlation.recordTelemetryContext('call', { copilotSku: 'sku-a', copilotTrackingId: 'analytics-a' });
+-				correlation.record('call', 'owning-turn');
+-				setLiveChatStub(agent, 'sdk-session', {
+-					currentTurnId: 'different-active-turn', modelCallTurnCorrelation: correlation,
+-				});
+-				const notification = (restricted: boolean): GitHubTelemetryNotification => ({
+-					sessionId: 'sdk-session', restricted,
+-					event: { kind, model_call_id: 'call', properties: { initiatorType }, metrics: {} },
+-				});
+-
+-				await forward(notification(true));
+-				await forward(notification(false));
+-				await received.p;
+-
+-				assert.deepStrictEqual(events.map(event => ({
+-					turnId: event.turnId,
+-					outcome: event.ahCorrelationOutcome,
+-					copilotSku: event.copilotSku,
+-					trackingId: event['common.copilotTrackingId'],
+-				})), [{
+-					turnId: 'owning-turn', outcome: 'mappingAvailable', copilotSku: 'sku-a', trackingId: 'analytics-a',
+-				}]);
+-			});
+-		}
+-	}
+-
 -	test('waits for originating account context for user and agent initiated SDK responses', async () => {
 -		for (const initiatorType of ['user', 'agent']) {
 -			const received = new DeferredPromise<ITelemetryData>();
@@ -56763,7 +56816,7 @@ index 3fe9978da4b..00000000000
 -		]);
 -	});
 -
--	test('routes exact legacy targets exclusively and falls back to generic forwarding', async () => {
+-	test('routes exact restricted targets and only forwards standard fallback events', async () => {
 -		const client = new TestCopilotClient([]);
 -		const copilotApiService = new TestCopilotApiService();
 -		copilotApiService.restrictedTelemetryContexts.set('restricted-token', {
@@ -56819,6 +56872,7 @@ index 3fe9978da4b..00000000000
 -		await forward(notification('engine.messages.length', true));
 -		await forward(notification('engine.messages', false));
 -		await forward(notification('unknown_restricted', true));
+-		await forward(notification('tool_call_executed', true));
 -		await forward(notification('tool_call_executed', false));
 -
 -		assert.deepStrictEqual({
@@ -56826,7 +56880,7 @@ index 3fe9978da4b..00000000000
 -			enhanced: telemetryService.enhancedEvents,
 -			internal: telemetryService.internalEvents,
 -		}, {
--			generic: ['copilotSdk/unknown_restricted', 'copilotSdk/tool_call_executed'],
+-			generic: ['copilotSdk/tool_call_executed'],
 -			enhanced: ['engine.messages.length'],
 -			internal: ['engine.messages.length'],
 -		});
@@ -82052,10 +82106,10 @@ index 3fe9978da4b..00000000000
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts b/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts
 deleted file mode 100644
-index 1b9f1d49cfe..00000000000
+index bb497fddc72..00000000000
 --- a/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts
 +++ /dev/null
-@@ -1,34824 +0,0 @@
+@@ -1,34856 +0,0 @@
 -/*---------------------------------------------------------------------------------------------
 - *  Copyright (c) Microsoft Corporation. All rights reserved.
 - *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -92226,7 +92280,7 @@ index 1b9f1d49cfe..00000000000
 -			mockSession.fire('assistant.message', {
 -				messageId: 'message', apiCallId: 'call', content: 'done',
 -			} as SessionEventPayload<'assistant.message'>['data'], { agentId: 'agent-1' });
--			new CopilotGitHubTelemetryForwarder(() => false, telemetryService).forward({
+-			new CopilotGitHubTelemetryForwarder(telemetryService).forward({
 -				sessionId: session.sessionId, restricted: false,
 -				event: { kind: 'response.success', properties: { modelCallId: 'call' }, metrics: {} },
 -			}, 'child-turn', undefined, session.modelCallTurnCorrelation.getTelemetryContext('call'));
@@ -101830,13 +101884,14 @@ index 1b9f1d49cfe..00000000000
 -			].join('\n');
 -			for (const chat of [buildDefaultChatUri(sessionUri), buildChatUri(sessionUri, 'peer')]) {
 -				for (const agentId of [undefined, 'agent-1']) {
+-					const telemetryContext = { copilotSku: 'sku-a', copilotTrackingId: 'account-a' };
 -					const { session, mockSession, waitForSignal } = await createAgentSession(disposables, {
--						workingDirectory, sessionUri, chatChannelUri: URI.parse(chat),
+-						workingDirectory, sessionUri, chatChannelUri: URI.parse(chat), telemetryContext,
 -					});
 -					const sessionInternals = session as unknown as ISessionInternalsForTest;
--					const taken: { path: string; chat: string | undefined; isSubagent: boolean }[] = [];
--					sessionInternals._editTracker.takeCompletedEdit = async (_turnId, _toolCallId, path, _toolName, _toolInput, _modelId, isSubagent, _clientContext, chat) => {
--						taken.push({ path, chat, isSubagent });
+-					const taken: { path: string; chat: string | undefined; isSubagent: boolean; copilotTrackingId: string | undefined }[] = [];
+-					sessionInternals._editTracker.takeCompletedEdit = async (_turnId, _toolCallId, path, _toolName, _toolInput, _modelId, isSubagent, _clientContext, chat, _autoTier, _fusionModel, copilotTrackingId) => {
+-						taken.push({ path, chat, isSubagent, copilotTrackingId });
 -						return undefined;
 -					};
 -					session.resetTurnState('turn-apply-patch');
@@ -101848,6 +101903,7 @@ index 1b9f1d49cfe..00000000000
 -					mockSession.fire('tool.execution_start', {
 -						toolCallId: 'tc-apply-patch', toolName: 'apply_patch', arguments: patch,
 -					} as unknown as SessionEventPayload<'tool.execution_start'>['data'], { agentId });
+-					telemetryContext.copilotTrackingId = 'account-b';
 -					mockSession.fire('tool.execution_complete', {
 -						toolCallId: 'tc-apply-patch', success: true,
 -					} as SessionEventPayload<'tool.execution_complete'>['data'], { agentId });
@@ -101858,10 +101914,38 @@ index 1b9f1d49cfe..00000000000
 -						path: join(workingDirectory.fsPath, path),
 -						chat: agentId ? buildSubagentChatUri(sessionUri, 'task') : chat,
 -						isSubagent: agentId !== undefined,
+-						copilotTrackingId: 'account-a',
 -					})));
 -				}
 -			}
 -		});
+-
+-		for (const copilotTrackingId of ['account-a', undefined]) {
+-			test(`tool_complete preserves the spawning subagent account after the root changes (${copilotTrackingId})`, async () => {
+-				const options = { telemetryContext: { copilotSku: 'sku-a', copilotTrackingId } };
+-				const { session, mockSession, waitForSignal } = await createAgentSession(disposables, options);
+-				const sessionInternals = session as unknown as ISessionInternalsForTest;
+-				const taken: (string | undefined)[] = [];
+-				sessionInternals._editTracker.takeCompletedEdit = async (_turnId, _toolCallId, _path, _toolName, _toolInput, _modelId, _isSubagent, _clientContext, _chat, _autoTier, _fusionModel, trackingId) => {
+-					taken.push(trackingId);
+-					return undefined;
+-				};
+-				session.resetTurnState('turn-1');
+-				mockSession.fire('subagent.started', {
+-					toolCallId: 'task', agentName: 'explore', agentDisplayName: 'Explore', agentDescription: 'Explore tests',
+-				} as SessionEventPayload<'subagent.started'>['data'], { agentId: 'agent-1' });
+-				options.telemetryContext = { copilotSku: 'sku-b', copilotTrackingId: 'account-b' };
+-				session.resetTurnState('turn-2');
+-				mockSession.fire('tool.execution_start', {
+-					toolCallId: 'child-edit', toolName: 'apply_patch', arguments: '*** Begin Patch\n*** Update File: foo.ts\n@@\n+new\n*** End Patch',
+-				} as unknown as SessionEventPayload<'tool.execution_start'>['data'], { agentId: 'agent-1' });
+-				mockSession.fire('tool.execution_complete', {
+-					toolCallId: 'child-edit', success: true,
+-				} as SessionEventPayload<'tool.execution_complete'>['data'], { agentId: 'agent-1' });
+-				await waitForSignal(s => isAction(s, ActionType.ChatToolCallComplete));
+-				assert.deepStrictEqual(taken, [copilotTrackingId]);
+-			});
+-		}
 -
 -		test('tool_complete snapshots the committed Auto tier per edit without subagent inheritance', async () => {
 -			const { session, mockSession, waitForSignal } = await createAgentSession(disposables, {
@@ -101984,17 +102068,19 @@ index 1b9f1d49cfe..00000000000
 -		});
 -
 -		test('tool_complete attributes unattributed edits inside a running HydraFusion phase to the turn\'s HydraFusion model', async () => {
--			const { session, mockSession, waitForSignal } = await createAgentSession(disposables);
+-			const telemetryContext = { copilotSku: 'sku-a', copilotTrackingId: 'account-a' };
+-			const { session, mockSession, waitForSignal } = await createAgentSession(disposables, { telemetryContext });
 -			const sessionInternals = session as unknown as ISessionInternalsForTest;
--			const taken: { toolCallId: string; fusionModel: string | undefined }[] = [];
--			sessionInternals._editTracker.takeCompletedEdit = async (_turnId, toolCallId, _path, _toolName, _toolInput, _modelId, _isSubagent, _clientContext, _chat, _autoTier, fusionModel) => {
--				taken.push({ toolCallId, fusionModel });
+-			const taken: { toolCallId: string; fusionModel: string | undefined; copilotTrackingId: string | undefined }[] = [];
+-			sessionInternals._editTracker.takeCompletedEdit = async (_turnId, toolCallId, _path, _toolName, _toolInput, _modelId, _isSubagent, _clientContext, _chat, _autoTier, fusionModel, copilotTrackingId) => {
+-				taken.push({ toolCallId, fusionModel, copilotTrackingId });
 -				return undefined;
 -			};
 -			const edit = async (toolCallId: string) => {
 -				mockSession.fire('tool.execution_start', {
 -					toolCallId, toolName: 'apply_patch', arguments: '*** Begin Patch\n*** Update File: foo.ts\n@@\n+new\n*** End Patch',
 -				} as unknown as SessionEventPayload<'tool.execution_start'>['data']);
+-				telemetryContext.copilotTrackingId = 'account-b';
 -				mockSession.fire('tool.execution_complete', { toolCallId, success: true } as SessionEventPayload<'tool.execution_complete'>['data']);
 -				await waitForSignal(s => s.kind === 'action' && s.action.type === ActionType.ChatToolCallComplete && s.action.toolCallId === toolCallId);
 -			};
@@ -102007,8 +102093,8 @@ index 1b9f1d49cfe..00000000000
 -			await edit('plain-edit');
 -
 -			assert.deepStrictEqual(taken, [
--				{ toolCallId: 'phase-edit', fusionModel: 'hydrafusion-max' },
--				{ toolCallId: 'plain-edit', fusionModel: undefined },
+-				{ toolCallId: 'phase-edit', fusionModel: 'hydrafusion-max', copilotTrackingId: 'account-a' },
+-				{ toolCallId: 'plain-edit', fusionModel: undefined, copilotTrackingId: 'account-b' },
 -			]);
 -		});
 -
