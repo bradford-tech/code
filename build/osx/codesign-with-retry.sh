@@ -12,6 +12,10 @@
 # --force, so re-signing a bundle that is already fully or partially signed
 # simply replaces the existing signatures.
 #
+# Also wraps `xcrun stapler staple`, whose CloudKit ticket lookup fails on the
+# same kind of network blip ("The network connection was lost"); re-stapling
+# just re-fetches and re-attaches the ticket.
+#
 # A non-transient failure (bad entitlement, missing identity, malformed
 # bundle) is NOT retried — it fails on the first attempt so real breakage
 # surfaces immediately instead of being hidden behind minutes of backoff.

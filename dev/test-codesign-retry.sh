@@ -98,6 +98,24 @@ else
   FAILURES=$(( FAILURES + 1 ))
 fi
 
+# --- 6. Stapler's CloudKit network drop is treated as transient -----------
+# Run 42234608658: notarization was Accepted, then `xcrun stapler staple`
+# lost its connection to Apple's ticket-delivery CloudKit and failed the build.
+reset_case
+make_stub "${WORK}/stub" 1 'error is Error Domain=NSURLErrorDomain Code=-1005 "The network connection was lost."'
+rc=0
+SIGN_RETRY_DELAY=0 "${RETRY}" "${WORK}/stub" > /dev/null 2>&1 || rc=$?
+assert_eq "0" "${rc}" "recovers after a stapler CloudKit network drop"
+assert_eq "2" "$( attempts_made )" "retries the stapler after a CloudKit network drop"
+
+# --- 7. prepare_assets.sh actually routes stapling through the wrapper ----
+if grep -qE 'codesign-with-retry\.sh.*xcrun stapler staple' build/osx/prepare_assets.sh; then
+  echo "ok   - build/osx/prepare_assets.sh staples via codesign-with-retry.sh"
+else
+  echo "FAIL - build/osx/prepare_assets.sh does not staple via codesign-with-retry.sh"
+  FAILURES=$(( FAILURES + 1 ))
+fi
+
 echo
 if (( FAILURES > 0 )); then
   echo "${FAILURES} assertion(s) failed"
