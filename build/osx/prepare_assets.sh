@@ -52,7 +52,11 @@ if [[ -n "${CERTIFICATE_OSX_P12_DATA}" ]]; then
   xcrun notarytool submit "${ZIP_FILE}" --keychain-profile "${APP_NAME}" --wait --keychain "${KEYCHAIN}"
 
   echo "+ attach staple"
-  xcrun stapler staple ./*.app
+  # Wrapped for retry: the stapler fetches the ticket from Apple's CloudKit, and
+  # a dropped connection there ("The network connection was lost", error 68)
+  # failed run 42234608658 after notarization had already been Accepted.
+  # Re-stapling is safe: it just re-fetches and re-attaches the ticket.
+  ../build/osx/codesign-with-retry.sh xcrun stapler staple ./*.app
   # spctl --assess -vv --type install ./*.app
 
   rm "${ZIP_FILE}"
