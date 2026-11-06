@@ -67,6 +67,13 @@ Historical failure classes, most→least common:
   (guarded by `./dev/test-node-compile-cache-gate.sh`). `ci-verify.sh` stops
   before packaging, so this class only reproduces by running the packing task.
 
+- **Transient Apple-service failures in `Sign + notarize + DMG`** — codesign's
+  timestamp service or the stapler's CloudKit ticket lookup
+  (`NSURLErrorDomain -1005 "The network connection was lost"`, stapler
+  `Error 68`). Not a patch problem: both calls go through
+  `build/osx/codesign-with-retry.sh` (guarded by `./dev/test-codesign-retry.sh`);
+  if a new message slips past its `TRANSIENT_PATTERN`, widen the pattern there.
+
 **Check which job failed before assuming it's a patch problem.** `release`
 failures look like build failures in the issue text but have nothing to do with
 patches. If `build` and `build-reh` are green, skip straight to the release job's
