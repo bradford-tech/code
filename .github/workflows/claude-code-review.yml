@@ -6,12 +6,15 @@ on:
 
 jobs:
   claude-review:
-    # Skip claude[bot] PRs: every auto-fix iteration would otherwise burn an
-    # extra review session per push. The build itself is the regression check
-    # for the fix loop.
+    # Skip auto-fix loop PRs: every iteration would otherwise burn an extra
+    # review session per push. The build itself is the regression check for
+    # the fix loop. claude[bot] opens the PR; bradfordbot[bot] is the identity
+    # behind every `git push` from the fix workflow (its checkout token), so
+    # `synchronize` events arrive under that actor.
     if: |
       github.actor != 'dependabot[bot]' &&
       github.actor != 'claude[bot]' &&
+      github.actor != 'bradfordbot[bot]' &&
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:

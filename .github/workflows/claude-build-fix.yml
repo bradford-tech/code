@@ -63,7 +63,35 @@ jobs:
       id-token: write
       actions: read
     steps:
+      # Mint a BradfordBot installation token and make it the credential the
+      # checkout persists, so every `git push` Claude runs goes out as
+      # `bradfordbot[bot]` — an installed app with write access — instead of
+      # `github-actions[bot]`. Since June 2026 GitHub creates PR workflow runs
+      # for pushes by github-actions[bot] but HOLDS them until a human with
+      # write access approves (PR #129 sat for 18 min on its second commit).
+      # Pushes from an installed app aren't held, so the fix PR's build and
+      # review start immediately. The Claude step keeps using the Claude app
+      # token for `gh` (PR creation, comments); only git credentials change.
+      # The app needs Contents + Pull requests + Workflows: write. The token is
+      # narrowed below to just what a push needs (zizmor `github-app`): no
+      # `owner`/`repositories` means it's scoped to this repo only, and the
+      # `permission-*` inputs drop everything else the installation holds.
+      # `workflows: write` is what lets a fix touch .github/workflows/*.yml;
+      # without it GitHub rejects the push with "refusing to allow a GitHub
+      # App to create or update workflow".
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.BRADFORDBOT_CLIENT_ID }}
+          private-key: ${{ secrets.BRADFORDBOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+          permission-metadata: read
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       # Resolve which issue number we're operating on and what failing run kicked
       # this off. The fields live in different places on the two event payloads.
