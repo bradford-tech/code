@@ -1,5 +1,5 @@
 diff --git a/src/vs/platform/update/common/update.config.contribution.ts b/src/vs/platform/update/common/update.config.contribution.ts
-index a33c834abe6..19e97bf7ca5 100644
+index 7866b7332fb..6d2a281b42a 100644
 --- a/src/vs/platform/update/common/update.config.contribution.ts
 +++ b/src/vs/platform/update/common/update.config.contribution.ts
 @@ -65,2 +65,8 @@ configurationRegistry.registerConfiguration({
@@ -12,15 +12,15 @@ index a33c834abe6..19e97bf7ca5 100644
 +		},
  		'update.enableWindowsBackgroundUpdates': {
 diff --git a/src/vs/platform/update/electron-main/abstractUpdateService.ts b/src/vs/platform/update/electron-main/abstractUpdateService.ts
-index 6b541107658..2414a7a30b3 100644
+index 3950bf219ac..9743c644f37 100644
 --- a/src/vs/platform/update/electron-main/abstractUpdateService.ts
 +++ b/src/vs/platform/update/electron-main/abstractUpdateService.ts
-@@ -707,3 +707,3 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
+@@ -712,3 +712,3 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
  
 -				this.logService.info('update#isLatestVersion() - found version', fetchedVersion, currentVersion);
 +				this.logService.info(`update#isLatestVersion() - found: ${fetchedVersion}, current: ${currentVersion}`);
  
-@@ -711,3 +711,28 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
+@@ -716,3 +716,28 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
  
 -				return Promise.resolve({ lastest, update });
 +				const minReleaseAge = this.configurationService.getValue<number>('update.minReleaseAge');

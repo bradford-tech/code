@@ -195,28 +195,36 @@ if [[ "${CI_BUILD}" != "no" ]]; then
   clang++ --version
 fi
 
-node build/npm/preinstall.ts
+# Upstream switched from npm to pnpm in 1.146.0: the lockfiles are
+# pnpm-lock.yaml, and the node-gyp/prebuild settings that used to live in
+# .npmrc are the `nativeBuild` field of each install root's package.json.
+# Install the pnpm version pinned by `packageManager` (no-op when present).
+node build/azure-pipelines/common/installPnpm.ts
 
-mv .npmrc .npmrc.bak
-cp ../npmrc .npmrc
+# Opt @vscodium/native-keymap out of the global build-from-source setting so it
+# downloads its prebuilt binary (formerly `build_from_source_native_keymap="no"`
+# in the .npmrc that 20-keymap-use-custom-lib.patch edited). pnpm passes the
+# caller's environment through to dependency install scripts.
+export npm_config_build_from_source_native_keymap="no"
 
+# `pnpm install` runs the root preinstall (Node version check + node-gyp
+# headers) and postinstall (the separate install roots: build/, remote/,
+# extensions/) itself; preinstall.ts refuses to run outside pnpm.
 for i in {1..5}; do # try 5 times
   if [[ "${CI_BUILD}" != "no" && "${OS_NAME}" == "osx" ]]; then
-    CXX=clang++ npm ci && break
+    CXX=clang++ pnpm install --frozen-lockfile && break
   else
-    npm ci && break
+    pnpm install --frozen-lockfile && break
   fi
 
   if [[ $i == 5 ]]; then
-    echo "Npm install failed too many times" >&2
+    echo "pnpm install failed too many times" >&2
     exit 1
   fi
-  echo "Npm install failed $i, trying again..."
+  echo "pnpm install failed $i, trying again..."
 
   sleep $(( 15 * (i + 1)))
 done
-
-mv .npmrc.bak .npmrc
 # }}}
 
 # package.json

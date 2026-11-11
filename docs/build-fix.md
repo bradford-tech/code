@@ -58,6 +58,14 @@ Historical failure classes, most→least common:
   literals introduced by a patch.
 - **Native module ABI mismatch** (`NODE_MODULE_VERSION`) after a Node version
   bump — check `.nvmrc` against upstream's `vscode/.nvmrc`.
+- **Package-manager migration.** 1.146.0 moved upstream from npm to pnpm
+  (`packageManager: pnpm@x.y.z`): every `package-lock.json` and the root
+  `.npmrc` vanished, so five patches failed with "No such file or directory"
+  and `npm ci` could not run. Native-build settings moved from `.npmrc` to
+  the `nativeBuild` field of each install root's `package.json`.
+  `prepare_vscode.sh` now installs the pinned pnpm via upstream's
+  `build/azure-pipelines/common/installPnpm.ts` and runs
+  `pnpm install --frozen-lockfile`; see "Lockfile hunks (pnpm)" below.
 - **Packaging-only features that assume Microsoft's Electron build.** Product
   builds download Electron from `product.electronArtifactFeed`; ours use stock
   GitHub Electron. 1.144.0's `generateNodeCompileCache` failed in
@@ -213,6 +221,37 @@ type-level mistake never shows up in a dry-apply. The efficient inner loop:
 State the verification tier you actually reached in the PR body ("compile
 passed", "full prepack passed", or "could not verify: <why>"). Never imply a
 verified fix without a passing run.
+
+## Lockfile hunks (pnpm)
+
+Patches that change dependencies (`00-remote-add-missing-dependencies`,
+`00-vsce-use-custom-lib`, `20-keymap-*`, `21-policy-*`,
+`30-build-add-missing-dependencies`, `51-ext-copilot-remove-it`) carry
+`pnpm-lock.yaml` hunks, and the install is `--frozen-lockfile`, so the
+lockfile must match `package.json` exactly. Never hand-edit those hunks;
+regenerate them. With the tree staged at "all earlier patches applied" and
+the patch's `package.json` edits in place, run this in the affected install
+root (`.`, `build/` or `remote/`; each has its own `pnpm-lock.yaml`):
+
+```bash
+pnpm install --lockfile-only --ignore-scripts
+```
+
+Then `git diff` the lockfile into the patch.
+
+- `pnpm-workspace.yaml` has `strictDepBuilds: true`. A swapped native package
+  (e.g. `@vscodium/policy-watcher`) needs its own `allowBuilds` entry
+  (`'<name>@<exact version>': true`), or the install fails.
+- `minimumReleaseAge` (7 days) applies to new resolutions. A just-published
+  `@vscodium/*` version will not resolve until it ages, unless it is listed in
+  `minimumReleaseAgeExclude`.
+- Per-package settings that used to live in `.npmrc` become exported
+  `npm_config_*` env vars in `prepare_vscode.sh`. pnpm passes the caller's
+  environment through to install scripts (e.g.
+  `npm_config_build_from_source_native_keymap=no`).
+- A `separateRoots` entry in `build/npm/dirs.ts` for a directory we delete
+  (`extensions/copilot`) makes postinstall fail. Remove it in the patch that
+  removes the directory.
 
 ## Regenerated-patch checklist
 
