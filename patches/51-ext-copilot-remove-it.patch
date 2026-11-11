@@ -521,13 +521,41 @@ index a6f8c8f7ab7..5e62385d292 100644
 +};
  import type { URI } from '../../../../base/common/uri.js';
 diff --git a/src/vs/platform/agentHost/node/agentHostAutomationCustomizations.ts b/src/vs/platform/agentHost/node/agentHostAutomationCustomizations.ts
-index 96073737132..e4dc7c65b1c 100644
+index 96073737132..d825e990278 100644
 --- a/src/vs/platform/agentHost/node/agentHostAutomationCustomizations.ts
 +++ b/src/vs/platform/agentHost/node/agentHostAutomationCustomizations.ts
-@@ -18,3 +18,3 @@ import type { AutomationEntry, AutomationSessionTemplate } from '../common/state
- import { CustomizationLoadStatus, CustomizationType, type AgentSelection, type ClientPluginCustomization, type PluginCustomization, type SessionActiveClient } from '../common/state/sessionState.js';
+@@ -11,3 +11,3 @@ import { generateUuid } from '../../../base/common/uuid.js';
+ import { localize } from '../../../nls.js';
+-import { parsePlugin } from '../../agentPlugins/common/pluginParsers.js';
++import { parsePlugin, type IParsedPlugin } from '../../agentPlugins/common/pluginParsers.js';
+ import { IFileService } from '../../files/common/files.js';
+@@ -17,4 +17,25 @@ import { AUTOMATION_ACTIVE_CLIENT_ID, toAgentHostFileUri } from '../common/agent
+ import type { AutomationEntry, AutomationSessionTemplate } from '../common/state/protocol/channels-automation/state.js';
+-import { CustomizationLoadStatus, CustomizationType, type AgentSelection, type ClientPluginCustomization, type PluginCustomization, type SessionActiveClient } from '../common/state/sessionState.js';
 -import { toChildCustomizations } from './copilot/copilotPluginConverters.js';
-+import { toChildCustomizations } from './copilot/sessionCustomizationDiscovery.js';
++import { CustomizationLoadStatus, CustomizationType, type AgentSelection, type ChildCustomization, type ClientPluginCustomization, type PluginCustomization, type SessionActiveClient } from '../common/state/sessionState.js';
++
++// Inlined from './copilot/copilotPluginConverters.js', which !!APP_NAME!!
++// deletes: that module is built entirely on '@github/copilot-sdk' types
++// (CustomAgentConfig, MCPServerConfig, SessionHooks) and cannot compile without
++// the SDK. This one helper is the only thing this file needs from it and is
++// SDK-free, so it is reproduced verbatim rather than keeping the whole module.
++function toChildCustomizations(plugins: readonly IParsedPlugin[]): ChildCustomization[] {
++	const byId = new Map<string, ChildCustomization>();
++	const add = (c: ChildCustomization) => {
++		if (!byId.has(c.id)) {
++			byId.set(c.id, c);
++		}
++	};
++	for (const plugin of plugins) {
++		for (const a of plugin.agents) { add(a.customization); }
++		for (const s of plugin.skills) { add(s.customization); }
++		for (const r of plugin.instructions) { add(r.customization); }
++		for (const h of plugin.hooks) { add(h.customization); }
++		for (const m of plugin.mcpServers) { add(m.customization); }
++	}
++	return [...byId.values()];
++}
  
 diff --git a/src/vs/platform/agentHost/node/agentHostGitHubTelemetryRouter.ts b/src/vs/platform/agentHost/node/agentHostGitHubTelemetryRouter.ts
 index 4610e584f41..a54011b228f 100644
@@ -35530,7 +35558,7 @@ index 9adf2ed598f..9cdd2097581 100644
 +			softAssertNever(kind as never);
  			return undefined;
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
-index 3ecb41aa197..0fb1207023d 100644
+index 3ecb41aa197..acb24e69e8c 100644
 --- a/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 +++ b/src/vs/platform/agentHost/node/copilot/copilotToolDisplay.ts
 @@ -5,3 +5,24 @@
@@ -35559,6 +35587,11 @@ index 3ecb41aa197..0fb1207023d 100644
 +type SkillInvokedData = any;
 +/* eslint-enable @typescript-eslint/no-explicit-any */
  import { assertNever } from '../../../../base/common/assert.js';
+@@ -563,3 +584,3 @@ export function getPhaseTaskCompleteMarkdown(parameters: Record<string, unknown>
+ function getBlockedActionsMarkdown(actions: NonNullable<TaskCompletionReview['blockedActions']>): string {
+-	const labels = [...new Set(actions.map(action => getBlockedActionLabel(action.permissionKind)))];
++	const labels = [...new Set(actions.map((action: { readonly permissionKind: string }) => getBlockedActionLabel(action.permissionKind)))];
+ 	return localize('toolMarkdown.blockedActions', "Blocked actions:\n{0}", labels.map(label => `- ${label}`).join('\n'));
 diff --git a/src/vs/platform/agentHost/node/copilot/copilotVirtualSearchTools.ts b/src/vs/platform/agentHost/node/copilot/copilotVirtualSearchTools.ts
 deleted file mode 100644
 index 64bc3091770..00000000000
@@ -54691,10 +54724,10 @@ index b565941f8dc..00000000000
 -	return platform === 'win32' ? path.replace(/\//g, '\\') : path;
 -}
 diff --git a/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts b/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
-index 3d44019f691..c96a810b9ab 100644
+index 3d44019f691..2dbd4f5373f 100644
 --- a/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
 +++ b/src/vs/platform/agentHost/node/copilot/sessionCustomizationDiscovery.ts
-@@ -5,3 +5,30 @@
+@@ -5,3 +5,33 @@
  
 -import type { CopilotClient } from '@github/copilot-sdk';
 +// `CopilotClient` came from '@github/copilot-sdk' (removed in !!APP_NAME!!).
@@ -54721,6 +54754,9 @@ index 3d44019f691..c96a810b9ab 100644
 +		};
 +		mcp: {
 +			discover(params: unknown): Promise<{ servers: any[] }>;
++		};
++		plugins: {
++			list(): Promise<{ plugins: { id?: string; rootPath?: string; name: string; version?: string }[] }>;
 +		};
 +	};
 +};
@@ -88321,6 +88357,99 @@ index ab2e309402b..00000000000
 -			);
 -		});
 -
+-	});
+-});
+diff --git a/src/vs/platform/agentHost/test/node/copilotAgentDecisions.test.ts b/src/vs/platform/agentHost/test/node/copilotAgentDecisions.test.ts
+deleted file mode 100644
+index 3bd887020e2..00000000000
+--- a/src/vs/platform/agentHost/test/node/copilotAgentDecisions.test.ts
++++ /dev/null
+@@ -1,87 +0,0 @@
+-/*---------------------------------------------------------------------------------------------
+- *  Copyright (c) Microsoft Corporation. All rights reserved.
+- *  Licensed under the MIT License. See License.txt in the project root for license information.
+- *--------------------------------------------------------------------------------------------*/
+-
+-import assert from 'assert';
+-import { CancellationToken } from '../../../../base/common/cancellation.js';
+-import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../base/test/common/utils.js';
+-import { agentDecisionErrorData, type IAgentDecisionsRequest, type IAgentDecisionsResult } from '../../common/agentDecisions.js';
+-import { URI } from '../../../../base/common/uri.js';
+-import type { IAgentModelInfo } from '../../common/agent.js';
+-import type { IAgentHostCredentialSource } from '../../common/agentHostCredentials.js';
+-import { readAgentModelNoticesMeta } from '../../common/agentModelNotices.js';
+-import { parseModelRouter, readModelRouterDescription } from '../../common/modelRouter.js';
+-import { CopilotAgent } from '../../node/copilot/copilotAgent.js';
+-
+-type AskDecisions = (this: unknown, request: IAgentDecisionsRequest, credentials: IAgentHostCredentialSource | undefined, token: CancellationToken) => Promise<IAgentDecisionsResult>;
+-
+-const request: IAgentDecisionsRequest = { model: 'gpt-6-luna-decisions', context: { kind: 'text', text: 'hi' }, questions: [{ kind: 'boolean', name: 'q', instructions: 'Yes?' }] };
+-const answer: IAgentDecisionsResult = { model: 'gpt-6-luna-decisions', answers: [{ kind: 'boolean', name: 'q', probability: 1 }] };
+-
+-suite('CopilotAgent.askDecisions', () => {
+-	ensureNoDisposablesAreLeakedInTestSuite();
+-
+-	const askDecisions = (CopilotAgent.prototype as unknown as { askDecisions: AskDecisions }).askDecisions;
+-
+-	function agentWith(rpc: object, hostToken: string | undefined = 'host') {
+-		const client = { rpc };
+-		return {
+-			_githubCredentials: { token: hostToken },
+-			_ensureClient: async () => client,
+-			_decisionsGates: new WeakMap(),
+-			_gitHubEndpointService: { getCopilotResource: () => ({ resource: 'https://api.github.com', scopes_supported: [] }) },
+-		};
+-	}
+-
+-	const credentials = (token: string) => ({ getCredential: () => ({ resource: 'https://api.github.com', token }) }) as unknown as IAgentHostCredentialSource;
+-
+-	test('is unavailable when the runtime has no decisions.ask', async () => {
+-		const error = await askDecisions.call(agentWith({}), request, undefined, CancellationToken.None).catch(e => e);
+-		assert.deepStrictEqual(agentDecisionErrorData(error), { kind: 'unavailable' });
+-	});
+-
+-	test('is unauthenticated without a host or caller token', async () => {
+-		const error = await askDecisions.call(agentWith({ decisions: { ask: async () => answer } }, ''), request, undefined, CancellationToken.None).catch(e => e);
+-		assert.deepStrictEqual(agentDecisionErrorData(error), { kind: 'unauthenticated' });
+-	});
+-
+-	test('asks as the caller\'s account, or the host\'s, with one gate per account', async () => {
+-		const asked: (string | undefined)[] = [];
+-		const agent = agentWith({
+-			decisions: {
+-				ask: async (params: IAgentDecisionsRequest & { gitHubToken?: string }) => {
+-					asked.push(params.gitHubToken);
+-					if (params.gitHubToken === 'limited') {
+-						throw Object.assign(new Error('limited'), { data: { kind: 'rateLimited', retryAfterMs: 60_000 } });
+-					}
+-					return answer;
+-				},
+-			},
+-		});
+-		const call = (source?: IAgentHostCredentialSource) => askDecisions.call(agent, request, source, CancellationToken.None).then(() => 'ok', e => agentDecisionErrorData(e)?.kind);
+-		assert.deepStrictEqual([
+-			await call(),
+-			await call(credentials('limited')),
+-			await call(credentials('limited')),
+-			await call(credentials('other')),
+-		], ['ok', 'rateLimited', 'rateLimited', 'ok']);
+-		assert.deepStrictEqual(asked, ['host', 'limited', 'other'], 'the rate-limited account\'s second call never reached the runtime');
+-	});
+-
+-	test('a router with errors keeps its picker row, with a warning', () => {
+-		const withRows = (CopilotAgent.prototype as unknown as { _withModelRouterRows(this: unknown, models: readonly IAgentModelInfo[]): readonly IAgentModelInfo[] })._withModelRouterRows;
+-		const good = parseModelRouter('version: 1\ndescription: Good.\nroutes:\n  - model: a\n    when: A.\n  - model: b\n    when: B.\n', 'good.model-router.yaml');
+-		const files = [
+-			{ uri: URI.file('/r/good.model-router.yaml'), scope: 'user', name: 'good', router: good.router, diagnostics: [] },
+-			{ uri: URI.file('/r/bad.model-router.yaml'), scope: 'user', name: 'bad', router: undefined, diagnostics: [{ severity: 'error', message: 'Add `version: 1`.' }] },
+-		];
+-		const models: IAgentModelInfo[] = [{ provider: 'copilotcli', id: 'a', name: 'A', supportsVision: true }, { provider: 'copilotcli', id: 'b', name: 'B', supportsVision: true }];
+-		const rows = withRows.call({ id: 'copilotcli', _modelRouterCatalog: { value: { snapshot: { files } } } }, models).slice(2);
+-		assert.deepStrictEqual(rows.map(row => [row.id, readModelRouterDescription(row) !== undefined, readAgentModelNoticesMeta(row).rowWarning]), [
+-			['model-router:good', true, undefined],
+-			['model-router:bad', true, 'bad.model-router.yaml has errors: Add `version: 1`.'],
+-		]);
+-		assert.strictEqual(withRows.call({ id: 'copilotcli', _modelRouterCatalog: { value: { snapshot: { files: [] } } } }, models), models, 'unchanged without routers');
 -	});
 -});
 diff --git a/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts b/src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts
