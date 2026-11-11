@@ -74,6 +74,17 @@ Historical failure classes, most→least common:
   `build/osx/codesign-with-retry.sh` (guarded by `./dev/test-codesign-retry.sh`);
   if a new message slips past its `TRANSIENT_PATTERN`, widen the pattern there.
 
+- **`build-reh` dies in `Install build dependencies` with
+  `Temporary failure resolving 'archive.ubuntu.com'` / `security.ubuntu.com` /
+  `azure.archive.ubuntu.com`** — the Ubuntu mirrors' DNS is down (2026-11-11,
+  actions/runner-images#15296), not anything in this repo; `packages.microsoft.com`
+  keeps resolving on the same runner. The step retries 3× with backoff under a
+  `timeout` and then exits 1 with `::error::apt could not fetch build
+  dependencies`. Re-run the job once `nslookup archive.ubuntu.com` works from any
+  Linux runner. Guarded by `./dev/test-pr-report-gating.sh`, which also asserts
+  that `report-pr-success` / `report-pr-failure` wait on `build-reh` — a PR is not
+  green until both artifacts built.
+
 **Check which job failed before assuming it's a patch problem.** `release`
 failures look like build failures in the issue text but have nothing to do with
 patches. If `build` and `build-reh` are green, skip straight to the release job's
