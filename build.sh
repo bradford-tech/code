@@ -21,17 +21,17 @@ if [[ "${SHOULD_BUILD}" == "yes" ]]; then
   export NODE_OPTIONS="--max-old-space-size=${VSCODE_NODE_HEAP_MB:-8192}"
   export VSCODE_PUBLISH_COUNTER=1
 
-  npm run gulp vscode-min-prepack
+  pnpm run gulp vscode-min-prepack
 
   # remove win32 node modules
   rm -f .build/extensions/ms-vscode.js-debug/src/win32-app-container-tokens.*.node
 
   if [[ "${OS_NAME}" == "osx" ]]; then
     # generate Group Policy definitions
-    npm run copy-policy-dto --prefix build
+    pnpm -C build run copy-policy-dto
     node build/lib/policies/policyGenerator.ts build/lib/policies/policyData.jsonc darwin
 
-    npm run gulp "vscode-darwin-${VSCODE_ARCH}-min-packing"
+    pnpm run gulp "vscode-darwin-${VSCODE_ARCH}-min-packing"
 
     find "../VSCode-darwin-${VSCODE_ARCH}" -print0 | xargs -0 touch -c
 
@@ -43,8 +43,8 @@ if [[ "${SHOULD_BUILD}" == "yes" ]]; then
   fi
 
   if [[ "${SHOULD_BUILD_REH}" == "yes" ]]; then
-    npm run gulp esbuild-vscode-reh-min
-    npm run gulp "vscode-reh-${VSCODE_PLATFORM}-${VSCODE_ARCH}-min-ci"
+    pnpm run gulp esbuild-vscode-reh-min
+    pnpm run gulp "vscode-reh-${VSCODE_PLATFORM}-${VSCODE_ARCH}-min-ci"
   fi
 
   cd ..

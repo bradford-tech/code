@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Verifies a patch-set the way CI will, without the packaging stages:
-# prepare_vscode.sh (src/stable overlay + product.json + patches + npm ci)
+# prepare_vscode.sh (src/stable overlay + product.json + patches + pnpm install)
 # followed by the TypeScript compile. Catches the two failure classes a
 # dry-apply cannot: compile-src type errors and (with --full) the
 # vscode-min-prepack minify/ASCII-hygiene stage.
@@ -84,7 +84,7 @@ if [[ "${SKIP_PREPARE}" == "0" ]]; then
     ( cd vscode && git reset --hard -q HEAD && git clean -fdxq )
   fi
 
-  echo "== prepare_vscode.sh (overlay + product.json + patches + npm ci) =="
+  echo "== prepare_vscode.sh (overlay + product.json + patches + pnpm install) =="
   # Sourced, matching build.sh — it cds into vscode/ and returns here.
   # shellcheck disable=SC1091
   . prepare_vscode.sh
@@ -94,9 +94,9 @@ echo "== compile =="
 export NODE_OPTIONS="--max-old-space-size=${VERIFY_HEAP:-6144}"
 rc=0
 if [[ "${FULL}" == "1" ]]; then
-  ( cd vscode && npm run gulp vscode-min-prepack ) || rc=$?
+  ( cd vscode && pnpm run gulp vscode-min-prepack ) || rc=$?
 else
-  ( cd vscode && npm run compile ) || rc=$?
+  ( cd vscode && pnpm run compile ) || rc=$?
 fi
 
 if [[ "${rc}" -eq 0 ]]; then
