@@ -471,7 +471,8 @@ jobs:
     #
     # Must stay x64: VSCODE_ARCH is x64 and this publishes
     # bradfordcode-reh-linux-x64. The `Install build dependencies` apt names
-    # assume Ubuntu 24.04, matching what ubuntu-latest resolves to.
+    # work on Ubuntu 24.04 and 26.04 (ubuntu-latest moved to 26.04 in
+    # November 2026, actions/runner-images#14748).
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -528,15 +529,50 @@ jobs:
       # npm ci builds native modules: kerberos → libkrb5-dev, secret →
       # libsecret-1-dev, plus X11 headers the shared build needs even though
       # we only ship the server.
+      #
+      # A healthy run of this step takes ~15 s. On 2026-11-11 Canonical's DNS
+      # went down (actions/runner-images#15296, #15297): every Ubuntu mirror
+      # name stopped resolving and apt walked its three-mirror fallback list
+      # for all 35 packages, one ~40 s DNS timeout at a time — 27 min in run
+      # 43033731596 and 56 min in run 43045569211 before it finally exited
+      # 100. So the network half (update + download) is wrapped in `timeout`
+      # and retried with backoff; the unpack/configure half runs once, from
+      # the local cache, never under a timeout, so dpkg is never interrupted.
+      # timeout-minutes is a backstop only — the loop below is sized to give
+      # up on its own (~10 min worst case) with the apt error still on screen.
       - name: Install build dependencies
+        timeout-minutes: 15
+        env:
+          APT_MAX_ATTEMPTS: "3"
+          APT_RETRY_DELAY: "30"
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            libkrb5-dev \
-            libsecret-1-dev \
-            libx11-dev \
+          pkgs=(
+            build-essential
+            libkrb5-dev
+            libsecret-1-dev
+            libx11-dev
             libxkbfile-dev
+          )
+          fetched=no
+          delay="${APT_RETRY_DELAY}"
+          for (( attempt = 1; attempt <= APT_MAX_ATTEMPTS; attempt++ )); do
+            if sudo timeout 60 apt-get update \
+               && sudo timeout 120 apt-get install -y --no-install-recommends \
+                    --download-only "${pkgs[@]}"; then
+              fetched=yes
+              break
+            fi
+            if (( attempt < APT_MAX_ATTEMPTS )); then
+              echo "::warning::apt fetch attempt ${attempt}/${APT_MAX_ATTEMPTS} failed; retrying in ${delay}s"
+              sleep "${delay}"
+              delay=$(( delay * 2 ))
+            fi
+          done
+          if [[ "${fetched}" != yes ]]; then
+            echo "::error::apt could not fetch build dependencies after ${APT_MAX_ATTEMPTS} attempts (mirror/DNS outage? see actions/runner-images#15296)"
+            exit 1
+          fi
+          sudo apt-get install -y --no-install-recommends "${pkgs[@]}"
 
       - name: Cache npm packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1168,9 +1204,15 @@ jobs:
               );
             }
 
+  # Both PR-reporting jobs must wait on build-reh as well as build: a fix PR
+  # ships the REH tarball too, and `failure()` only looks at the jobs listed
+  # here. Without build-reh, a REH-only failure never re-dispatched the loop
+  # and report-pr-success called the PR green while REH was still running
+  # (PR #134, run 43045569211: "built green" posted at 15:21, REH failed at
+  # 16:06). dev/test-pr-report-gating.sh locks the dependency lists down.
   report-pr-failure:
     name: Dispatch Claude fix loop on PR failure
-    needs: [check, build]
+    needs: [check, build, build-reh]
     if: |
       failure() && github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -1255,10 +1297,11 @@ jobs:
   # silence: a green, unassigned PR nobody was told about.
   report-pr-success:
     name: Hand off green fix PR
-    needs: [check, build]
+    needs: [check, build, build-reh]
     if: |
       github.event_name == 'pull_request' &&
       needs.build.result == 'success' &&
+      needs['build-reh'].result == 'success' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
