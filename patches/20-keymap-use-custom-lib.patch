@@ -16,66 +16,66 @@ index f39ddd3a053..7dcc5d7e032 100644
 +!@vscodium/native-keymap/build/Release/*.node
  
 diff --git a/eslint.config.js b/eslint.config.js
-index f5d47d3ac38..69738a6896b 100644
+index 9db9923e5d7..3aa025e140c 100644
 --- a/eslint.config.js
 +++ b/eslint.config.js
-@@ -1701,3 +1701,3 @@ export default defineConfig(
+@@ -1544,3 +1544,3 @@ export default [
  						'node:v8',
 -						'native-keymap',
 +						'@vscodium/native-keymap',
  						'net',
 diff --git a/package.json b/package.json
-index 12966cc08e0..3bfa6560cf4 100644
+index 7c963e94162..61651652a56 100644
 --- a/package.json
 +++ b/package.json
-@@ -164,3 +164,3 @@
+@@ -167,3 +167,3 @@
      "native-is-elevated": "0.9.0",
 -    "native-keymap": "^3.3.5",
 +    "@vscodium/native-keymap": "3.3.7-258424",
-     "node-addon-api": "^6.0.0",
+     "node-pty": "^1.2.0-beta.18",
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 4fe502ac5fc..03bf5ddd553 100644
+index b97ab23b7a7..154188ad241 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
-@@ -122,2 +122,5 @@ importers:
+@@ -287,2 +287,5 @@ importers:
          version: 1.3.0
 +      '@vscodium/native-keymap':
 +        specifier: 3.3.7-258424
 +        version: 3.3.7-258424
        '@xterm/addon-clipboard':
-@@ -185,5 +188,2 @@ importers:
+@@ -350,5 +353,2 @@ importers:
          version: 0.9.0
 -      native-keymap:
 -        specifier: ^3.3.5
 -        version: 3.3.9
-       node-addon-api:
-@@ -2172,2 +2172,5 @@ packages:
+       node-pty:
+@@ -5927,2 +5927,5 @@ packages:
  
 +  '@vscodium/native-keymap@3.3.7-258424':
 +    resolution: {integrity: sha512-HZ20QfExV0kE2l939yE3wn0LezSV7BcpxOFmlUMUHBQbdANMSLkwzo6Zw1xOEZDoYm3VTDHt8/+WwLBR2MpA3A==}
 +
    '@webassemblyjs/ast@1.14.1':
-@@ -5116,5 +5119,2 @@ packages:
+@@ -9737,5 +9740,2 @@ packages:
  
 -  native-keymap@3.3.9:
 -    resolution: {integrity: sha512-d/ydQ5x+GM5W0dyAjFPwexhtc9CDH1g/xWZESS5CXk16ThyFzSBLvlBJq1+FyzUIFf/F2g1MaHdOpa6G9150YQ==}
 -
-   natural-compare@1.4.0:
-@@ -8531,2 +8531,4 @@ snapshots:
+   ncp@2.0.0:
+@@ -16829,2 +16829,4 @@ snapshots:
  
 +  '@vscodium/native-keymap@3.3.7-258424': {}
 +
    '@webassemblyjs/ast@1.14.1':
-@@ -11865,4 +11867,2 @@ snapshots:
+@@ -21207,4 +21209,2 @@ snapshots:
  
 -  native-keymap@3.3.9: {}
 -
-   natural-compare@1.4.0: {}
+   ncp@2.0.0: {}
 diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
-index c31f55fd165..443d73e5a9b 100644
+index c8a62b3fdbb..0f62373bcaa 100644
 --- a/pnpm-workspace.yaml
 +++ b/pnpm-workspace.yaml
-@@ -68,3 +68,3 @@ allowBuilds:
+@@ -126,3 +126,3 @@ allowBuilds:
    native-is-elevated@0.9.0: true
 -  native-keymap@3.3.9: true
 +  '@vscodium/native-keymap@3.3.7-258424': true

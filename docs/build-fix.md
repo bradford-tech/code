@@ -226,7 +226,7 @@ verified fix without a passing run.
 
 Patches that change dependencies (`00-remote-add-missing-dependencies`,
 `00-vsce-use-custom-lib`, `20-keymap-*`, `21-policy-*`,
-`30-build-add-missing-dependencies`, `51-ext-copilot-remove-it`) carry
+`51-ext-copilot-remove-it`) carry
 `pnpm-lock.yaml` hunks, and the install is `--frozen-lockfile`, so the
 lockfile must match `package.json` exactly. Never hand-edit those hunks;
 regenerate them. With the tree staged at "all earlier patches applied" and
@@ -252,6 +252,24 @@ Then `git diff` the lockfile into the patch.
 - A `separateRoots` entry in `build/npm/dirs.ts` for a directory we delete
   (`extensions/copilot`) makes postinstall fail. Remove it in the patch that
   removes the directory.
+- 1.147.0 moved `extensions/copilot` (and `chat-lib`) from a separate root
+  into the **root** workspace: `pnpm-workspace.yaml` `packages`,
+  `workspaceMembers`/`layoutRoots` in `build/npm/dirs.ts`, and the root
+  `pnpm-lock.yaml` importers. `51-ext-copilot-remove-it` removes all three;
+  regenerate the root lockfile after dropping the workspace entries.
+- When upstream drops the dependency a patch exists to move or swap (1.147.0
+  removed `tree-sitter` from `build/package.json`, emptying the old
+  `30-build-add-missing-dependencies`), delete the patch rather than rebasing it.
+
+### Rebasing a large patch: cherry-pick, don't hand-merge
+
+For a patch too large to resolve hunk by hunk (`51-ext-copilot-remove-it` is
+~160k lines), get a real 3-way merge. In `vscode/`, `git fetch --depth 1` the
+**previous** pin, apply the old patch stack there (raw, one commit per patch),
+then apply the rebased stack on the new pin and `git cherry-pick --no-commit`
+the old patch's commit on top. Most files auto-merge; resolve modify/delete
+conflicts with `git rm`. Then re-run the dangling-import check below, because
+new upstream files will not show up as conflicts.
 
 ## Regenerated-patch checklist
 
