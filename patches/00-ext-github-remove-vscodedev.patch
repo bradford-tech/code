@@ -1,8 +1,8 @@
 diff --git a/extensions/github/package.json b/extensions/github/package.json
-index bce90fe..73debf7 100644
+index da555bb3953..7eb00cf795d 100644
 --- a/extensions/github/package.json
 +++ b/extensions/github/package.json
-@@ -45,19 +45,2 @@
+@@ -44,19 +44,2 @@
        },
 -      {
 -        "command": "github.copyVscodeDevLink",
@@ -22,7 +22,7 @@ index bce90fe..73debf7 100644
 -        "icon": "$(globe)"
 -      },
        {
-@@ -83,11 +66,2 @@
+@@ -82,11 +65,2 @@
      ],
 -    "continueEditSession": [
 -      {
@@ -34,7 +34,7 @@ index bce90fe..73debf7 100644
 -      }
 -    ],
      "menus": {
-@@ -110,18 +84,2 @@
+@@ -109,18 +83,2 @@
          },
 -        {
 -          "command": "github.copyVscodeDevLink",
@@ -53,7 +53,7 @@ index bce90fe..73debf7 100644
 -          "when": "false"
 -        },
          {
-@@ -131,42 +89,2 @@
+@@ -130,42 +88,2 @@
        ],
 -      "file/share": [
 -        {
@@ -97,14 +97,14 @@ index bce90fe..73debf7 100644
 -      ],
        "scm/historyItem/context": [
 diff --git a/extensions/github/src/commands.ts b/extensions/github/src/commands.ts
-index 33acf5a..107e94a 100644
+index c8f1904ab6d..82d8f49c9ab 100644
 --- a/extensions/github/src/commands.ts
 +++ b/extensions/github/src/commands.ts
-@@ -9,30 +9,5 @@ import { publishRepository } from './publish.js';
+@@ -10,30 +10,5 @@ import { publishRepository } from './publish.js';
  import { DisposableStore, getRepositoryFromUrl } from './util.js';
 -import { LinkContext, getCommitLink, getLink, getVscodeDevHost } from './links.js';
 +import { getCommitLink } from './links.js';
- import { getOctokit } from './auth.js';
+ import { GitHubService } from './auth.js';
  
 -async function copyVscodeDevLink(gitAPI: GitAPI, useSelection: boolean, context: LinkContext, includeRange = true) {
 -	try {
@@ -132,7 +132,7 @@ index 33acf5a..107e94a 100644
 -}
 -
  interface ResolvedSessionRepo {
-@@ -210,14 +185,2 @@ export function registerCommands(gitAPI: GitAPI): vscode.Disposable {
+@@ -187,14 +162,2 @@ export function registerCommands(gitAPI: GitAPI, githubService: GitHubService):
  
 -	disposables.add(vscode.commands.registerCommand('github.copyVscodeDevLink', async (context: LinkContext) => {
 -		return copyVscodeDevLink(gitAPI, true, context);
@@ -147,7 +147,7 @@ index 33acf5a..107e94a 100644
 -	}));
 -
  	disposables.add(vscode.commands.registerCommand('github.openOnGitHub', async (url: string, historyItemId: string) => {
-@@ -253,6 +216,2 @@ export function registerCommands(gitAPI: GitAPI): vscode.Disposable {
+@@ -230,6 +193,2 @@ export function registerCommands(gitAPI: GitAPI, githubService: GitHubService):
  
 -	disposables.add(vscode.commands.registerCommand('github.openOnVscodeDev', async () => {
 -		return openVscodeDevLink(gitAPI);
@@ -155,27 +155,27 @@ index 33acf5a..107e94a 100644
 -
  	disposables.add(vscode.commands.registerCommand('github.createPullRequest', async (sessionResource: vscode.Uri | undefined, sessionMetadata: { worktreePath?: string } | undefined) => {
 diff --git a/extensions/github/src/extension.ts b/extensions/github/src/extension.ts
-index 17906c5..86a0ca8 100644
+index 807a8cebe96..9eae242b616 100644
 --- a/extensions/github/src/extension.ts
 +++ b/extensions/github/src/extension.ts
 @@ -17,3 +17,2 @@ import { GitHubBranchProtectionProviderManager } from './branchProtection.js';
  import { GitHubCanonicalUriProvider } from './canonicalUriProvider.js';
 -import { VscodeDevShareProvider } from './shareProviders.js';
  import { GitHubSourceControlHistoryItemDetailsProvider } from './historyItemDetailsProvider.js';
-@@ -109,3 +108,2 @@ function initializeGitExtension(context: ExtensionContext, octokitService: Octok
+@@ -109,3 +108,2 @@ function initializeGitExtension(context: ExtensionContext, githubService: GitHub
  						disposables.add(new GitHubCanonicalUriProvider(gitAPI));
 -						disposables.add(new VscodeDevShareProvider(gitAPI));
  						setGitHubContext(gitAPI, disposables);
 diff --git a/extensions/github/src/remoteSourceProvider.ts b/extensions/github/src/remoteSourceProvider.ts
-index bed2bb1..2880f97 100644
+index bd0854cdbf7..9b1c3a09c4d 100644
 --- a/extensions/github/src/remoteSourceProvider.ts
 +++ b/extensions/github/src/remoteSourceProvider.ts
-@@ -10,3 +10,3 @@ import { Octokit } from '@octokit/rest';
+@@ -10,3 +10,3 @@ import type { GitHubClient } from '@vscode/internal-github';
  import { getRepositoryFromQuery, getRepositoryFromUrl } from './util.js';
 -import { getBranchLink, getVscodeDevHost } from './links.js';
 +import { getBranchLink } from './links.js';
  
-@@ -137,9 +137,2 @@ export class GithubRemoteSourceProvider implements RemoteSourceProvider {
+@@ -146,9 +146,2 @@ export class GithubRemoteSourceProvider implements RemoteSourceProvider {
  			}
 -		}, {
 -			label: l10n.t('Checkout on vscode.dev'),
