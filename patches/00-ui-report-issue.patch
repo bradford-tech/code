@@ -1,41 +1,55 @@
 diff --git a/src/vs/workbench/contrib/extensions/electron-browser/extensionsSlowActions.ts b/src/vs/workbench/contrib/extensions/electron-browser/extensionsSlowActions.ts
-index 77c1661c..a64a48ce 100644
+index db266334a04..89cf5878ac7 100644
 --- a/src/vs/workbench/contrib/extensions/electron-browser/extensionsSlowActions.ts
 +++ b/src/vs/workbench/contrib/extensions/electron-browser/extensionsSlowActions.ts
-@@ -153,3 +153,3 @@ class ReportExtensionSlowAction extends Action {
+@@ -164,3 +164,3 @@ class ReportExtensionSlowAction extends Action {
  - OS Version: \`${osVersion}\`
 -- VS Code version: \`${this._productService.version}\`\n\n${message}`);
 +- !!APP_NAME!! version: \`${this._productService.version}\`\n\n${message}`);
  
 diff --git a/src/vs/workbench/contrib/issue/browser/baseIssueReporterService.ts b/src/vs/workbench/contrib/issue/browser/baseIssueReporterService.ts
-index b7734ab7..c5cd8804 100644
+index aa024e293f7..edfa5a7ea57 100644
 --- a/src/vs/workbench/contrib/issue/browser/baseIssueReporterService.ts
 +++ b/src/vs/workbench/contrib/issue/browser/baseIssueReporterService.ts
-@@ -85,3 +85,3 @@ export class BaseIssueReporterService extends Disposable {
+@@ -16,3 +16,3 @@ import { debounce } from '../../../../base/common/decorators.js';
+ import { CancellationError, isCancellationError } from '../../../../base/common/errors.js';
+-import { Disposable, DisposableStore, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
++import { Disposable, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+ import { Schemas } from '../../../../base/common/network.js';
+@@ -24,3 +24,2 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
+ import { URI } from '../../../../base/common/uri.js';
+-import { createCancellableFetch } from '../../../../base/parts/request/common/fetch.js';
+ import { localize } from '../../../../nls.js';
+@@ -91,3 +90,3 @@ export class BaseIssueReporterService extends Disposable {
  		public readonly isWeb: boolean,
 -		private readonly fetcher: typeof fetch = (input, init) => fetch(input, init),
 +		_fetcher: typeof fetch = (input, init) => fetch(input, init),
  		@IIssueFormService public readonly issueFormService: IIssueFormService,
-@@ -854,3 +854,3 @@ export class BaseIssueReporterService extends Disposable {
+@@ -870,3 +869,3 @@ export class BaseIssueReporterService extends Disposable {
  		if (title) {
 -			this.searchDuplicates(title, issueDescription, this.similarIssueSearchGeneration);
 +			this.searchGitHub('!!GH_REPO_PATH!!', title, this.similarIssueSearchGeneration);
  		}
-@@ -871,4 +871,3 @@ export class BaseIssueReporterService extends Disposable {
+@@ -887,4 +886,3 @@ export class BaseIssueReporterService extends Disposable {
  
 -		const description = this.issueReporterModel.getData().issueDescription;
 -		this.searchDuplicates(title, description, this.similarIssueSearchGeneration);
 +		this.searchGitHub('!!GH_REPO_PATH!!', title, this.similarIssueSearchGeneration);
  	}
-@@ -939,38 +938,2 @@ export class BaseIssueReporterService extends Disposable {
+@@ -955,45 +953,2 @@ export class BaseIssueReporterService extends Disposable {
  
 -	@debounce(300)
 -	private searchDuplicates(title: string, body: string | undefined, generation: number): void {
 -		if (this._store.isDisposed || generation !== this.similarIssueSearchGeneration) {
 -			return;
 -		}
--		const controller = new AbortController();
--		this.similarIssueSearch.value = toDisposable(() => controller.abort());
+-		const lifetime = new DisposableStore();
+-		const source = new CancellationTokenSource();
+-		this.similarIssueSearch.value = toDisposable(() => {
+-			source.dispose(true);
+-			lifetime.dispose();
+-		});
+-		const token = source.token;
 -		const url = 'https://vscode-probot.westus.cloudapp.azure.com:7890/duplicate_candidates';
 -		const init = {
 -			method: 'POST',
@@ -46,12 +60,11 @@ index b7734ab7..c5cd8804 100644
 -			headers: new Headers({
 -				'Content-Type': 'application/json'
 -			}),
--			signal: controller.signal,
 -		};
 -
--		void this.fetcher(url, init).then(async response => {
+-		void createCancellableFetch(this.fetcher)(url, init, token, lifetime).then(async response => {
 -			const result: { candidates?: readonly ISimilarIssue[] } | null = await response.json();
--			if (controller.signal.aborted) {
+-			if (token.isCancellationRequested) {
 -				return;
 -			}
 -			if (!result || !Array.isArray(result.candidates)) {
@@ -59,27 +72,30 @@ index b7734ab7..c5cd8804 100644
 -			}
 -			this.displaySearchResults(result.candidates);
 -		}).catch(error => {
--			if (!controller.signal.aborted) {
+-			if (!token.isCancellationRequested) {
 -				this.logService.warn('[IssueReporter] Error fetching duplicate issues', error);
 -			}
+-		}).finally(() => {
+-			lifetime.dispose();
+-			source.dispose();
 -		});
 -	}
 -
  	private displaySearchResults(results: readonly ISimilarIssue[]) {
-@@ -1065,4 +1028,4 @@ export class BaseIssueReporterService extends Disposable {
+@@ -1088,4 +1043,4 @@ export class BaseIssueReporterService extends Disposable {
  		sourceSelect.append(this.makeOption('', localize('selectSource', "Select source"), true));
 -		sourceSelect.append(this.makeOption(IssueSource.VSCode, localize('vscode', "Visual Studio Code"), false));
 -		sourceSelect.append(this.makeOption(IssueSource.Extension, localize('extension', "A VS Code extension"), false));
 +		sourceSelect.append(this.makeOption(IssueSource.VSCode, localize('vscode', "!!APP_NAME!!"), false));
 +		sourceSelect.append(this.makeOption(IssueSource.Extension, localize('extension', "A !!APP_NAME!! extension"), false));
  		if (this.product.reportMarketplaceIssueUrl) {
-@@ -1169,3 +1132,3 @@ export class BaseIssueReporterService extends Disposable {
+@@ -1192,3 +1147,3 @@ export class BaseIssueReporterService extends Disposable {
  			hide(descriptionTextArea);
 -			reset(descriptionTitle, localize('handlesIssuesElsewhere', "This extension handles issues outside of VS Code"));
 +			reset(descriptionTitle, localize('handlesIssuesElsewhere', "This extension handles issues outside of !!APP_NAME!!"));
  			reset(descriptionSubtitle, localize('elsewhereDescription', "The '{0}' extension prefers to use an external issue reporter. To be taken to that issue reporting experience, click the button below.", selectedExtension.displayName));
 diff --git a/src/vs/workbench/contrib/issue/browser/issueReporterModel.ts b/src/vs/workbench/contrib/issue/browser/issueReporterModel.ts
-index cf3e5d42..accdc6c9 100644
+index cf3e5d4251c..accdc6c98d2 100644
 --- a/src/vs/workbench/contrib/issue/browser/issueReporterModel.ts
 +++ b/src/vs/workbench/contrib/issue/browser/issueReporterModel.ts
 @@ -102,3 +102,3 @@ ${this._data.issueDescription}
@@ -88,7 +104,7 @@ index cf3e5d42..accdc6c9 100644
 +!!APP_NAME!! version: ${this._data.versionInfo && this._data.versionInfo.vscodeVersion}
  OS version: ${this._data.versionInfo && this._data.versionInfo.os}
 diff --git a/src/vs/workbench/contrib/issue/browser/issueReporterPage.ts b/src/vs/workbench/contrib/issue/browser/issueReporterPage.ts
-index 10fde69b..77ca0b63 100644
+index 10fde69b316..77ca0b632cf 100644
 --- a/src/vs/workbench/contrib/issue/browser/issueReporterPage.ts
 +++ b/src/vs/workbench/contrib/issue/browser/issueReporterPage.ts
 @@ -14,3 +14,3 @@ const sendExperimentsLabel = escape(localize('sendExperiments', "Include A/B exp

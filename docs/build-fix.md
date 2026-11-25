@@ -257,6 +257,15 @@ Then `git diff` the lockfile into the patch.
   `workspaceMembers`/`layoutRoots` in `build/npm/dirs.ts`, and the root
   `pnpm-lock.yaml` importers. `51-ext-copilot-remove-it` removes all three;
   regenerate the root lockfile after dropping the workspace entries.
+- 1.148.0 renamed `@github/copilot-sdk` → `@microsoft/copilot-sdk`, so every
+  import line `51-ext-copilot-remove-it` edits or deletes conflicted. A 3-way
+  cherry-pick resolves those mechanically (take the patch side when upstream's
+  side is the base with only the package name changed). The real work is
+  upstream code that newly imports modules the patch deletes
+  (`copilotBuiltinSkills`, `copilotSlashCommandCompletionProvider`): keep such
+  a module and alias its SDK types locally rather than chasing importers. Run
+  a relative-import resolver over `src/` on both the old and new stacks and
+  diff the results; grep is not enough.
 - When upstream drops the dependency a patch exists to move or swap (1.147.0
   removed `tree-sitter` from `build/package.json`, emptying the old
   `30-build-add-missing-dependencies`), delete the patch rather than rebasing it.

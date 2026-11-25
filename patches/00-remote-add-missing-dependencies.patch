@@ -1,5 +1,5 @@
 diff --git a/remote/package.json b/remote/package.json
-index 1eb834dfa25..79098545533 100644
+index 9406c0cf67e..20985238150 100644
 --- a/remote/package.json
 +++ b/remote/package.json
 @@ -58,2 +58,3 @@
@@ -7,10 +7,10 @@ index 1eb834dfa25..79098545533 100644
 +    "tslib": "^2.6.3",
      "vscode-oniguruma": "1.7.0",
 diff --git a/remote/pnpm-lock.yaml b/remote/pnpm-lock.yaml
-index 7de604860d9..b4ea8aab176 100644
+index 86a93923b5a..6075e9754e6 100644
 --- a/remote/pnpm-lock.yaml
 +++ b/remote/pnpm-lock.yaml
-@@ -29,6 +29,6 @@ importers:
+@@ -184,6 +184,6 @@ importers:
          specifier: ^3.2.13
 -        version: 3.2.13
 +        version: 3.2.13(tslib@2.9.1)
@@ -18,14 +18,14 @@ index 7de604860d9..b4ea8aab176 100644
          specifier: ^3.2.13
 -        version: 3.2.13
 +        version: 3.2.13(tslib@2.9.1)
-       '@parcel/watcher':
-@@ -150,2 +150,5 @@ importers:
+       '@microsoft/copilot-sdk':
+@@ -308,2 +308,5 @@ importers:
          version: 0.4.6
 +      tslib:
 +        specifier: ^2.6.3
 +        version: 2.9.1
        vscode-oniguruma:
-@@ -176,6 +179,6 @@ importers:
+@@ -334,6 +337,6 @@ importers:
          specifier: ^3.2.13
 -        version: 3.2.13
 +        version: 3.2.13(tslib@2.9.1)
@@ -34,13 +34,13 @@ index 7de604860d9..b4ea8aab176 100644
 -        version: 3.2.13
 +        version: 3.2.13(tslib@2.9.1)
        '@vscode/codicons':
-@@ -817,2 +820,5 @@ packages:
+@@ -981,2 +984,5 @@ packages:
  
 +  tslib@2.9.1:
 +    resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
 +
    tunnel-agent@0.6.0:
-@@ -997,5 +1003,5 @@ snapshots:
+@@ -1122,5 +1128,5 @@ snapshots:
  
 -  '@microsoft/1ds-core-js@3.2.13':
 +  '@microsoft/1ds-core-js@3.2.13(tslib@2.9.1)':
@@ -48,7 +48,7 @@ index 7de604860d9..b4ea8aab176 100644
 -      '@microsoft/applicationinsights-core-js': 2.8.15
 +      '@microsoft/applicationinsights-core-js': 2.8.15(tslib@2.9.1)
        '@microsoft/applicationinsights-shims': 2.0.2
-@@ -1005,5 +1011,5 @@ snapshots:
+@@ -1130,5 +1136,5 @@ snapshots:
  
 -  '@microsoft/1ds-post-js@3.2.13':
 +  '@microsoft/1ds-post-js@3.2.13(tslib@2.9.1)':
@@ -56,16 +56,16 @@ index 7de604860d9..b4ea8aab176 100644
 -      '@microsoft/1ds-core-js': 3.2.13
 +      '@microsoft/1ds-core-js': 3.2.13(tslib@2.9.1)
        '@microsoft/applicationinsights-shims': 2.0.2
-@@ -1013,3 +1019,3 @@ snapshots:
+@@ -1138,3 +1144,3 @@ snapshots:
  
 -  '@microsoft/applicationinsights-core-js@2.8.15':
 +  '@microsoft/applicationinsights-core-js@2.8.15(tslib@2.9.1)':
      dependencies:
-@@ -1017,2 +1023,3 @@ snapshots:
+@@ -1142,2 +1148,3 @@ snapshots:
        '@microsoft/dynamicproto-js': 1.1.9
 +      tslib: 2.9.1
  
-@@ -1446,2 +1453,4 @@ snapshots:
+@@ -1613,2 +1620,4 @@ snapshots:
  
 +  tslib@2.9.1: {}
 +
