@@ -1,5 +1,5 @@
 diff --git a/src/vs/platform/update/common/update.ts b/src/vs/platform/update/common/update.ts
-index bdade5f6122..ec83d8390c9 100644
+index fce1e205dbe..aa276645a42 100644
 --- a/src/vs/platform/update/common/update.ts
 +++ b/src/vs/platform/update/common/update.ts
 @@ -59,3 +59,4 @@ export const enum UpdateType {
@@ -8,7 +8,7 @@ index bdade5f6122..ec83d8390c9 100644
 +	Snap,
 +	WindowsInstaller,
  }
-@@ -165 +166,38 @@ export interface IUpdateService {
+@@ -168 +169,38 @@ export interface IUpdateService {
  }
 +
 +export type Architecture =
@@ -49,7 +49,7 @@ index bdade5f6122..ec83d8390c9 100644
 +	| "user";
 \ No newline at end of file
 diff --git a/src/vs/platform/update/electron-main/abstractUpdateService.ts b/src/vs/platform/update/electron-main/abstractUpdateService.ts
-index 93f77d80a34..3950bf219ac 100644
+index 7a4bbdfe5f5..e7573d73210 100644
 --- a/src/vs/platform/update/electron-main/abstractUpdateService.ts
 +++ b/src/vs/platform/update/electron-main/abstractUpdateService.ts
 @@ -19,3 +19,3 @@ import { ILogService } from '../../log/common/log.js';
@@ -156,7 +156,7 @@ index 93f77d80a34..3950bf219ac 100644
 +			})
  	}
 diff --git a/src/vs/platform/update/electron-main/updateService.darwin.ts b/src/vs/platform/update/electron-main/updateService.darwin.ts
-index 11cb9457bc2..ef72710974d 100644
+index 611a252e583..1a9ec421d08 100644
 --- a/src/vs/platform/update/electron-main/updateService.darwin.ts
 +++ b/src/vs/platform/update/electron-main/updateService.darwin.ts
 @@ -15,3 +15,3 @@ import { ILogService } from '../../log/common/log.js';
@@ -164,28 +164,31 @@ index 11cb9457bc2..ef72710974d 100644
 -import { asJson, IRequestService } from '../../request/common/request.js';
 +import { asJson, IRequestService, NO_FETCH_TELEMETRY } from '../../request/common/request.js';
  import { IApplicationStorageMainService } from '../../storage/electron-main/storageMainService.js';
-@@ -95,15 +95,4 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
+@@ -134,6 +134,3 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
  
 -	protected buildUpdateFeedUrl(quality: string, commit: string, options?: IUpdateURLOptions): string | undefined {
 -		const assetID = this.productService.darwinUniversalAssetId ?? (process.arch === 'x64' ? 'darwin' : 'darwin-arm64');
 -		const url = createUpdateURL(this.productService.updateUrl!, assetID, quality, commit, options);
 -		const headers = getUpdateRequestHeaders(this.productService.version);
++	protected buildUpdateFeedUrl(quality: string, _commit: string, _options?: IUpdateURLOptions): string | undefined {
+ 		const earlyStaging = this.isEarlyStagingEnabled();
+@@ -144,11 +141,3 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
+ 		}
 -		try {
--			this.logService.trace('update#buildUpdateFeedUrl - setting feed URL for Electron autoUpdater', { url, assetID, quality, commit, headers });
--			electron.autoUpdater.setFeedURL({ url, headers });
+-			this.logService.trace('update#buildUpdateFeedUrl - setting feed URL for Electron autoUpdater', { url, assetID, quality, commit, headers, earlyStaging });
+-			this.host.setFeedURL(url, headers);
 -		} catch (e) {
 -			// application is very likely not signed
 -			this.logService.error('Failed to set update feed URL', e);
 -			return undefined;
 -		}
 -		return url;
-+	protected buildUpdateFeedUrl(quality: string, _commit: string, _options?: IUpdateURLOptions): string | undefined {
 +		return createUpdateURL(this.productService, quality, process.platform, process.arch);
  	}
-@@ -133,4 +122,30 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
+@@ -178,4 +167,30 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
  
 -		this.logService.trace('update#doCheckForUpdates - using Electron autoUpdater', { url, explicit, background });
--		electron.autoUpdater.checkForUpdates();
+-		this.host.checkForUpdates();
 +		this.logService.info('update#doCheckForUpdates', { url, explicit, background });
 +
 +		this._isLatestVersion(url, explicit)
@@ -200,8 +203,8 @@ index 11cb9457bc2..ef72710974d 100644
 +				else {
 +					this.logService.info('update#doCheckForUpdates - using Electron autoUpdater');
 +
-+					electron.autoUpdater.setFeedURL({ url });
-+					electron.autoUpdater.checkForUpdates();
++					this.host.setFeedURL(url, undefined);
++					this.host.checkForUpdates();
 +				}
 +
 +				return Promise.resolve(null);
@@ -215,7 +218,7 @@ index 11cb9457bc2..ef72710974d 100644
 +				this.setState(State.Idle(UpdateType.Setup, message));
 +			});
  	}
-@@ -147,3 +162,3 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
+@@ -192,3 +207,3 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
  		try {
 -			const context = await this.requestService.request({ url, headers, callSite: 'updateService.darwin.checkForUpdates' }, CancellationToken.None);
 +			const context = await this.requestService.request({ url, headers, callSite: NO_FETCH_TELEMETRY }, CancellationToken.None);
