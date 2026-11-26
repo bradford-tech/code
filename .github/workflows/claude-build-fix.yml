@@ -79,7 +79,7 @@ jobs:
       # `workflows: write` is what lets a fix touch .github/workflows/*.yml;
       # without it GitHub rejects the push with "refusing to allow a GitHub
       # App to create or update workflow".
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         id: app-token
         with:
           client-id: ${{ secrets.BRADFORDBOT_CLIENT_ID }}
@@ -436,7 +436,7 @@ jobs:
       - name: Run Claude
         id: claude
         if: steps.count.outputs.proceed == 'true'
-        uses: anthropics/claude-code-action@4d75e5f390ee76b2e09c1980ecc99ff3a2e088c8 # v1
+        uses: anthropics/claude-code-action@f431adaf77e0fecf918431e75a2b5b45b85af002 # v1
         with:
           allowed_bots: "*"
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
